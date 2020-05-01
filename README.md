@@ -1,6 +1,7 @@
 # Tiny Build Server
 
-This is a functioning, minimalistic build server for Golang and C# projects.
+This project is, or rather will be, a functioning, minimalistic build server for Golang and C# projects.
+It is not meant to be used in production since it is a proof-of-concept.
 It can be used in conjunction with BitBucket, GitHub and GitLab and it runs on 
 whatever platform you compile it for, be it Windows, Linux or MacOS, even a RaspberryPi.
 You need to make some changes to your build definitions, though.
