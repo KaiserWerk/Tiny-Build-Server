@@ -3,10 +3,9 @@ package main
 import "time"
 
 type BuildDefinition struct {
-	Id			int		`yaml:"id"`
 	AuthToken   string  `yaml:"auth_token"`
 	ProjectType string  `yaml:"project_type"`
-	OnlyCustomSteps bool `yaml:"only_custom_steps"`
+	OnlyCustomActions bool `yaml:"only_custom_actions"`
 	Repository  struct {
 		Host     string  `yaml:"host"`
 		FullName string  `yaml:"full_name"`

@@ -1,7 +1,6 @@
-id: example_go
 auth_token: 123abc
 project_type: golang
-only_custom_steps: false
+only_custom_actions: false
 repository:
   host: github
   full_name: myuser/test-repo

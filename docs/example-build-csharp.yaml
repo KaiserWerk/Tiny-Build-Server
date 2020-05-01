@@ -1,7 +1,6 @@
-id: example_csharp
 auth_token: 123abc
 project_type: csharp
-only_custom_steps: false
+only_custom_actions: false
 repository:
   host: bitbucket
   full_name: myuser/test-repository
