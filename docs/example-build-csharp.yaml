@@ -1,0 +1,16 @@
+id: example_csharp
+auth_token: 123abc
+project_type: csharp
+only_custom_steps: false
+repository:
+  host: bitbucket
+  full_name: myuser/test-repository
+  username: myuser
+  secret: phDHwkWNqzGB74BgL4NL
+  branch: master
+
+
+actions:
+  - "dotnet restore"
+  - "dotnet test"
+  - "dotnet publish -r win-x64 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true"

@@ -1,0 +1,6 @@
+.idea/
+.git/
+build_definitions/
+etc/
+
+build.ps1
