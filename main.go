@@ -31,7 +31,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      router,
+		Handler:      limit(router),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -63,7 +63,7 @@ func main() {
 	}
 
 	<-done
-	fmt.Println("Server stopped")
+	fmt.Println("Server shutdown complete. Have a nice day!")
 }
 
 func bitBucketReceiveHandler(writer http.ResponseWriter, request *http.Request) {
