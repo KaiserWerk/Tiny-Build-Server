@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"time"
@@ -44,7 +42,7 @@ func main() {
 
 	go func() {
 		<-quit
-		fmt.Println("Server is shutting down...")
+		fmt.Println("\nServer is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -66,39 +64,3 @@ func main() {
 	fmt.Println("Server shutdown complete. Have a nice day!")
 }
 
-func bitBucketReceiveHandler(writer http.ResponseWriter, request *http.Request) {
-	var payload BitBucketPushPayload
-	err := json.NewDecoder(request.Body).Decode(&payload)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	queryParams, err := url.ParseQuery(request.URL.RawQuery)
-	if err != nil {
-		fmt.Println("Could not parse query params")
-		return
-	}
-
-	if len(queryParams["id"]) == 0 || len(queryParams["token"]) == 0 {
-		fmt.Println("Missing request parameters")
-		return
-	}
-
-	fmt.Println("id: " + queryParams["id"][0])
-	fmt.Println("token: " + queryParams["token"][0])
-
-	fmt.Println("branch: " + payload.Push.Changes[0].New.Name)
-	fmt.Println("repo full name: " + payload.Repository.FullName)
-
-	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte("received"))
-}
-
-func gitHubReceiveHandler(writer http.ResponseWriter, request *http.Request) {
-
-}
-
-func gitLabReceiveHandler(writer http.ResponseWriter, request *http.Request) {
-
-}
