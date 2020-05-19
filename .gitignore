@@ -2,5 +2,7 @@
 .git/
 build_definitions/
 etc/
+config/*
+!config/app.dist.yaml
 
 build.ps1
