@@ -36,13 +36,27 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
+	externalShutdownCh := make(chan bool)
 	done := make(chan bool)
 	quit := make(chan os.Signal)
-
 	signal.Notify(quit, os.Interrupt)
 
+	go readConsoleInput(externalShutdownCh)
+
 	go func() {
-		<-quit
+		goOn := false
+		for {
+			select {
+			case <-quit:
+				goOn = true
+			case <- externalShutdownCh:
+				goOn = true
+			}
+			if goOn {
+				break
+			}
+		}
+
 		fmt.Println("\nServer is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
@@ -50,15 +64,13 @@ func main() {
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			fmt.Printf("Could not gracefully shutdown the server: %v\n", err)
-			os.Exit(-1)
+			log.Fatalf("Could not gracefully shutdown the server: %v\n", err)
 		}
 		close(done)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		fmt.Printf("Could not listen on %s: %v\n", listenAddr, err)
-		os.Exit(-1)
+		log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
 	}
 	<-done
 	fmt.Println("Server shutdown complete. Have a nice day!")

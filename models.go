@@ -13,6 +13,7 @@ type BuildDefinition struct {
 	DeploymentEnabled	bool	`yaml:"deployment_enabled"`
 	Repository  struct {
 		Host     string  `yaml:"host"`
+		HostUrl	 string  `yaml:"host_url"`
 		FullName string  `yaml:"full_name"`
 		Username string  `yaml:"username"`
 		Secret   string  `yaml:"secret"`
