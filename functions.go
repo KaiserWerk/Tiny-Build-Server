@@ -4,11 +4,16 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func getHeaderIfSet(r *http.Request, key string) (string, error) {
@@ -131,28 +136,164 @@ func startBuildProcess(id string, definition BuildDefinition) {
 	switch definition.ProjectType {
 	case "go":
 	case "golang":
-		// restore dependencies
-		err = exec.Command(sysConf.GolangExecutable, "get", "./...").Run()
-		if err != nil {
-			fmt.Println("could not restore dependencies: " + err.Error())
-			return
+		for _, v := range definition.Actions {
+			switch true {
+			case strings.Contains(v, "restore"):
+				// restore dependencies
+				err = exec.Command(sysConf.GolangExecutable, "get", "./...").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "test"):
+				// tests and bench tests don't really matter for now
+				err = exec.Command(sysConf.GolangExecutable, "test").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "test bench"):
+				err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "build"):
+				var (
+					targetOS string
+					targetArch string
+					targetArm string
+				)
+
+				osArch := strings.Split(v, " ")[1]
+
+				// its sth like raspi
+				if !strings.Contains(osArch, "_") {
+					switch osArch {
+					case "raspi3":
+						targetOS = "linux"
+						targetArch = "arm32"
+						targetArm = "5"
+					case "raspi4":
+						targetOS = "linux"
+						targetArch = "arm32"
+						targetArm = "7" // or 6?
+					}
+				} else {
+					parts := strings.Split(osArch, "_")
+					targetOS = parts[0]
+					targetArch = parts[1]
+				}
+
+				_ = os.Setenv("GOOS", targetOS)
+				_ = os.Setenv("GOARCH", targetArch)
+				_ = os.Setenv("GOARM", targetArm)
+
+				err = exec.Command(sysConf.GolangExecutable, "build", "-o", "../build/binary").Run()
+				if err != nil {
+					fmt.Println("could not build: " + err.Error())
+					return
+				}
+			}
 		}
-		// tests and bench tests don't really matter for now
-		err = exec.Command(sysConf.GolangExecutable, "test").Run()
-		if err != nil {
-			fmt.Println("could not restore dependencies: " + err.Error())
-			return
+
+		if definition.DeploymentEnabled {
+			for _, v := range definition.Deployments {
+				// first, the pre deployment actions
+
+				sshConfig := &ssh.ClientConfig{
+					User: v.Username,
+					Auth: []ssh.AuthMethod{
+						ssh.Password(v.Password),
+					},
+				}
+				sshClient, err := ssh.Dial("tcp", v.Host, sshConfig)
+				if err != nil {
+					fmt.Println("could not exstablish ssh connection")
+					return
+				}
+				session, err := sshClient.NewSession()
+				if err != nil {
+					fmt.Printf("Failed to create session: %s\n", err.Error())
+					return
+				}
+				//modes := ssh.TerminalModes{
+				//	ssh.ECHO:          0,     // disable echoing
+				//	ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
+				//	ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
+				//}
+				//
+				//if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
+				//	session.Close()
+				//	fmt.Printf("request for pseudo terminal failed: %s\n", err.Error())
+				//}
+
+				if len(v.PreDeploymentActions) > 0 {
+					for _, action := range v.PreDeploymentActions {
+						err = session.Run(action)
+						if err != nil {
+							fmt.Println("could not execute pre deployment command: " + action)
+							return
+						}
+					}
+				}
+				// then, the actual deployment
+				sftpClient, err := sftp.NewClient(sshClient)
+				if err != nil {
+					fmt.Println("could not create sftp client instance:", err.Error())
+					return
+				}
+				err = sftpClient.Close()
+				if err != nil {
+					fmt.Println("could not close sftp client connection")
+				}
+
+				// copy local file to remote location
+
+				// create destination file
+				// really necessary?
+				dstFile, err := sftpClient.Create(v.WorkingDirectory)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				// create source file
+				srcFile, err := os.Open("../build/binary")
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				// copy source file to destination file
+				bytes, err := io.Copy(dstFile, srcFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				dstFile.Close()
+				srcFile.Close()
+				fmt.Printf("%d bytes copied\n", bytes)
+
+				// then, the post deployment actions
+				if len(v.PostDeploymentActions) > 0 {
+					// connect via ssh
+					for _, action := range v.PostDeploymentActions {
+						err = session.Run(action)
+						if err != nil {
+							fmt.Println("could not execute post deployment command: " + action)
+							return
+						}
+					}
+				}
+
+				if sshClient != nil {
+					err = sshClient.Close()
+					if err != nil {
+						fmt.Println("could not close ssh client connection")
+					}
+				}
+			}
 		}
-		err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
-		if err != nil {
-			fmt.Println("could not restore dependencies: " + err.Error())
-			return
-		}
-		err = exec.Command(sysConf.GolangExecutable, "build", "-o", "../build/binary").Run()
-		if err != nil {
-			fmt.Println("could not build: " + err.Error())
-			return
-		}
+		// reset cwd?
+
 	case "cs":
 	case "csharp":
 

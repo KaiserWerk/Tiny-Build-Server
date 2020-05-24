@@ -73,7 +73,7 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	if buildDefinition.Repository.FullName != repoFullName || buildDefinition.Repository.Branch != branch {
 		fmt.Println("repo name or branch mismatch")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("recevied, but repository name/branch mismatch"))
+		w.Write([]byte("received, but repository name/branch mismatch"))
 	}
 
 	// now we can start the build process
@@ -82,7 +82,7 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	go startBuildProcess(id, buildDefinition)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("received, everything fine"))
+	w.Write([]byte("received, build proces initiated, everything fine"))
 }
 
 func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
