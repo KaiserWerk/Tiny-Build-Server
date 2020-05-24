@@ -127,28 +127,38 @@ func startBuildProcess(id string, definition BuildDefinition) {
 		fmt.Println("could not change dir to clone: " + err.Error())
 		return
 	}
-	// restore dependencies
-	err = exec.Command(sysConf.GolangExecutable, "get", "./...").Run()
-	if err != nil {
-		fmt.Println("could not restore dependencies: " + err.Error())
-		return
+
+	switch definition.ProjectType {
+	case "go":
+	case "golang":
+		// restore dependencies
+		err = exec.Command(sysConf.GolangExecutable, "get", "./...").Run()
+		if err != nil {
+			fmt.Println("could not restore dependencies: " + err.Error())
+			return
+		}
+		// tests and bench tests don't really matter for now
+		err = exec.Command(sysConf.GolangExecutable, "test").Run()
+		if err != nil {
+			fmt.Println("could not restore dependencies: " + err.Error())
+			return
+		}
+		err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
+		if err != nil {
+			fmt.Println("could not restore dependencies: " + err.Error())
+			return
+		}
+		err = exec.Command(sysConf.GolangExecutable, "build", "-o", "../build/binary").Run()
+		if err != nil {
+			fmt.Println("could not build: " + err.Error())
+			return
+		}
+	case "cs":
+	case "csharp":
+
 	}
-	// tests and bench tests don't really matter for now
-	err = exec.Command(sysConf.GolangExecutable, "test").Run()
-	if err != nil {
-		fmt.Println("could not restore dependencies: " + err.Error())
-		return
-	}
-	err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
-	if err != nil {
-		fmt.Println("could not restore dependencies: " + err.Error())
-		return
-	}
-	err = exec.Command(sysConf.GolangExecutable, "build", "-o", "../build/binary").Run()
-	if err != nil {
-		fmt.Println("could not build: " + err.Error())
-		return
-	}
+
+
 	fmt.Println("build completed!")
 }
 
