@@ -11,7 +11,7 @@ type BuildDefinition struct {
 	AuthToken   string  `yaml:"auth_token"`
 	ProjectType string  `yaml:"project_type"`
 	DeploymentEnabled	bool	`yaml:"deployment_enabled"`
-	Repository  struct {
+	Repository struct {
 		Host     string  `yaml:"host"`
 		HostUrl	 string  `yaml:"host_url"`
 		FullName string  `yaml:"full_name"`

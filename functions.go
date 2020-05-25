@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -101,10 +100,8 @@ func startBuildProcess(id string, definition BuildDefinition) {
 	* test bench
 	* build arch
 
-	arch = window_amd64, darwin_amd32, raspi_arm5, ...
+	arch = window_amd64, darwin_amd32, raspi3, ...
 	 */
-
-	// noch zwischen go und c# unterscheiden
 
 	baseDir := "build_definitions/build_" + id
 	cloneDir := baseDir + "/clone"
@@ -125,6 +122,7 @@ func startBuildProcess(id string, definition BuildDefinition) {
 	sysConf, err := loadSysConfig()
 	if err != nil {
 		fmt.Println("could not load system config")
+		return
 	}
 	// change dir
 	err = os.Chdir(cloneDir)
@@ -172,12 +170,12 @@ func startBuildProcess(id string, definition BuildDefinition) {
 					switch osArch {
 					case "raspi3":
 						targetOS = "linux"
-						targetArch = "arm32"
+						targetArch = "arm"
 						targetArm = "5"
 					case "raspi4":
 						targetOS = "linux"
-						targetArch = "arm32"
-						targetArm = "7" // or 6?
+						targetArch = "arm"
+						targetArm = "6"
 					}
 				} else {
 					parts := strings.Split(osArch, "_")
@@ -200,7 +198,6 @@ func startBuildProcess(id string, definition BuildDefinition) {
 		if definition.DeploymentEnabled {
 			for _, v := range definition.Deployments {
 				// first, the pre deployment actions
-
 				sshConfig := &ssh.ClientConfig{
 					User: v.Username,
 					Auth: []ssh.AuthMethod{
@@ -217,16 +214,6 @@ func startBuildProcess(id string, definition BuildDefinition) {
 					fmt.Printf("Failed to create session: %s\n", err.Error())
 					return
 				}
-				//modes := ssh.TerminalModes{
-				//	ssh.ECHO:          0,     // disable echoing
-				//	ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-				//	ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-				//}
-				//
-				//if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
-				//	session.Close()
-				//	fmt.Printf("request for pseudo terminal failed: %s\n", err.Error())
-				//}
 
 				if len(v.PreDeploymentActions) > 0 {
 					for _, action := range v.PreDeploymentActions {
@@ -237,6 +224,7 @@ func startBuildProcess(id string, definition BuildDefinition) {
 						}
 					}
 				}
+
 				// then, the actual deployment
 				sftpClient, err := sftp.NewClient(sshClient)
 				if err != nil {
@@ -245,28 +233,30 @@ func startBuildProcess(id string, definition BuildDefinition) {
 				}
 				err = sftpClient.Close()
 				if err != nil {
-					fmt.Println("could not close sftp client connection")
+					fmt.Println("could not close sftp client connection,", err.Error())
+					return
 				}
 
-				// copy local file to remote location
-
 				// create destination file
-				// really necessary?
+				// @TODO really necessary?
 				dstFile, err := sftpClient.Create(v.WorkingDirectory)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err.Error())
+					return
 				}
 
 				// create source file
 				srcFile, err := os.Open("../build/binary")
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err.Error())
+					return
 				}
 
 				// copy source file to destination file
 				bytes, err := io.Copy(dstFile, srcFile)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err.Error())
+					return
 				}
 				dstFile.Close()
 				srcFile.Close()
@@ -274,7 +264,6 @@ func startBuildProcess(id string, definition BuildDefinition) {
 
 				// then, the post deployment actions
 				if len(v.PostDeploymentActions) > 0 {
-					// connect via ssh
 					for _, action := range v.PostDeploymentActions {
 						err = session.Run(action)
 						if err != nil {
@@ -288,15 +277,17 @@ func startBuildProcess(id string, definition BuildDefinition) {
 					err = sshClient.Close()
 					if err != nil {
 						fmt.Println("could not close ssh client connection")
+						return
 					}
 				}
 			}
 		}
-		// reset cwd?
+		// @TODO reset cwd?
 
 	case "cs":
 	case "csharp":
-
+		// sysconfig!
+		// @TODO
 	}
 
 
@@ -337,6 +328,6 @@ func getRepositoryUrl(d BuildDefinition, withCredentials bool) string {
 		if withCredentials {
 			url = fmt.Sprintf("%s:%s@%s", d.Repository.Username, d.Repository.Secret, url)
 		}
-		return "http://" + url
+		return "http://" + url // just http
 	}
 }

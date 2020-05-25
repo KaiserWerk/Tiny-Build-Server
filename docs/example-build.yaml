@@ -1,0 +1,24 @@
+auth_token: 123abc
+project_type: golang
+repository:
+  host: github
+  host_url:
+  full_name: myuser/test-repo
+  username: myuser
+  secret: xyz987
+  branch: master
+actions:
+  - "restore"
+  - "test"
+  - "test bench"
+  - "build linux_amd64"
+deployments:
+  - host: "mydomain.com:22"
+    username: myuser
+    password: mysecretpassword
+    connection_type: sftp  # currently, only sftp (SSH File Transfer Protocol) is supported
+    working_directory: /usr/local/bin/my_binary
+    pre_deployment_actions:
+      - "sudo service myservice stop"
+    post_deployment_actions:
+      - "sudo service myservice start"

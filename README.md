@@ -16,20 +16,29 @@ The YAML file's content might look like this:
 
     auth_token: 123abc
     project_type: golang
-    only_custom_actions: true
+    deployment_enabled: true
     repository:
       host: github
+      host_url:   # empty when using a cloud-based service
       full_name: myuser/test-repo
       username: myuser
       secret: xyz987
       branch: master
-    
     actions:
-      - "git clone https://github.com/myuser/test-repo clone"
-      - "go get"
-      - "env GOOS=linux GOARCH=amd64 go build -o %output_dir/example_go %package"
-      - "env GOOS=linux GOARCH=arm GOARM=5 go build -o %output_dir/example_go.exe %package"
-      - "env GOOS=windows GOARCH=amd64 go build -o %output_dir/example_go %package"
+      - "restore"
+      - "test"
+      - "test bench"
+      - "build linux_amd64"
+    deployments:
+      - host: "mydomain.com:22"
+        username: myuser
+        password: mysecretpassword
+        connection_type: sftp  # currently, only sftp (SSH File Transfer Protocol) is supported
+        working_directory: /usr/local/bin/my_binary
+        pre_deployment_actions:
+          - "sudo service myservice stop"
+        post_deployment_actions:
+          - "sudo service myservice start"
 
 There is no need to restart the server after adding, modifying or removing a build definition.
 
@@ -38,14 +47,18 @@ Field explanations:
 character used to check if the sender of a build request is allowed to do so
   * ``project`` can either be ``golang`` or ``csharp``. Maybe I'll add support for PHP 
 or other languages in the future
-  * ``only_custom_actions`` is a boolean flag which, if set to true, allows you to use custom commands
-under the actions key instead of predefined ones
+  * ``deplyoment_enabled`` allows you to enable or disable deployments for this build definition
   * ``repository`` contains information about the repository that is supposed to be built
-    * ``host`` can either be github, bitbucket or gitlab
-    * ``full_name`` must be the combination of the repository and the owning user, like in a Git URL
+    * ``host`` can either be github, bitbucket, gitlab or gitea
+    * ``host_url`` is required to be supplied when you use a self-hosted service, like Gitea. If you use a cloud-base service
+    this can be left blank
+    * ``full_name`` must be the combination of the repository and the owning user, like in a Git URL, e.g. KaiserWerk/Tiny-Build-Server
     * ``username`` is the username used to authenticate for a ``git pull``.
     * ``secret`` is the associated password/secret token
     * ``branch`` must supply the name of the branch which should be built. Most of the time, this will be 
 something like ``master`` or ``release``.
   * ``actions`` contains a list of commands to be execute after each other in order for the project
-to be built
+to be built. This can be either **restore** (to restore dependencies), **test** (runs unit tests), **test bench** (runs benchmark tests; only for Golang) and **build os_arch**.
+The OS and architecture can be any valid combination supported by your Golang installation, like **windows_amd32**. Also you can use **raspi3** and **raspi4** for use with the 
+RaspberryPi 3 and 4, respectively.
+  * ``deployments`` contains the deployment definitions. You can have multiple 
