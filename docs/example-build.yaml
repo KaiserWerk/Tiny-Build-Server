@@ -1,5 +1,6 @@
 auth_token: 123abc
 project_type: golang
+deployment_enabled: true
 repository:
   host: github
   host_url:

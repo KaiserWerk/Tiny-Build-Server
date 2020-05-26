@@ -13,9 +13,16 @@ import (
 )
 
 func main() {
+	//dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//fmt.Println(dir)
+
 	listenAddrPtr := flag.String("port", "5000", "The port which the build server should listen on")
-	listenAddr := fmt.Sprintf(":%v", *listenAddrPtr)
-	fmt.Printf("Server is ready to handle requests at port %v\n", *listenAddrPtr)
+	flag.Parse() // <.<
+	listenAddr := fmt.Sprintf(":%s", *listenAddrPtr)
+	fmt.Printf("Server is ready to handle requests at port %s\n", *listenAddrPtr)
 
 	if _, err := loadSysConfig(); err != nil {
 		log.Fatal("could not handle config/app.yaml file; something went wrong")
