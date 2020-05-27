@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/KaiserWerk/Tiny-Build-Server)](https://goreportcard.com/report/github.com/KaiserWerk/Tiny-Build-Server)
+
 # Tiny Build Server
 
 This project is, or rather will be, a functioning, minimalistic build server for Golang and C# projects.
