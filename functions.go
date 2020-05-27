@@ -22,44 +22,44 @@ func getHeaderIfSet(r *http.Request, key string) (string, error) {
 	}
 	return header, nil
 }
-func loadSysConfig() (SysConfig, error) {
+func loadSysConfig() (sysConfig, error) {
 	cont, err := ioutil.ReadFile("config/app.yaml")
 	if err != nil {
-		return SysConfig{}, errors.New("could not read config/app.yaml file")
+		return sysConfig{}, errors.New("could not read config/app.yaml file")
 	}
-	var config SysConfig
+	var config sysConfig
 	err = yaml.Unmarshal(cont, &config)
 	if err != nil {
-		return SysConfig{}, errors.New("could not parse config/app.yaml file")
+		return sysConfig{}, errors.New("could not parse config/app.yaml file")
 	}
 
 	return config, nil
 }
 
-func loadBuildDefinition(id string) (BuildDefinition, error) {
+func loadBuildDefinition(id string) (buildDefinition, error) {
 	bdDir := "build_definitions/build_" + id
 	bdFile := bdDir + "/build.yaml"
 
 	if _, err := os.Stat(bdDir); os.IsNotExist(err) {
 		fmt.Printf("build definition with id %v not found\n", id)
-		return BuildDefinition{}, buildDefinitionNotFound{Id: id}
+		return buildDefinition{}, buildDefinitionNotFound{Id: id}
 	}
 
 	if _, err := os.Stat(bdFile); os.IsNotExist(err) {
 		fmt.Printf("config file for build definition with id %v not found\n", id)
-		return BuildDefinition{}, buildDefinitionConfigFileNotFound{Id: id}
+		return buildDefinition{}, buildDefinitionConfigFileNotFound{Id: id}
 	}
 
 	cont, err := ioutil.ReadFile(bdFile)
 	if err != nil {
 		fmt.Println("could not read build definition config file")
-		return BuildDefinition{}, errors.New("could not read build definition config file")
+		return buildDefinition{}, errors.New("could not read build definition config file")
 	}
-	var bd BuildDefinition
+	var bd buildDefinition
 	err = yaml.Unmarshal(cont, &bd)
 	if err != nil {
 		fmt.Println("could not unmarshal yaml")
-		return BuildDefinition{}, errors.New("could not unmarshal yaml")
+		return buildDefinition{}, errors.New("could not unmarshal yaml")
 	}
 
 	return bd, nil
@@ -92,7 +92,7 @@ func readConsoleInput(externalShutdownCh chan bool) {
 	}
 }
 
-func startBuildProcess(id string, definition BuildDefinition) {
+func startBuildProcess(id string, definition buildDefinition) {
 	/*
 		* clone
 		* restore
@@ -217,7 +217,7 @@ func startBuildProcess(id string, definition BuildDefinition) {
 	fmt.Println("build completed!")
 }
 
-func deployToHost(outputFile string, definition BuildDefinition) {
+func deployToHost(outputFile string, definition buildDefinition) {
 	for _, v := range definition.Deployments {
 		// first, the pre deployment actions
 		sshConfig := &ssh.ClientConfig{
@@ -327,7 +327,7 @@ func deployToHost(outputFile string, definition BuildDefinition) {
 	}
 }
 
-func getRepositoryUrl(d BuildDefinition, withCredentials bool) string {
+func getRepositoryUrl(d buildDefinition, withCredentials bool) string {
 	var url string
 
 	switch d.Repository.Host {

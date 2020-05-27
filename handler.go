@@ -14,7 +14,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	var payload BitBucketPushPayload
+	var payload bitBucketPushPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -82,11 +82,11 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	go startBuildProcess(id, buildDefinition)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("received, build proces initiated, everything fine"))
+	w.Write([]byte("received, build process initiated, everything fine"))
 }
 
 func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	var payload GitHubPushPayload
+	var payload gitHubPushPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -152,7 +152,7 @@ func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	var payload GitLabPushPayload
+	var payload gitLabPushPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -187,7 +187,7 @@ func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	var payload GiteaPushPayload
+	var payload giteaPushPayload
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		fmt.Println(err.Error())

@@ -2,12 +2,12 @@ package main
 
 import "time"
 
-type SysConfig struct {
+type sysConfig struct {
 	GolangExecutable string `yaml:"golang_executable"`
 	DotNetExecutable string `yaml:"dotnet_executable"`
 }
 
-type BuildDefinition struct {
+type buildDefinition struct {
 	AuthToken         string `yaml:"auth_token"`
 	ProjectType       string `yaml:"project_type"`
 	DeploymentEnabled bool   `yaml:"deployment_enabled"`
@@ -31,7 +31,7 @@ type BuildDefinition struct {
 	} `yaml:"deployments"`
 }
 
-type BitBucketPushPayload struct {
+type bitBucketPushPayload struct {
 	Push struct {
 		Changes []struct {
 			Forced bool `json:"forced"`
@@ -313,7 +313,7 @@ type BitBucketPushPayload struct {
 	} `json:"repository"`
 }
 
-type GitHubPushPayload struct {
+type gitHubPushPayload struct {
 	Ref        string        `json:"ref"`
 	Before     string        `json:"before"`
 	After      string        `json:"after"`
@@ -448,7 +448,7 @@ type GitHubPushPayload struct {
 	} `json:"sender"`
 }
 
-type GitLabPushPayload struct {
+type gitLabPushPayload struct {
 	ObjectKind   string `json:"object_kind"`
 	Before       string `json:"before"`
 	After        string `json:"after"`
@@ -503,7 +503,7 @@ type GitLabPushPayload struct {
 	TotalCommitsCount int `json:"total_commits_count"`
 }
 
-type GiteaPushPayload struct {
+type giteaPushPayload struct {
 	Secret     string `json:"secret"`
 	Ref        string `json:"ref"`
 	Before     string `json:"before"`
