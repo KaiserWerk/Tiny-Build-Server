@@ -220,4 +220,3 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	token := queryParams["token"][0]
 	fmt.Printf("gitea receive handler: id=%v, token=%v\n", id, token)
 }
-

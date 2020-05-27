@@ -42,12 +42,12 @@ func loadBuildDefinition(id string) (BuildDefinition, error) {
 
 	if _, err := os.Stat(bdDir); os.IsNotExist(err) {
 		fmt.Printf("build definition with id %v not found\n", id)
-		return BuildDefinition{}, BuildDefinitionNotFound{Id: id}
+		return BuildDefinition{}, buildDefinitionNotFound{Id: id}
 	}
 
 	if _, err := os.Stat(bdFile); os.IsNotExist(err) {
 		fmt.Printf("config file for build definition with id %v not found\n", id)
-		return BuildDefinition{}, BuildDefinitionConfigFileNotFound{Id: id}
+		return BuildDefinition{}, buildDefinitionConfigFileNotFound{Id: id}
 	}
 
 	cont, err := ioutil.ReadFile(bdFile)
@@ -94,14 +94,14 @@ func readConsoleInput(externalShutdownCh chan bool) {
 
 func startBuildProcess(id string, definition BuildDefinition) {
 	/*
-	* clone
-	* restore
-	* test
-	* test bench
-	* build arch
+		* clone
+		* restore
+		* test
+		* test bench
+		* build arch
 
-	arch = window_amd64, darwin_amd32, raspi3, ...
-	 */
+		arch = window_amd64, darwin_amd32, raspi3, ...
+	*/
 
 	repoName := strings.Split(definition.Repository.FullName, "/")[1]
 
@@ -109,8 +109,6 @@ func startBuildProcess(id string, definition BuildDefinition) {
 	fileExt["windows"] = ".exe"
 	fileExt["linux"] = ""
 	fileExt["darwin"] = ".osx"
-
-
 
 	baseDir := "build_definitions/build_" + id
 	cloneDir := baseDir + "/clone"
@@ -168,9 +166,9 @@ func startBuildProcess(id string, definition BuildDefinition) {
 				}
 			case strings.Contains(v, "build"):
 				var (
-					targetOS string
+					targetOS   string
 					targetArch string
-					targetArm string
+					targetArm  string
 				)
 
 				osArch := strings.Split(v, " ")[1]
@@ -216,7 +214,6 @@ func startBuildProcess(id string, definition BuildDefinition) {
 		// @TODO
 	}
 
-
 	fmt.Println("build completed!")
 }
 
@@ -225,7 +222,7 @@ func deployToHost(outputFile string, definition BuildDefinition) {
 		// first, the pre deployment actions
 		sshConfig := &ssh.ClientConfig{
 			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-			User: v.Username,
+			User:            v.Username,
 			Auth: []ssh.AuthMethod{
 				ssh.Password(v.Password),
 			},
@@ -235,7 +232,6 @@ func deployToHost(outputFile string, definition BuildDefinition) {
 			fmt.Println("could not establish ssh connection:", err.Error())
 			return
 		}
-
 
 		if len(v.PreDeploymentActions) > 0 {
 			for _, action := range v.PreDeploymentActions {
@@ -270,7 +266,6 @@ func deployToHost(outputFile string, definition BuildDefinition) {
 			fmt.Println("could not create sftp client instance:", err.Error())
 			return
 		}
-
 
 		// create destination file
 		// @TODO really necessary?

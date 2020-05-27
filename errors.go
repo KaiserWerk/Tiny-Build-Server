@@ -1,17 +1,17 @@
 package main
 
-type BuildDefinitionNotFound struct{
-	Id	string
+type buildDefinitionNotFound struct {
+	Id string
 }
 
-func (e BuildDefinitionNotFound) Error() string {
+func (e buildDefinitionNotFound) Error() string {
 	return "build definition directory with id " + e.Id + " not found"
 }
 
-type BuildDefinitionConfigFileNotFound struct{
-	Id	string
+type buildDefinitionConfigFileNotFound struct {
+	Id string
 }
 
-func (e BuildDefinitionConfigFileNotFound) Error() string {
+func (e buildDefinitionConfigFileNotFound) Error() string {
 	return "config file of build definition with id " + e.Id + " not found"
 }

@@ -57,7 +57,7 @@ func main() {
 			select {
 			case <-quit:
 				goOn = true
-			case <- externalShutdownCh:
+			case <-externalShutdownCh:
 				goOn = true
 			}
 			if goOn {
@@ -67,7 +67,7 @@ func main() {
 
 		fmt.Println("\nServer is shutting down...")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
@@ -83,4 +83,3 @@ func main() {
 	<-done
 	fmt.Println("Server shutdown complete. Have a nice day!")
 }
-

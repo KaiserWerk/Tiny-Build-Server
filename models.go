@@ -3,31 +3,31 @@ package main
 import "time"
 
 type SysConfig struct {
-	GolangExecutable	string	`yaml:"golang_executable"`
-	DotNetExecutable	string	`yaml:"dotnet_executable"`
+	GolangExecutable string `yaml:"golang_executable"`
+	DotNetExecutable string `yaml:"dotnet_executable"`
 }
 
 type BuildDefinition struct {
-	AuthToken   string  `yaml:"auth_token"`
-	ProjectType string  `yaml:"project_type"`
-	DeploymentEnabled	bool	`yaml:"deployment_enabled"`
-	Repository struct {
-		Host     string  `yaml:"host"`
-		HostUrl	 string  `yaml:"host_url"`
-		FullName string  `yaml:"full_name"`
-		Username string  `yaml:"username"`
-		Secret   string  `yaml:"secret"`
-		Branch	 string	 `yaml:"branch"`
+	AuthToken         string `yaml:"auth_token"`
+	ProjectType       string `yaml:"project_type"`
+	DeploymentEnabled bool   `yaml:"deployment_enabled"`
+	Repository        struct {
+		Host     string `yaml:"host"`
+		HostUrl  string `yaml:"host_url"`
+		FullName string `yaml:"full_name"`
+		Username string `yaml:"username"`
+		Secret   string `yaml:"secret"`
+		Branch   string `yaml:"branch"`
 	} `yaml:"repository"`
-	Actions []string `yaml:"actions"`
-	Deployments []struct{
-		Host					string	`yaml:"host"`
-		Username				string	`yaml:"username"`
-		Password				string	`yaml:"password"`
-		ConnectionType			string	`yaml:"connection_type"`
-		WorkingDirectory		string	`yaml:"working_directory"`
-		PreDeploymentActions	[]string	`yaml:"pre_deployment_actions"`
-		PostDeploymentActions	[]string	`yaml:"post_deployment_actions"`
+	Actions     []string `yaml:"actions"`
+	Deployments []struct {
+		Host                  string   `yaml:"host"`
+		Username              string   `yaml:"username"`
+		Password              string   `yaml:"password"`
+		ConnectionType        string   `yaml:"connection_type"`
+		WorkingDirectory      string   `yaml:"working_directory"`
+		PreDeploymentActions  []string `yaml:"pre_deployment_actions"`
+		PostDeploymentActions []string `yaml:"post_deployment_actions"`
 	} `yaml:"deployments"`
 }
 
