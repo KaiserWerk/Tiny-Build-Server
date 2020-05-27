@@ -29,6 +29,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
+	router.Use(limit)
 	router.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
 	router.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")
 	router.HandleFunc("/gitlab-receive", gitLabReceiveHandler).Methods("POST")
@@ -37,7 +38,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         listenAddr,
-		Handler:      limit(router),
+		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
