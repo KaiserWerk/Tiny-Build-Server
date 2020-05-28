@@ -4,7 +4,7 @@ When you push new code into your repository, you have to notify your build serve
 is available. This is what webhooks are for. Please read the paragraph corresponding to your used
 Git system. For every webhook, you will need your build URL. As URL, you need to 
 supply the address of your build server, the build ID and the auth token,
-e.g. http://my-build-server.com:5000/bitbucket-receive?id=<my-id>&token=<my-auth-token>.
+e.g. http://my-build-server.com:5000/bitbucket-receive?id=my-id&token=my-auth-token.
 
 ### BitBucket
 
@@ -33,6 +33,10 @@ More Info: https://confluence.atlassian.com/bitbucket/manage-webhooks-735643732.
 
 coming soon
 
+
+
 ### Gitea
 
 coming soon
+
+More Info: https://docs.gitea.io/en-us/webhooks/

@@ -11,7 +11,7 @@ Build information are stored in files and folders which are placed in the ``buil
 subfolder. A build definition is a folder containing a YAML file.
 
 Prerequisites
-* 
+* Basic knowledge of the Go programming language
 
 ### Documentation
 
@@ -19,7 +19,5 @@ Prerequisites
 * [Part II: Create a build definition](docs/create-a-build-definition.md)
 * [Part III: Create a webhook](docs/create-a-webhook.md)
 
-
-Example build:
 
   
