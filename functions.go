@@ -39,7 +39,7 @@ func loadSysConfig() (sysConfig, error) {
 func loadBuildDefinition(id string) (buildDefinition, error) {
 	bdDir := "build_definitions/build_" + id
 	bdFile := bdDir + "/build.yaml"
-
+	fmt.Println("full build path:", bdFile)
 	if _, err := os.Stat(bdDir); os.IsNotExist(err) {
 		fmt.Printf("build definition with id %v not found\n", id)
 		return buildDefinition{}, buildDefinitionNotFound{Id: id}
@@ -146,7 +146,7 @@ func startBuildProcess(id string, definition buildDefinition) {
 			switch true {
 			case strings.Contains(v, "restore"):
 				// restore dependencies
-				err = exec.Command(sysConf.GolangExecutable, "get", "./...").Run()
+				err = exec.Command(sysConf.GolangExecutable, "get", "-u").Run()
 				if err != nil {
 					fmt.Println("could not restore dependencies: " + err.Error())
 					return
@@ -210,6 +210,7 @@ func startBuildProcess(id string, definition buildDefinition) {
 
 	case "cs":
 	case "csharp":
+		// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
 		// sysconfig!
 		// @TODO
 	}

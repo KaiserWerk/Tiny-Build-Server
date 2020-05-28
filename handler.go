@@ -145,7 +145,7 @@ func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
 
 	// now we can start the build process
 	// something like
-	// go startBuildProcess(buildConfig, payload)
+	go startBuildProcess(id, buildConfig)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("received, build process initiated, everything fine"))
@@ -171,7 +171,7 @@ func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// AUCH HEADER PRÜFEN!
 
-	headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+	headers := []string{"X-GitLab-Event"}
 	headerValues := make([]string, len(headers))
 	for i := range headers {
 		headerValues[i], err = getHeaderIfSet(r, headers[i])
@@ -183,7 +183,39 @@ func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	// all strings
 	id := queryParams["id"][0]
 	token := queryParams["token"][0]
-	fmt.Printf("gitlab receive handler: id=%v, token=%v\n", id, token)
+	repoFullName := payload.Project.PathWithNamespace
+	branch := payload.Project.DefaultBranch
+
+	buildConfig, err := loadBuildDefinition(id)
+	if err != nil {
+		fmt.Println("error while loading build configuration:", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("received, but bad request"))
+		return
+	}
+
+	if buildConfig.AuthToken != token {
+		fmt.Println("no auth token match")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("received, but auth token mismatch"))
+		return
+	}
+
+	if buildConfig.Repository.FullName != repoFullName || buildConfig.Repository.Branch != branch {
+		fmt.Println("repo name or branch mismatch")
+		w.WriteHeader(http.StatusBadRequest)
+		str := fmt.Sprintf("repo name expected: %v, got %v instead; branch name expected: %v, got %v instead",
+			buildConfig.Repository.FullName, repoFullName, buildConfig.Repository.Branch, branch)
+		w.Write([]byte("recevied, but repository name/branch mismatch: " + str))
+		return
+	}
+
+	// now we can start the build process
+	// something like
+	go startBuildProcess(id, buildConfig)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("received, build process initiated, everything fine"))
 }
 
 func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +238,7 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// AUCH HEADER PRÜFEN!
 
-	headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+	headers := []string{"X-Gitea-Delivery", "X-Gitea-Event"}
 	headerValues := make([]string, len(headers))
 	for i := range headers {
 		headerValues[i], err = getHeaderIfSet(r, headers[i])
@@ -218,5 +250,5 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	// all strings
 	id := queryParams["id"][0]
 	token := queryParams["token"][0]
-	fmt.Printf("gitea receive handler: id=%v, token=%v\n", id, token)
+	fmt.Printf("gitea receive handler still incomplete: id=%v, token=%v\n", id, token)
 }

@@ -1,5 +1,6 @@
 .idea/
 .git/
+build/*
 build_definitions/
 etc/
 config/*
