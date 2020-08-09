@@ -3,15 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
 )
-
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "pong")
-}
 
 func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	var payload bitBucketPushPayload
