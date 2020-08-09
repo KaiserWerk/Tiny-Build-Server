@@ -2,6 +2,22 @@ package main
 
 import "time"
 
+type user struct {
+	id			int
+	displayname	string
+	email		string
+	password	string
+	locked		bool
+	admin		bool
+}
+
+type configuration struct {
+	Database struct{
+		Driver	string	`yaml:"driver"`
+		DSN		string	`yaml:"dsn"`
+	} `yaml:"database"`
+}
+
 type sysConfig struct {
 	GolangExecutable string `yaml:"golang_executable"`
 	DotNetExecutable string `yaml:"dotnet_executable"`

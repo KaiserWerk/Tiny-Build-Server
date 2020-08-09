@@ -16,10 +16,12 @@ import (
 
 var (
 	templates map[string]*template.Template
-	publicDir = "/public/"
+	configFile = "app.yaml"
+	centralConfig configuration
 )
 
 func main() {
+	getConfiguration()
 	templates = populateTemplates()
 
 	listenAddrPtr := flag.String("port", "5000", "The port which the build server should listen on")
