@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	sessionstore "session-store"
 	"time"
 )
 
@@ -18,11 +19,16 @@ var (
 	templates map[string]*template.Template
 	configFile = "app.yaml"
 	centralConfig configuration
+	sessMgr *sessionstore.SessionManager
 )
 
 func main() {
 	getConfiguration()
 	templates = populateTemplates()
+	sessMgr = sessionstore.NewManager("tbs_sessid")
+	if sessMgr == nil {
+		panic("session manager is NIL!")
+	}
 
 	listenAddrPtr := flag.String("port", "5000", "The port which the build server should listen on")
 	flag.Parse() // <.<
@@ -70,6 +76,7 @@ func main() {
 
 	go func() {
 		<-quit
+
 		writeToConsole("Server is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
