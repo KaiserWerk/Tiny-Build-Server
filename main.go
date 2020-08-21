@@ -20,20 +20,18 @@ var (
 	configFile = "app.yaml"
 	centralConfig configuration
 	sessMgr *sessionstore.SessionManager
+	listenAddrPtr = flag.String("port", "5000", "The port which the build server should listen on")
 )
 
 func main() {
 	getConfiguration()
 	templates = populateTemplates()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
-	if sessMgr == nil {
-		panic("session manager is NIL!")
-	}
 
-	listenAddrPtr := flag.String("port", "5000", "The port which the build server should listen on")
+
 	flag.Parse() // <.<
 	listenAddr := fmt.Sprintf(":%s", *listenAddrPtr)
-	writeToConsole("Server is ready to handle requests at port " + *listenAddrPtr, )
+	writeToConsole("Server is ready to handle requests at port " + *listenAddrPtr)
 
 	if _, err := loadSysConfig(); err != nil {
 		log.Fatal("could not handle config/app.yaml file; something went wrong")
@@ -50,6 +48,7 @@ func main() {
 	// site handlers
 	router.HandleFunc("/", indexHandler).Methods("GET")
 	router.HandleFunc("/login", loginHandler).Methods("GET", "POST")
+	router.HandleFunc("/logout", logoutHandler).Methods("GET", "POST")
 
 	// API handlers
 	router.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")

@@ -10,9 +10,11 @@ func getUserByEmail(n string) (user, error) {
 		return user{}, errors.New("could not get database connection")
 	}
 
-	row := db.QueryRow("SELECT id, displayname, email, password, locked FROM user WHERE email = ?", n)
+	row := db.QueryRow("SELECT Id, Displayname, Email, Password, Locked, Admin FROM user WHERE Email = ?", n)
 	var u user
-	err = row.Scan(&u.id, &u.displayname, &u.email, &u.password, &u.locked)
+	//var Locked int
+	//var Admin int
+	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Password, &u.Locked, &u.Admin)
 	if err != nil {
 		return user{}, errors.New("could not scan")
 	}

@@ -5,6 +5,6 @@ build_definitions/
 etc/
 config/*
 !config/app.dist.yaml
-
+docs/startbootstrap-sb-admin-gh-pages
 build.ps1
 app.yaml

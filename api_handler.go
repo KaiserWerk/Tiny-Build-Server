@@ -23,7 +23,7 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(queryParams["id"]) == 0 || len(queryParams["token"]) == 0 {
+	if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
 		fmt.Println("Missing r parameters")
 		return
 	}
@@ -39,12 +39,12 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// all strings
-	id := queryParams["id"][0]
+	id := queryParams["Id"][0]
 	token := queryParams["token"][0]
 	branch := payload.Push.Changes[0].New.Name
 	repoFullName := payload.Repository.FullName
 
-	fmt.Println("id: " + id)
+	fmt.Println("Id: " + id)
 	fmt.Println("token: " + token)
 
 	fmt.Println("branch: " + branch)
@@ -73,7 +73,7 @@ func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
 
 	// now we can start the build process
 	// something like
-	fmt.Println("starting build process for id " + id)
+	fmt.Println("starting build process for Id " + id)
 	go startBuildProcess(id, buildDefinition)
 
 	w.WriteHeader(http.StatusOK)
@@ -94,7 +94,7 @@ func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(queryParams["id"]) == 0 || len(queryParams["token"]) == 0 {
+	if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
 		fmt.Println("Missing request parameters")
 		return
 	}
@@ -109,7 +109,7 @@ func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// all strings
-	id := queryParams["id"][0]
+	id := queryParams["Id"][0]
 	token := queryParams["token"][0]
 	repoFullName := payload.Repository.FullName
 	branch := payload.Repository.DefaultBranch // other: MasterBranch
@@ -160,7 +160,7 @@ func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(queryParams["id"]) == 0 || len(queryParams["token"]) == 0 {
+	if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
 		fmt.Println("Missing r parameters")
 		return
 	}
@@ -176,7 +176,7 @@ func gitLabReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// all strings
-	id := queryParams["id"][0]
+	id := queryParams["Id"][0]
 	token := queryParams["token"][0]
 	repoFullName := payload.Project.PathWithNamespace
 	branch := payload.Project.DefaultBranch
@@ -227,7 +227,7 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(queryParams["id"]) == 0 || len(queryParams["token"]) == 0 {
+	if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
 		fmt.Println("Missing r parameters")
 		return
 	}
@@ -243,7 +243,7 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// all strings
-	id := queryParams["id"][0]
+	id := queryParams["Id"][0]
 	token := queryParams["token"][0]
-	fmt.Printf("gitea receive handler still incomplete: id=%v, token=%v\n", id, token)
+	fmt.Printf("gitea receive handler still incomplete: Id=%v, token=%v\n", id, token)
 }

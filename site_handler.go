@@ -4,42 +4,46 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	//writeToConsole("getting cookie value")
-	//sessId, err := sessMgr.GetCookieValue(r)
-	//if err != nil {
-	//	writeToConsole("couldnt get cookie value")
-	//	http.Redirect(w, r, "/login", http.StatusSeeOther)
-	//	return
-	//}
-	//writeToConsole("getting session with id "+sessId)
-	//session, err := sessMgr.GetSession(sessId)
-	//if err != nil {
-	//	writeToConsole("couldnt get session")
-	//	http.Redirect(w, r, "/login", http.StatusSeeOther)
-	//	return
-	//}
-	//if session == nil {
-	//	writeToConsole("Session is NIL!")
-	//}
-	//writeToConsole("getting userID")
-	//userIdStr, ok := session.GetVar("user_id")
-	//if !ok {
-	//	writeToConsole("couldnt get userID")
-	//	http.Redirect(w, r, "/login", http.StatusSeeOther)
-	//	return
-	//}
-	//
-	//userId := userIdStr.(int)
-	//
-	// otherwise ok (logged in)
-	writeToConsole("login check ok")
+	writeToConsole("getting cookie value")
+	sessId, err := sessMgr.GetCookieValue(r)
+	if err != nil {
+		writeToConsole("couldnt get cookie value: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	writeToConsole("getting session with Id "+sessId)
+	session, err := sessMgr.GetSession(sessId)
+	if err != nil {
+		writeToConsole("couldnt get session: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	writeToConsole("getting userID")
+	userIdStr, ok := session.GetVar("user_id")
+	if !ok {
+		writeToConsole("couldnt get userID: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	userId, _ := strconv.Atoi(userIdStr)
+	user, err := getUserById(userId)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	//otherwise ok (logged in)
+	//writeToConsole("login check ok")
 	t := templates["index.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, user)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -51,42 +55,34 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
-		if sessMgr == nil {
-			writeToConsole("SessionManager is NIL!")
-			return
-		}
 
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
 		u, err := getUserByEmail(email)
 		if err != nil {
-			writeToConsole("could not get user by email (maybe doesnt exist): " + err.Error())
+			writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
 			return
 		}
 		fmt.Printf("User: %v\n", u)
-		if doesHashMatch(password, u.password) {
+		if doesHashMatch(password, u.Password) {
 			writeToConsole("authenticated successfully")
 			//continue settings cookie/starting session
-			_, err := sessMgr.CreateSession(sessMgr.CookieName, time.Now().Add(30 * 24 * time.Hour))
+			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
 				writeToConsole("could not create session: " + err.Error())
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
-			//if sess == nil {
-			//	writeToConsole("Session is NIL!")
-			//}
-			//sess.SetVar("user_id", strconv.Itoa(u.id))
-			//writeToConsole("session id: " + sess.Id)
-			//sessMgr.SetCookie(w, sess.Id)
-			////http.SetCookie(w, &http.Cookie{
-			////	Name:       sessMgr.CookieName,
-			////	Value:      sess.Id,
-			////	Path:       "/",
-			////	Expires:    time.Now().Add(30*24*time.Hour),
-			////	HttpOnly:   true,
-			////})
-			//writeToConsole("cookie set")
+			sess.SetVar("user_id", strconv.Itoa(u.Id))
+			writeToConsole("session Id: " + sess.Id)
+			err = sessMgr.SetCookie(w, sess.Id)
+			if err != nil {
+				writeToConsole("could not set cookie: " + err.Error())
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return
+			}
+
+			writeToConsole("cookie set")
 		} else {
 			writeToConsole("login not successful")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -107,6 +103,31 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	writeToConsole("getting cookie value")
+	sessId, err := sessMgr.GetCookieValue(r)
+	if err != nil {
+		writeToConsole("could not get cookie value: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	writeToConsole("getting session with Id "+sessId)
+	session, err := sessMgr.GetSession(sessId)
+	if err != nil {
+		writeToConsole("could not get session: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	err = sessMgr.RemoveSession(session.Id)
+	if err != nil {
+		writeToConsole("could not remove session: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {

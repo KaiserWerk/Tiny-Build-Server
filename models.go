@@ -3,12 +3,12 @@ package main
 import "time"
 
 type user struct {
-	id			int
-	displayname	string
-	email		string
-	password	string
-	locked		bool
-	admin		bool
+	Id          int
+	Displayname string
+	Email       string
+	Password    string
+	Locked      bool
+	Admin       bool
 }
 
 type configuration struct {
@@ -39,7 +39,7 @@ type buildDefinition struct {
 	Deployments []struct {
 		Host                  string   `yaml:"host"`
 		Username              string   `yaml:"username"`
-		Password              string   `yaml:"password"`
+		Password              string   `yaml:"Password"`
 		ConnectionType        string   `yaml:"connection_type"`
 		WorkingDirectory      string   `yaml:"working_directory"`
 		PreDeploymentActions  []string `yaml:"pre_deployment_actions"`
@@ -341,16 +341,16 @@ type gitHubPushPayload struct {
 	Commits    []interface{} `json:"commits"`
 	HeadCommit interface{}   `json:"head_commit"`
 	Repository struct {
-		ID       int    `json:"id"`
+		ID       int    `json:"Id"`
 		NodeID   string `json:"node_id"`
 		Name     string `json:"name"`
 		FullName string `json:"full_name"`
 		Private  bool   `json:"private"`
 		Owner    struct {
 			Name              string `json:"name"`
-			Email             string `json:"email"`
+			Email             string `json:"Email"`
 			Login             string `json:"login"`
-			ID                int    `json:"id"`
+			ID                int    `json:"Id"`
 			NodeID            string `json:"node_id"`
 			AvatarURL         string `json:"avatar_url"`
 			GravatarID        string `json:"gravatar_id"`
@@ -440,11 +440,11 @@ type gitHubPushPayload struct {
 	} `json:"repository"`
 	Pusher struct {
 		Name  string `json:"name"`
-		Email string `json:"email"`
+		Email string `json:"Email"`
 	} `json:"pusher"`
 	Sender struct {
 		Login             string `json:"login"`
-		ID                int    `json:"id"`
+		ID                int    `json:"Id"`
 		NodeID            string `json:"node_id"`
 		AvatarURL         string `json:"avatar_url"`
 		GravatarID        string `json:"gravatar_id"`
@@ -477,7 +477,7 @@ type gitLabPushPayload struct {
 	UserAvatar   string `json:"user_avatar"`
 	ProjectID    int    `json:"project_id"`
 	Project      struct {
-		ID                int         `json:"id"`
+		ID                int         `json:"Id"`
 		Name              string      `json:"name"`
 		Description       string      `json:"description"`
 		WebURL            string      `json:"web_url"`
@@ -503,14 +503,14 @@ type gitLabPushPayload struct {
 		VisibilityLevel int    `json:"visibility_level"`
 	} `json:"repository"`
 	Commits []struct {
-		ID        string    `json:"id"`
+		ID        string    `json:"Id"`
 		Message   string    `json:"message"`
 		Title     string    `json:"title"`
 		Timestamp time.Time `json:"timestamp"`
 		URL       string    `json:"url"`
 		Author    struct {
 			Name  string `json:"name"`
-			Email string `json:"email"`
+			Email string `json:"Email"`
 		} `json:"author"`
 		Added    []string      `json:"added"`
 		Modified []string      `json:"modified"`
@@ -526,17 +526,17 @@ type giteaPushPayload struct {
 	After      string `json:"after"`
 	CompareURL string `json:"compare_url"`
 	Commits    []struct {
-		ID      string `json:"id"`
+		ID      string `json:"Id"`
 		Message string `json:"message"`
 		URL     string `json:"url"`
 		Author  struct {
 			Name     string `json:"name"`
-			Email    string `json:"email"`
+			Email    string `json:"Email"`
 			Username string `json:"username"`
 		} `json:"author"`
 		Committer struct {
 			Name     string `json:"name"`
-			Email    string `json:"email"`
+			Email    string `json:"Email"`
 			Username string `json:"username"`
 		} `json:"committer"`
 		Verification interface{}   `json:"verification"`
@@ -547,12 +547,12 @@ type giteaPushPayload struct {
 	} `json:"commits"`
 	HeadCommit interface{} `json:"head_commit"`
 	Repository struct {
-		ID    int `json:"id"`
+		ID    int `json:"Id"`
 		Owner struct {
-			ID        int       `json:"id"`
+			ID        int       `json:"Id"`
 			Login     string    `json:"login"`
 			FullName  string    `json:"full_name"`
-			Email     string    `json:"email"`
+			Email     string    `json:"Email"`
 			AvatarURL string    `json:"avatar_url"`
 			Language  string    `json:"language"`
 			IsAdmin   bool      `json:"is_admin"`
@@ -586,7 +586,7 @@ type giteaPushPayload struct {
 		CreatedAt       time.Time   `json:"created_at"`
 		UpdatedAt       time.Time   `json:"updated_at"`
 		Permissions     struct {
-			Admin bool `json:"admin"`
+			Admin bool `json:"Admin"`
 			Push  bool `json:"push"`
 			Pull  bool `json:"pull"`
 		} `json:"permissions"`
@@ -606,10 +606,10 @@ type giteaPushPayload struct {
 		AvatarURL                 string `json:"avatar_url"`
 	} `json:"repository"`
 	Pusher struct {
-		ID        int       `json:"id"`
+		ID        int       `json:"Id"`
 		Login     string    `json:"login"`
 		FullName  string    `json:"full_name"`
-		Email     string    `json:"email"`
+		Email     string    `json:"Email"`
 		AvatarURL string    `json:"avatar_url"`
 		Language  string    `json:"language"`
 		IsAdmin   bool      `json:"is_admin"`
@@ -618,10 +618,10 @@ type giteaPushPayload struct {
 		Username  string    `json:"username"`
 	} `json:"pusher"`
 	Sender struct {
-		ID        int       `json:"id"`
+		ID        int       `json:"Id"`
 		Login     string    `json:"login"`
 		FullName  string    `json:"full_name"`
-		Email     string    `json:"email"`
+		Email     string    `json:"Email"`
 		AvatarURL string    `json:"avatar_url"`
 		Language  string    `json:"language"`
 		IsAdmin   bool      `json:"is_admin"`

@@ -41,12 +41,12 @@ func loadBuildDefinition(id string) (buildDefinition, error) {
 	bdFile := bdDir + "/build.yaml"
 	fmt.Println("full build path:", bdFile)
 	if _, err := os.Stat(bdDir); os.IsNotExist(err) {
-		fmt.Printf("build definition with id %v not found\n", id)
+		fmt.Printf("build definition with Id %v not found\n", id)
 		return buildDefinition{}, buildDefinitionNotFound{Id: id}
 	}
 
 	if _, err := os.Stat(bdFile); os.IsNotExist(err) {
-		fmt.Printf("config file for build definition with id %v not found\n", id)
+		fmt.Printf("config file for build definition with Id %v not found\n", id)
 		return buildDefinition{}, buildDefinitionConfigFileNotFound{Id: id}
 	}
 

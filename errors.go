@@ -5,7 +5,7 @@ type buildDefinitionNotFound struct {
 }
 
 func (e buildDefinitionNotFound) Error() string {
-	return "build definition directory with id " + e.Id + " not found"
+	return "build definition directory with Id " + e.Id + " not found"
 }
 
 type buildDefinitionConfigFileNotFound struct {
@@ -13,5 +13,5 @@ type buildDefinitionConfigFileNotFound struct {
 }
 
 func (e buildDefinitionConfigFileNotFound) Error() string {
-	return "config file of build definition with id " + e.Id + " not found"
+	return "config file of build definition with Id " + e.Id + " not found"
 }
