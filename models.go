@@ -24,28 +24,52 @@ type sysConfig struct {
 }
 
 type buildDefinition struct {
-	AuthToken         string `yaml:"auth_token"`
-	ProjectType       string `yaml:"project_type"`
-	DeploymentEnabled bool   `yaml:"deployment_enabled"`
-	Repository        struct {
-		Host     string `yaml:"host"`
-		HostUrl  string `yaml:"host_url"`
-		FullName string `yaml:"full_name"`
-		Username string `yaml:"username"`
-		Secret   string `yaml:"secret"`
-		Branch   string `yaml:"branch"`
-	} `yaml:"repository"`
-	Actions     []string `yaml:"actions"`
-	Deployments []struct {
-		Host                  string   `yaml:"host"`
-		Username              string   `yaml:"username"`
-		Password              string   `yaml:"Password"`
-		ConnectionType        string   `yaml:"connection_type"`
-		WorkingDirectory      string   `yaml:"working_directory"`
-		PreDeploymentActions  []string `yaml:"pre_deployment_actions"`
-		PostDeploymentActions []string `yaml:"post_deployment_actions"`
-	} `yaml:"deployments"`
+	Id					int
+	AlteredBy			int
+	Caption				string
+	Enabled				bool
+	DeploymentEnabled	bool
+	RepoHoster			string
+	RepoHosterUrl		string
+	RepoFullname		string
+	RepoUsername		string
+	RepoSecret			string
+	RepoBranch			string
+	AlteredAt			time.Time
 }
+
+type buildExecution struct {
+	Id					int
+	BuildDefinitionId	int
+	ActionLog			string
+	Result				string
+	ExecutionTime		float64
+	ExecutedAt			time.Time
+}
+
+//type buildDefinition struct {
+//	AuthToken         string `yaml:"auth_token"`
+//	ProjectType       string `yaml:"project_type"`
+//	DeploymentEnabled bool   `yaml:"deployment_enabled"`
+//	Repository        struct {
+//		Host     string `yaml:"host"`
+//		HostUrl  string `yaml:"host_url"`
+//		FullName string `yaml:"full_name"`
+//		Username string `yaml:"username"`
+//		Secret   string `yaml:"secret"`
+//		Branch   string `yaml:"branch"`
+//	} `yaml:"repository"`
+//	Actions     []string `yaml:"actions"`
+//	Deployments []struct {
+//		Host                  string   `yaml:"host"`
+//		Username              string   `yaml:"username"`
+//		Password              string   `yaml:"Password"`
+//		ConnectionType        string   `yaml:"connection_type"`
+//		WorkingDirectory      string   `yaml:"working_directory"`
+//		PreDeploymentActions  []string `yaml:"pre_deployment_actions"`
+//		PostDeploymentActions []string `yaml:"post_deployment_actions"`
+//	} `yaml:"deployments"`
+//}
 
 type bitBucketPushPayload struct {
 	Push struct {

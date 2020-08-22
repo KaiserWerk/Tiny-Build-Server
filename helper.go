@@ -62,19 +62,5 @@ func doesHashMatch(password string, hash string) bool {
 	return err == nil
 }
 
-func getUserById(id int) (user, error) {
-	var u user
-	db, err := getDbConnection()
-	if err != nil {
-		return u, err
-	}
 
-	row := db.QueryRow("SELECT Id, Displayname, Email, Admin FROM user WHERE Id = ?", id)
-	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
-	if err != nil {
-		return u, err
-	}
-
-	return u, nil
-}
 

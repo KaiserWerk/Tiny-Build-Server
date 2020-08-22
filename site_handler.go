@@ -33,17 +33,36 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, _ := strconv.Atoi(userIdStr)
-	user, err := getUserById(userId)
+	currentUser, err := getUserById(userId)
 	if err != nil {
 		writeToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+	latestBuilds, err := getNewestBuildExecutions(10)
+	if err != nil {
+		writeToConsole("could not fet latest build executions: " + err.Error())
+	}
+	latestBuildDefs, err := getNewestBuildDefinitions(10)
+	if err != nil {
+		writeToConsole("could not fet latest build executions: " + err.Error())
+	}
+
+	indexData := struct {
+		CurrentUser     user
+		LatestBuilds    []buildExecution
+		LatestBuildDefs []buildDefinition
+	}{
+		CurrentUser:     currentUser,
+		LatestBuilds:    latestBuilds,
+		LatestBuildDefs: latestBuildDefs,
+	}
+
 	//otherwise ok (logged in)
 	//writeToConsole("login check ok")
 	t := templates["index.html"]
 	if t != nil {
-		err := t.Execute(w, user)
+		err := t.Execute(w, indexData)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -131,5 +150,5 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func pingHandler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "pong")
+	_, _ = io.WriteString(w, "pong")
 }

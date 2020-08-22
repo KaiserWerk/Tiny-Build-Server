@@ -21,6 +21,9 @@ var (
 	centralConfig configuration
 	sessMgr *sessionstore.SessionManager
 	listenAddrPtr = flag.String("port", "5000", "The port which the build server should listen on")
+	funcMap = template.FuncMap{
+		"getBuildDefCaption": getBuildDefCaption,
+	}
 )
 
 func main() {
@@ -98,7 +101,7 @@ func main() {
 func populateTemplates() map[string]*template.Template {
 	result := make(map[string]*template.Template)
 	const basePath = "templates"
-	layout := template.Must(template.ParseFiles(basePath + "/_layout.html"))
+	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(funcMap)
 	//template.Must(layout.ParseFiles(...
 	dir, err := os.Open(basePath + "/content")
 	if err != nil {
