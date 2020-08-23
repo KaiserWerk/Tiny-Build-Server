@@ -7,6 +7,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -65,5 +66,12 @@ func doesHashMatch(password string, hash string) bool {
 	return err == nil
 }
 
+func sendMail(m *gomail.Message) {
+	// fetch datam from system configuration
+	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
+	if err := d.DialAndSend(m); err != nil {
+		writeToConsole("could not send email: " + err.Error())
+	}
+}
 
 

@@ -160,7 +160,7 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			
+
 		}
 	}
 
