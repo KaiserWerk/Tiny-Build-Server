@@ -10,7 +10,7 @@ func getUserByEmail(n string) (user, error) {
 	if err != nil {
 		return user{}, errors.New("could not get database connection")
 	}
-
+	defer db.Close()
 	row := db.QueryRow("SELECT Id, Displayname, Email, Password, Locked, Admin FROM user WHERE Email = ?", n)
 	var u user
 	//var Locked int
@@ -28,7 +28,7 @@ func getBuildDefCaption(id int) string {
 	if err != nil {
 		return "could not fetch"
 	}
-
+	defer db.Close()
 	var name string
 	row := db.QueryRow("SELECT caption FROM build_definition WHERE id = ?", id)
 	err = row.Scan(&name)
@@ -44,7 +44,7 @@ func getUserById(id int) (user, error) {
 	if err != nil {
 		return u, err
 	}
-
+	defer db.Close()
 	row := db.QueryRow("SELECT Id, Displayname, Email, Admin FROM user WHERE Id = ?", id)
 	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
 	if err != nil {
@@ -52,6 +52,22 @@ func getUserById(id int) (user, error) {
 	}
 
 	return u, nil
+}
+
+func getUsernameById(id int) string {
+	var u user
+	db, err := getDbConnection()
+	if err != nil {
+		return "not found"
+	}
+	defer db.Close()
+	row := db.QueryRow("SELECT Id, Displayname, Email, Admin FROM user WHERE Id = ?", id)
+	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
+	if err != nil {
+		return "not found"
+	}
+
+	return u.Displayname
 }
 
 func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
@@ -62,6 +78,7 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 	if err != nil {
 		return beList, err
 	}
+	defer db.Close()
 	query := "SELECT id, build_definition_id, action_log, result, execution_time, " +
 		"executed_at FROM build_execution ORDER BY executed_at DESC"
 	if limit > 0 {
@@ -93,6 +110,7 @@ func getNewestBuildDefinitions(limit int) ([]buildDefinition, error) {
 	if err != nil {
 		return bdList, err
 	}
+	defer db.Close()
 	query := "SELECT id, altered_by, caption, enabled, deployment_enabled, repo_hoster, repo_hoster_url, " +
 		"repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition ORDER BY altered_at DESC"
 	if limit > 0 {

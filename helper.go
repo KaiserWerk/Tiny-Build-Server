@@ -32,16 +32,19 @@ func getDbConnection() (*sql.DB, error) {
 	return db, nil
 }
 
-func getConfiguration() {
+func getConfiguration() configuration {
 	cont, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		panic("Could not read configuration file '"+configFile+"': " + err.Error())
 	}
 
-	err = yaml.Unmarshal(cont, &centralConfig)
+	var cfg configuration
+	err = yaml.Unmarshal(cont, &cfg)
 	if err != nil {
 		panic("could not parse configuration file content: " + err.Error())
 	}
+
+	return cfg
 }
 
 func generateToken(length int) string {

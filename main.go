@@ -16,23 +16,25 @@ import (
 )
 
 var (
-	templates map[string]*template.Template
 	configFile = "app.yaml"
 	centralConfig configuration
+	templates map[string]*template.Template
 	sessMgr *sessionstore.SessionManager
 	listenAddrPtr = flag.String("port", "5000", "The port which the build server should listen on")
 	funcMap = template.FuncMap{
 		"getBuildDefCaption": getBuildDefCaption,
+		"getUsernameById": getUsernameById,
 	}
 )
 
 func main() {
-	getConfiguration()
+	flag.StringVar(&configFile, "c", "app.yaml", "The location of the configuration file")
+	flag.Parse()
+
+	centralConfig = getConfiguration()
 	templates = populateTemplates()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 
-
-	flag.Parse() // <.<
 	listenAddr := fmt.Sprintf(":%s", *listenAddrPtr)
 	writeToConsole("Server is ready to handle requests at port " + *listenAddrPtr)
 
@@ -42,6 +44,13 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Use(limit)
+	router.NotFoundHandler = http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		t := templates["404.html"]
+		if t != nil {
+			_ = t.Execute(w, r.URL.Path)
+		}
+	})
 
 	// asset file handlers
 	router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
