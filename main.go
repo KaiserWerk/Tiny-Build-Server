@@ -61,14 +61,17 @@ func main() {
 	router.HandleFunc("/", indexHandler).Methods("GET")
 	router.HandleFunc("/login", loginHandler).Methods("GET", "POST")
 	router.HandleFunc("/logout", logoutHandler).Methods("GET", "POST")
+	router.HandleFunc("/password/request", requestNewPasswordHandler).Methods("GET", "POST")
+	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
+	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
 
 	// API handlers
-	router.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
-	router.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")
-	router.HandleFunc("/gitlab-receive", gitLabReceiveHandler).Methods("POST")
-	router.HandleFunc("/gitea-receive", giteaReceiveHandler).Methods("POST")
-	router.HandleFunc("/ping", pingHandler)
 
+	apiRouter := router.PathPrefix("/api/v1/").Subrouter()
+	apiRouter.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/gitlab-receive", gitLabReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/gitea-receive", giteaReceiveHandler).Methods("POST")
 
 	server := &http.Server{
 		Addr:         listenAddr,

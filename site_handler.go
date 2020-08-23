@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -150,6 +149,35 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	_, _ = io.WriteString(w, "pong")
+func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+
+		email := r.FormValue("login_email")
+		if email != "" {
+			u, err := getUserByEmail(email)
+			if err != nil {
+				writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+				return
+			}
+
+			
+		}
+	}
+
+	t := templates["login.html"]
+	if t != nil {
+		err := t.Execute(w, nil)
+		if err != nil {
+			fmt.Println("error:", err.Error())
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+func registrationHandler(w http.ResponseWriter, r *http.Request) {
+
 }
