@@ -64,9 +64,10 @@ func main() {
 	router.HandleFunc("/password/request", requestNewPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+
 
 	// API handlers
-
 	apiRouter := router.PathPrefix("/api/v1/").Subrouter()
 	apiRouter.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
 	apiRouter.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")

@@ -4,13 +4,16 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"os"
+	sessionstore "session-store"
 )
 
 func writeToConsole(s string) {
@@ -67,11 +70,25 @@ func doesHashMatch(password string, hash string) bool {
 }
 
 func sendMail(m *gomail.Message) {
-	// fetch datam from system configuration
+	// fetch data from system configuration
 	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
 	if err := d.DialAndSend(m); err != nil {
 		writeToConsole("could not send email: " + err.Error())
 	}
+}
+
+func checkLogin(r *http.Request) (sessionstore.Session, error) {
+	sessId, err := sessMgr.GetCookieValue(r)
+	if err != nil {
+		return sessionstore.Session{}, errors.New("could not get cookie: " + err.Error())
+	}
+	writeToConsole("getting session with Id "+sessId)
+	session, err := sessMgr.GetSession(sessId)
+	if err != nil {
+		return sessionstore.Session{}, errors.New("could not get session: " + err.Error())
+	}
+
+	return session, nil
 }
 
 

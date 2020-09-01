@@ -2,6 +2,11 @@ package main
 
 import "time"
 
+type adminSetting struct {
+	Name		string
+	Value		string
+}
+
 type user struct {
 	Id          int
 	Displayname string

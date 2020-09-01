@@ -9,31 +9,12 @@ import (
 
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	writeToConsole("getting cookie value")
-	sessId, err := sessMgr.GetCookieValue(r)
+	session, err := checkLogin(r)
 	if err != nil {
-		writeToConsole("couldnt get cookie value: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	writeToConsole("getting session with Id "+sessId)
-	session, err := sessMgr.GetSession(sessId)
-	if err != nil {
-		writeToConsole("couldnt get session: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	writeToConsole("getting userID")
-	userIdStr, ok := session.GetVar("user_id")
-	if !ok {
-		writeToConsole("couldnt get userID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	userId, _ := strconv.Atoi(userIdStr)
-	currentUser, err := getUserById(userId)
+	currentUser, err := getUserFromSession(session)
 	if err != nil {
 		writeToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -160,7 +141,9 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-
+			writeToConsole("user: " + u.Displayname)
+			// email an user versenden
+			// zur reset seite weiterleiten
 		}
 	}
 
@@ -180,4 +163,53 @@ func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 func registrationHandler(w http.ResponseWriter, r *http.Request) {
 
+}
+
+func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+
+		//email := r.FormValue("login_email")
+
+	}
+	allSettings, err := getAllSettings()
+	if err != nil {
+		writeToConsole("could not get allSettings: " + err.Error())
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	contextData := struct {
+		CurrentUser user
+		AdminSettings map[string]string
+	}{
+		currentUser,
+		allSettings,
+	}
+
+	t := templates["admin_settings.html"]
+	if t != nil {
+		err := t.Execute(w, contextData)
+		if err != nil {
+			fmt.Println("error:", err.Error())
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	sessionstore "session-store"
 	"strconv"
 )
 
@@ -52,6 +53,17 @@ func getUserById(id int) (user, error) {
 	}
 
 	return u, nil
+}
+
+func getUserFromSession(s sessionstore.Session) (user, error) {
+	userIdStr, ok := s.GetVar("user_id")
+	if !ok {
+		return user{}, nil
+	}
+
+	userId, _ := strconv.Atoi(userIdStr)
+	user, err := getUserById(userId)
+	return user, err
 }
 
 func getUsernameById(id int) string {
@@ -133,4 +145,31 @@ func getNewestBuildDefinitions(limit int) ([]buildDefinition, error) {
 	}
 
 	return bdList, nil
+}
+
+func getAllSettings() (map[string]string, error) {
+	settings := make(map[string]string)
+	db, err := getDbConnection()
+	if err != nil {
+		return settings, err
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT setting_name, setting_value FROM setting")
+	if err != nil {
+		return settings, err
+	}
+
+	var setting adminSetting
+	for rows.Next() {
+		err = rows.Scan(&setting.Name, &setting.Value)
+		if err != nil {
+			return settings, err
+		}
+		settings[setting.Name] = setting.Value
+		setting = adminSetting{}
+	}
+	//fmt.Println("settings:", settings)
+
+	return settings, nil
 }
