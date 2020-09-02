@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/sessionstore"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
@@ -11,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	sessionstore "session-store"
 	"time"
 )
 
@@ -36,7 +36,7 @@ func main() {
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 
 	listenAddr := fmt.Sprintf(":%s", *listenAddrPtr)
-	writeToConsole("Server is ready to handle requests at port " + *listenAddrPtr)
+	writeToConsole("server will be handling requests at port " + *listenAddrPtr)
 
 	if _, err := loadSysConfig(); err != nil {
 		log.Fatal("could not handle config/app.yaml file; something went wrong")
@@ -82,33 +82,32 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	externalShutdownCh := make(chan bool)
 	done := make(chan bool)
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt)
 
-	go readConsoleInput(externalShutdownCh)
+	go readConsoleInput(quit)
 
 	go func() {
 		<-quit
-
-		writeToConsole("Server is shutting down...")
+		writeToConsole("server is shutting down...")
+		time.Sleep(time.Second)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			log.Fatalf("Could not gracefully shutdown the server: %v\n", err)
+			log.Fatalf("could not gracefully shut down the server: %v\n", err)
 		}
 		close(done)
 	}()
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
+		log.Fatalf("could not listen on %s: %v\n", listenAddr, err)
 	}
 	<-done
-	writeToConsole("Server shutdown complete. Have a nice day!")
+	writeToConsole("server shutdown complete. Have a nice day!")
 }
 
 func populateTemplates() map[string]*template.Template {
@@ -118,26 +117,26 @@ func populateTemplates() map[string]*template.Template {
 	//template.Must(layout.ParseFiles(...
 	dir, err := os.Open(basePath + "/content")
 	if err != nil {
-		panic("Failed to open template block directory: " + err.Error())
+		panic("failed to open template block directory: " + err.Error())
 	}
 	fis, err := dir.Readdir(-1)
 	if err != nil {
-		panic("Failed to contents of content directory: " + err.Error())
+		panic("failed to contents of content directory: " + err.Error())
 	}
 	for _, fi := range fis {
 		f, err := os.Open(basePath + "/content/" + fi.Name())
 		if err != nil {
-			panic("Failed to open template '"+fi.Name()+"': " + err.Error())
+			panic("failed to open template '"+fi.Name()+"': " + err.Error())
 		}
 		content, err := ioutil.ReadAll(f)
 		if err != nil {
-			panic("Failed to read content from file '"+fi.Name()+"': " + err.Error())
+			panic("failed to read content from file '"+fi.Name()+"': " + err.Error())
 		}
 		f.Close()
 		tmpl := template.Must(layout.Clone())
 		_, err = tmpl.Parse(string(content))
 		if err != nil {
-			panic("Failed to parse contents of file '"+fi.Name()+"': " + err.Error())
+			panic("failed to parse contents of file '"+fi.Name()+"': " + err.Error())
 		}
 		result[fi.Name()] = tmpl
 	}

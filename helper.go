@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/sessionstore"
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/gomail.v2"
@@ -13,7 +14,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	sessionstore "session-store"
 )
 
 func writeToConsole(s string) {

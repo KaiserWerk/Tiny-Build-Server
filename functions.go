@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 )
 
 func getHeaderIfSet(r *http.Request, key string) (string, error) {
@@ -31,7 +32,7 @@ func loadSysConfig() (sysConfig, error) {
 	return config, nil
 }
 
-func readConsoleInput(externalShutdownCh chan bool) {
+func readConsoleInput(externalShutdownCh chan os.Signal) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _, err := reader.ReadLine()
@@ -41,19 +42,34 @@ func readConsoleInput(externalShutdownCh chan bool) {
 		}
 
 		switch string(input) {
-		case "moo":
-			moo := `                 (__)
-                 (oo)
-           /------\/
-          / |    ||
-         *  /\---/\
-            ~~   ~~
-..."Have you mooed today?"...`
-			fmt.Println(moo)
+		case "":
+			continue
+		case "cluck":
+			animal := `   \\
+   (o>
+\\_//)
+ \_/_)
+  _|_  
+You found the chicken. Hooray!`
+			fmt.Println(animal)
 		case "shutdown":
-			close(externalShutdownCh)
+			writeToConsole("shutdown via console initiated...")
+			time.Sleep(time.Second)
+			externalShutdownCh <- os.Interrupt
+		case "reload-config":
+			writeToConsole("reloading configuration...")
+			time.Sleep(time.Second)
+			// @TODO
+
+			writeToConsole("done")
+		case "invalidate-sessions":
+			writeToConsole("invalidating all sessions...")
+			time.Sleep(time.Second)
+			// @TODO
+
+			writeToConsole("done")
 		default:
-			fmt.Printf("  unrecognized command: %v\n", string(input))
+			writeToConsole("unrecognized command: " + string(input))
 		}
 	}
 }

@@ -1,8 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"errors"
-	sessionstore "session-store"
+	"github.com/KaiserWerk/sessionstore"
 	"strconv"
 )
 
@@ -172,4 +173,40 @@ func getAllSettings() (map[string]string, error) {
 	//fmt.Println("settings:", settings)
 
 	return settings, nil
+}
+
+func setSetting(name, value string) error {
+	db, err := getDbConnection()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	row := db.QueryRow("SELECT setting_name, setting_value FROM setting WHERE setting_name = ?", name)
+	var s adminSetting
+	err = row.Scan(&s.Name, &s.Value)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			writeToConsole("no row, inserting")
+			_, err = db.Exec("INSERT INTO setting (setting_name, setting_value) VALUES (?, ?)", name, value)
+			if err != nil {
+				return err
+			}
+		} else {
+			//writeToConsole("row found, updating")
+			//_, err = db.Exec("UPDATE setting SET setting_value = ? WHERE setting_name = ?", value, name)
+			//if err != nil {
+			//	return err
+			//}
+			return err
+		}
+	} else { // brauch ich den Zweig?
+		writeToConsole("row found, updating (2)")
+		_, err = db.Exec("UPDATE setting SET setting_value = ? WHERE setting_name = ?", value, name)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

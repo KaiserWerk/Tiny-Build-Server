@@ -184,9 +184,83 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
+		var errors uint8 = 0
+		form := r.FormValue("form")
+		if form == "security" {
 
-		//email := r.FormValue("login_email")
+			securityDisableRegistration := r.FormValue("security_disable_registration")
+			if securityDisableRegistration != "1" {
+				securityDisableRegistration = "0"
+			}
+			err = setSetting("security_disable_registration", securityDisableRegistration)
+			if err != nil {
+				errors++
+				writeToConsole("could not set securityDisableRegistration")
+			}
 
+			securityDisablePasswordReset := r.FormValue("security_disable_password_reset")
+			if securityDisablePasswordReset != "1" {
+				securityDisablePasswordReset = "0"
+			}
+			err = setSetting("security_disable_password_reset", securityDisablePasswordReset)
+			if err != nil {
+				errors++
+				writeToConsole("could not set securityDisableRegistration")
+			}
+
+			security2fa := r.FormValue("security_2fa")
+			if security2fa != "none" && security2fa != "email" && security2fa != "sms" {
+				security2fa = "none"
+			}
+			err = setSetting("security_2fa", security2fa)
+			if err != nil {
+				errors++
+				writeToConsole("could not set security2fa")
+			}
+
+		} else if form == "smtp" {
+			smtpUsername := r.FormValue("smtp_username")
+			err = setSetting("smtp_username", smtpUsername)
+			if err != nil {
+				errors++
+				writeToConsole("could not set smtpUsername")
+			}
+
+			smtpPassword := r.FormValue("smtp_password")
+			err = setSetting("smtp_password", smtpPassword)
+			if err != nil {
+				errors++
+				writeToConsole("could not set smtpPassword")
+			}
+
+			smtpHost := r.FormValue("smtp_host")
+			err = setSetting("smtp_host", smtpHost)
+			if err != nil {
+				errors++
+				writeToConsole("could not set smtpHost")
+			}
+
+			smtpPort := r.FormValue("smtp_port")
+			err = setSetting("smtp_port", smtpPort)
+			if err != nil {
+				errors++
+				writeToConsole("could not set smtpPort")
+			}
+
+			smtpEncryption := r.FormValue("smtp_encryption")
+			err = setSetting("smtp_encryption", smtpEncryption)
+			if err != nil {
+				errors++
+				writeToConsole("could not set smtpEncryption")
+			}
+		}
+
+		if errors > 0 {
+			// add flashbag
+		}
+
+		http.Redirect(w, r, "/admin/settings", http.StatusSeeOther)
+		return
 	}
 	allSettings, err := getAllSettings()
 	if err != nil {
