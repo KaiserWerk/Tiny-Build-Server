@@ -12,38 +12,33 @@
                 </div>
                 <div class="card-body">
                     <form method="post" name="_security_form">
-{{/*                    <div class="form-group">*/}}
-{{/*                        <label for="email">Email address:</label>*/}}
-{{/*                        <input type="email" class="form-control" id="email">*/}}
-{{/*                    </div>*/}}
-{{/*                    <div class="form-group">*/}}
-{{/*                        <label for="pwd">Password:</label>*/}}
-{{/*                        <input type="password" class="form-control" id="pwd">*/}}
-{{/*                    </div>*/}}
                         <div class="checkbox">
                             <label class="control-label">
-                                <input type="checkbox" name="_security_registration_disabled" value="1"> Disable registration
+                                {{ $sec_disable_registration := index .AdminSettings "security_disable_registration" }}
+                                <input type="checkbox" name="_security_registration_disabled" value="1"{{if eq $sec_disable_registration "1"}} checked{{end}}> Disable registration
                             </label>
                         </div>
                         <div class="checkbox">
                             <label class="control-label">
-                                <input type="checkbox" name="_security_password_reset_disabled" value="1"> Disable password reset
+                                {{ $sec_disable_password_reset := index .AdminSettings "security_disable_password_reset" }}
+                                <input type="checkbox" name="_security_password_reset_disabled" value="1"{{if eq $sec_disable_password_reset "1"}} checked{{end}}> Disable password reset
                             </label>
                         </div>
                         <br>
+                        {{ $sec_tfa := index .AdminSettings "security_2fa" }}
                         <div class="checkbox">
                             <label class="control-label">
-                                <input type="radio" name="_security_2fa" value="none" checked> Disable 2-Factor-Authentication
+                                <input type="radio" name="_security_2fa" value="none"{{if eq $sec_tfa "none"}} checked{{end}}{{if eq $sec_tfa ""}} checked{{end}}> Disable 2-Factor-Authentication
                             </label>
                         </div>
                         <div class="checkbox">
                             <label class="control-label">
-                                <input type="radio" name="_security_2fa" value="email"> Enable 2-Factor-Authentication via email
+                                <input type="radio" name="_security_2fa" value="email"{{if eq $sec_tfa "email"}} checked{{end}}> Enable 2-Factor-Authentication via email
                             </label>
                         </div>
                         <div class="checkbox">
                             <label class="control-label">
-                                <input type="radio" name="_security_2fa" value="sms"> Enable 2-Factor-Authentication via SMS
+                                <input type="radio" name="_security_2fa" value="sms"{{if eq $sec_tfa "sms"}} checked{{end}}> Enable 2-Factor-Authentication via SMS
                             </label>
                         </div>
                         <br>
@@ -79,14 +74,14 @@
                             <label class="control-label col-sm-3" for="_smtp_host">Host:</label>
                             <div class="col-sm-9">
                                 {{ $host := index .AdminSettings "smtp_host" }}
-                                <input type="password" class="form-control" id="_smtp_host" placeholder="Host" value="{{ $host }}">
+                                <input type="text" class="form-control" id="_smtp_host" placeholder="Host" value="{{ $host }}">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="control-label col-sm-3" for="_smtp_port">Port:</label>
                             <div class="col-sm-9">
                                 {{ $port := index .AdminSettings "smtp_port" }}
-                                <input type="password" class="form-control" id="_smtp_port" placeholder="Port" value="{{ $port }}">
+                                <input type="text" class="form-control" id="_smtp_port" placeholder="Port" value="{{ $port }}">
                             </div>
                         </div>
                         <div class="form-group">
