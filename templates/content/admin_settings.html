@@ -4,124 +4,125 @@
 
     <div class="row">
 
-        <div class="col-xl-8 offset-2">
+        <div class="col-xl-9 offset-1">
             <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-link active">
+                <li class="nav-link">
                     <a data-toggle="tab" href="#security" role="tab" aria-selected="true">Security</a>
                 </li>
                 <li class="nav-link">
-                    <a data-toggle="tab" href="#email" role="tab" aria-selected="false">Email/SMTP</a>
+                    <a data-toggle="tab" href="#email" role="tab" aria-selected="false">
+                        <i class="fa fa-envelope"></i>
+                        Email/SMTP
+                    </a>
                 </li>
                 <li class="nav-link">
-                    <a data-toggle="tab" href="#users" role="tab" aria-selected="false">Users</a>
+                    <a data-toggle="tab" href="#users" role="tab" aria-selected="false">
+                        <i class="fa fa-users"></i>
+                        Users
+                    </a>
                 </li>
             </ul>
 
             <div class="tab-content">
-                <div id="security" class="tab-pane fade in active">
-
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fa fa-lock mr-1"></i>
-                                Security
-                            </div>
-                            <div class="card-body">
-                                <form method="post">
-                                    <input type="hidden" name="form" value="security">
-                                    <div class="checkbox">
-                                        <label class="control-label">
-                                            {{ $sec_disable_registration := index .AdminSettings "security_disable_registration" }}
-                                            <input type="checkbox" name="security_disable_registration" value="1"{{if eq $sec_disable_registration "1"}} checked{{end}}> Disable registration
-                                        </label>
-                                    </div>
-                                    <div class="checkbox">
-                                        <label class="control-label">
-                                            {{ $sec_disable_password_reset := index .AdminSettings "security_disable_password_reset" }}
-                                            <input type="checkbox" name="security_disable_password_reset" value="1"{{if eq $sec_disable_password_reset "1"}} checked{{end}}> Disable password reset
-                                        </label>
-                                    </div>
-                                    <br>
-                                    {{ $sec_tfa := index .AdminSettings "security_2fa" }}
-                                    <div class="checkbox">
-                                        <label class="control-label">
-                                            <input type="radio" name="security_2fa" value="none"{{if eq $sec_tfa "none"}} checked{{end}}{{if eq $sec_tfa ""}} checked{{end}}> Disable 2-Factor-Authentication
-                                        </label>
-                                    </div>
-                                    <div class="checkbox">
-                                        <label class="control-label">
-                                            <input type="radio" name="security_2fa" value="email"{{if eq $sec_tfa "email"}} checked{{end}}> Enable 2-Factor-Authentication via email
-                                        </label>
-                                    </div>
-                                    <div class="checkbox">
-                                        <label class="control-label">
-                                            <input type="radio" name="security_2fa" value="sms"{{if eq $sec_tfa "sms"}} checked{{end}}> Enable 2-Factor-Authentication via SMS
-                                        </label>
-                                    </div>
-                                    <br>
-                                    <button type="submit" class="btn btn-primary">Save Security Settings</button>
-                                </form>
-                            </div>
+                <div id="security" class="tab-pane fade in active show" style="padding-top: 5px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fa fa-lock"></i>
+                            Security
                         </div>
-
+                        <div class="card-body">
+                            <form method="post">
+                                <input type="hidden" name="form" value="security">
+                                <div class="checkbox">
+                                    <label class="control-label">
+                                        {{ $sec_disable_registration := index .AdminSettings "security_disable_registration" }}
+                                        <input type="checkbox" name="security_disable_registration" value="1"{{if eq $sec_disable_registration "1"}} checked{{end}}> Disable registration
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <label class="control-label">
+                                        {{ $sec_disable_password_reset := index .AdminSettings "security_disable_password_reset" }}
+                                        <input type="checkbox" name="security_disable_password_reset" value="1"{{if eq $sec_disable_password_reset "1"}} checked{{end}}> Disable password reset
+                                    </label>
+                                </div>
+                                <br>
+                                {{ $sec_tfa := index .AdminSettings "security_2fa" }}
+                                <div class="checkbox">
+                                    <label class="control-label">
+                                        <input type="radio" name="security_2fa" value="none"{{if eq $sec_tfa "none"}} checked{{end}}{{if eq $sec_tfa ""}} checked{{end}}> Disable 2-Factor-Authentication
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <label class="control-label">
+                                        <input type="radio" name="security_2fa" value="email"{{if eq $sec_tfa "email"}} checked{{end}}> Enable 2-Factor-Authentication via email
+                                    </label>
+                                </div>
+                                <div class="checkbox">
+                                    <label class="control-label">
+                                        <input type="radio" name="security_2fa" value="sms"{{if eq $sec_tfa "sms"}} checked{{end}}> Enable 2-Factor-Authentication via SMS
+                                    </label>
+                                </div>
+                                <br>
+                                <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div id="email" class="tab-pane fade">
+                <div id="email" class="tab-pane fade" style="padding-top: 5px;">
+                    <div class="card">
+                        <div class="card-header">
 
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <i class="fa fa-envelope mr-1"></i>
-                                SMTP
-                            </div>
-                            <div class="card-body">
-                                <form class="form-horizontal" method="post">
-                                    <input type="hidden" name="form" value="smtp">
-                                    <div class="form-group">
-                                        <label class="control-label col-sm-3" for="_smtp_username">Username/Email:</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" class="form-control" name="smtp_username" id="_smtp_username"
-                                                   placeholder="Username or email" value="{{ index .AdminSettings "smtp_username" }}">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="control-label col-sm-3" for="_smtp_password">Password:</label>
-                                        <div class="col-sm-9">
-                                            <input type="password" class="form-control" name="smtp_password" id="_smtp_password"
-                                                   placeholder="Password" value="{{ index .AdminSettings "smtp_password" }}">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="control-label col-sm-3" for="_smtp_host">Host:</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" class="form-control" name="smtp_host" id="_smtp_host"
-                                                   placeholder="Host" value="{{ index .AdminSettings "smtp_host" }}">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="control-label col-sm-3" for="_smtp_port">Port:</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" class="form-control" name="smtp_port" id="_smtp_port"
-                                                   placeholder="Port" value="{{ index .AdminSettings "smtp_port" }}">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="control-label col-sm-3" for="_smtp_encryption">Encryption:</label>
-                                        <div class="col-sm-9">
-                                            {{ $enc := index .AdminSettings "smtp_encryption" }}
-                                            <select class="form-control" size="1" name="smtp_encryption" id="_smtp_encryption">
-                                                <option value="none"{{if eq $enc "none"}} selected{{end}}>None</option>
-                                                <option value="tls"{{if eq $enc "tls"}} selected{{end}}>TLS</option>
-                                                <option value="ssl"{{if eq $enc "ssl"}} selected{{end}}>SSL</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <div class="col-sm-offset-2 col-sm-9">
-                                            <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
                         </div>
-
+                        <div class="card-body">
+                            <form class="form-horizontal" method="post">
+                                <input type="hidden" name="form" value="smtp">
+                                <div class="form-group">
+                                    <label class="control-label col-sm-3" for="_smtp_username">Username/Email:</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" name="smtp_username" id="_smtp_username"
+                                               placeholder="Username or email" value="{{ index .AdminSettings "smtp_username" }}">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-sm-3" for="_smtp_password">Password:</label>
+                                    <div class="col-sm-9">
+                                        <input type="password" class="form-control" name="smtp_password" id="_smtp_password"
+                                               placeholder="Password" value="{{ index .AdminSettings "smtp_password" }}">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-sm-3" for="_smtp_host">Host:</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" name="smtp_host" id="_smtp_host"
+                                               placeholder="Host" value="{{ index .AdminSettings "smtp_host" }}">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-sm-3" for="_smtp_port">Port:</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" name="smtp_port" id="_smtp_port"
+                                               placeholder="Port" value="{{ index .AdminSettings "smtp_port" }}">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-sm-3" for="_smtp_encryption">Encryption:</label>
+                                    <div class="col-sm-9">
+                                        {{ $enc := index .AdminSettings "smtp_encryption" }}
+                                        <select class="form-control" size="1" name="smtp_encryption" id="_smtp_encryption">
+                                            <option value="none"{{if eq $enc "none"}} selected{{end}}>None</option>
+                                            <option value="tls"{{if eq $enc "tls"}} selected{{end}}>TLS</option>
+                                            <option value="ssl"{{if eq $enc "ssl"}} selected{{end}}>SSL</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-sm-offset-2 col-sm-9">
+                                        <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <div id="users" class="tab-pane fade">
                     <h3>Menu 2</h3>

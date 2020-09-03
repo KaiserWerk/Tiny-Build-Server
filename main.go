@@ -91,7 +91,6 @@ func main() {
 	go func() {
 		<-quit
 		writeToConsole("server is shutting down...")
-		time.Sleep(time.Second)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
