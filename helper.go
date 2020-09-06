@@ -82,7 +82,7 @@ func checkLogin(r *http.Request) (sessionstore.Session, error) {
 	if err != nil {
 		return sessionstore.Session{}, errors.New("could not get cookie: " + err.Error())
 	}
-	writeToConsole("getting session with Id "+sessId)
+	//writeToConsole("getting session with Id "+sessId)
 	session, err := sessMgr.GetSession(sessId)
 	if err != nil {
 		return sessionstore.Session{}, errors.New("could not get session: " + err.Error())
