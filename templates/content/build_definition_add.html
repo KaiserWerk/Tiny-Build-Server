@@ -1,0 +1,57 @@
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4">Build definition details</h1>
+
+    <div class="row">
+        <div class="col-xl-10">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-plus"></i>
+                    Add New Build Definition
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <input type="hidden" name="form" value="security">
+                        <div class="form-row">
+                            <div class="col-md-6">
+                                <div class="checkbox">
+                                    <label class="control-label" for="add_definition_enabled">
+                                        <input type="checkbox"
+                                               name="add_definition_enabled"
+                                               id="add_definition_enabled">
+                                        Enabled
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="checkbox">
+                                    <label class="control-label" for="add_definition_deployment_enabled">
+                                        <input type="checkbox"
+                                               name="add_definition_deployment_enabled"
+                                               id="add_definition_deployment_enabled">
+                                        Deployment enabled
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label" for="add_definition_caption">Caption / Title</label>
+                            <input type="email"
+                                   class="form-control py-4"
+                                   name="add_definition_caption"
+                                   id="add_definition_caption">
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                Add build Definition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{template "footer_default" .}}
