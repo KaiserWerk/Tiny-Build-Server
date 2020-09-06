@@ -56,18 +56,22 @@ You found the chicken. Hooray!`
 			writeToConsole("shutdown via console initiated...")
 			time.Sleep(time.Second)
 			externalShutdownCh <- os.Interrupt
-		case "reload-config":
+		case "reload config":
 			writeToConsole("reloading configuration...")
 			time.Sleep(time.Second)
 			// @TODO
 
 			writeToConsole("done")
-		case "invalidate-sessions":
+		case "invalidate sessions":
 			writeToConsole("invalidating all sessions...")
+			sessMgr.RemoveAllSessions()
 			time.Sleep(time.Second)
-			// @TODO
-
 			writeToConsole("done")
+		case "list sessions":
+			writeToConsole("all sessions:")
+			for _, v := range sessMgr.Sessions {
+				writeToConsole("Id: " + v.Id + "\tLifetime:" + v.Lifetime.Format("2006-01-02 15:04:05"))
+			}
 		default:
 			writeToConsole("unrecognized command: " + string(input))
 		}
