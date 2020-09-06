@@ -1,4 +1,8 @@
 {{template "header_default" .}}
+{{ $enabledClass := "" }}
+{{ $enabledLabel := "" }}
+{{ $deploymentEnabledClass := "" }}
+{{ $deploymentEnabledLabel := "" }}
 <div class="container-fluid">
     <h1 class="mt-4">Build definition details</h1>
 
@@ -7,10 +11,49 @@
             <div class="card mb-4">
                 <div class="card-header">
                     {{ .BuildDefinition.Caption }}
+                    <a href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
+                        <i class="fa fa-edit"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <h3>Details</h3>
+                        <div class="row-xl-3">
+                            <h4>Details</h4>
+                            <table>
+                                <tbody>
+                                <tr>
+                                    {{ if eq .BuildDefinition.Enabled true }}
+                                        {{ $enabledClass = "primary" }}
+                                        {{ $enabledLabel = "Yes" }}
+                                    {{ else }}
+                                        {{ $enabledClass = "secondary" }}
+                                        {{ $enabledLabel = "No" }}
+                                    {{ end }}
+                                    <td>Enabled:</td>
+                                    <td><span class="badge badge-{{ $enabledClass }}">{{ $enabledLabel }}</span></td>
+                                </tr>
+                                <tr>
+                                    {{ if eq .BuildDefinition.DeploymentEnabled true }}
+                                        {{ $deploymentEnabledClass = "primary" }}
+                                        {{ $deploymentEnabledLabel = "Yes" }}
+                                    {{ else }}
+                                        {{ $deploymentEnabledClass = "secondary" }}
+                                        {{ $deploymentEnabledLabel = "No" }}
+                                    {{ end }}
+                                    <td>Deployment Enabled:</td>
+                                    <td><span class="badge badge-{{ $deploymentEnabledClass }}">{{ $deploymentEnabledLabel }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Repository Name:</td>
+                                    <td>{{ .BuildDefinition.RepoFullname }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Repository Host:</td>
+                                    <td>{{ .BuildDefinition.RepoHoster }}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
