@@ -114,7 +114,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	writeToConsole("getting session with Id "+sessId)
+	//writeToConsole("getting session with Id "+sessId)
 	session, err := sessMgr.GetSession(sessId)
 	if err != nil {
 		writeToConsole("could not get session: " + err.Error())
@@ -320,6 +320,10 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := checkLogin(r)
 	if err != nil {
@@ -370,3 +374,24 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
+
+func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func buildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func buildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func buildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
