@@ -16,11 +16,13 @@ import (
 )
 
 var (
-	configFile = "app.yaml"
+	version = "0.0.0" // inject at compile time
+	versionDate = time.Now() // inject at compile time
+	listenPort string
+	configFile string
 	centralConfig configuration
 	templates map[string]*template.Template
 	sessMgr *sessionstore.SessionManager
-	listenAddrPtr = flag.String("port", "8271", "The port which the build server should listen on")
 	funcMap = template.FuncMap{
 		"getBuildDefCaption": getBuildDefCaption,
 		"getUsernameById": getUsernameById,
@@ -28,6 +30,8 @@ var (
 )
 
 func main() {
+	writeToConsole("Tiny Build Server, Version " + version + " from " + versionDate.String())
+	flag.StringVar(&listenPort, "p", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "c", "app.yaml", "The location of the configuration file")
 	flag.Parse()
 
@@ -35,12 +39,12 @@ func main() {
 	templates = populateTemplates()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 
-	listenAddr := fmt.Sprintf(":%s", *listenAddrPtr)
-	writeToConsole("server will be handling requests at port " + *listenAddrPtr)
+	listenAddr := fmt.Sprintf(":%s", listenPort)
+	writeToConsole("server will be handling requests at port " + listenPort)
 
-	if _, err := loadSysConfig(); err != nil {
-		log.Fatal("could not handle config/app.yaml file; something went wrong")
-	}
+	//if _, err := loadSysConfig(); err != nil {
+	//	log.Fatal("could not handle config/app.yaml file; something went wrong")
+	//}
 
 	router := mux.NewRouter()
 	router.Use(limit)
@@ -65,12 +69,14 @@ func main() {
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/builddefinition/list", buildDefinitionListHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionShowHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionEditHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/remove", buildDefinitionRemoveHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/listexecutions", buildDefinitionListExecutionsHandler).Methods("GET")
 
-	// einzeln anzeigen: /builds/executions/{id}/show
-	// alle anzeigen: /builds/executions/list
-	// einzelne build definition anzeigen /builds/definitions/{id}/show
-	// alle build definitions anzeigen /builds/definitions/list
+	router.HandleFunc("/buildexecution/list", buildExecutionListHandler).Methods("GET")
+	router.HandleFunc("/buildexecution/{id}/show", buildExecutionShowHandler).Methods("GET")
 
 	// API handlers
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
