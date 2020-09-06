@@ -69,9 +69,11 @@ func main() {
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+
 	router.HandleFunc("/builddefinition/list", buildDefinitionListHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/add", buildDefinitionAddHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionShowHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionEditHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/edit", buildDefinitionEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/remove", buildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", buildDefinitionListExecutionsHandler).Methods("GET")
 
