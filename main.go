@@ -20,7 +20,7 @@ var (
 	centralConfig configuration
 	templates map[string]*template.Template
 	sessMgr *sessionstore.SessionManager
-	listenAddrPtr = flag.String("port", "5000", "The port which the build server should listen on")
+	listenAddrPtr = flag.String("port", "8271", "The port which the build server should listen on")
 	funcMap = template.FuncMap{
 		"getBuildDefCaption": getBuildDefCaption,
 		"getUsernameById": getUsernameById,
@@ -65,10 +65,15 @@ func main() {
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionShowHandler).Methods("GET")
 
+	// einzeln anzeigen: /builds/executions/{id}/show
+	// alle anzeigen: /builds/executions/list
+	// einzelne build definition anzeigen /builds/definitions/{id}/show
+	// alle build definitions anzeigen /builds/definitions/list
 
 	// API handlers
-	apiRouter := router.PathPrefix("/api/v1/").Subrouter()
+	apiRouter := router.PathPrefix("/api/v1").Subrouter()
 	apiRouter.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
 	apiRouter.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")
 	apiRouter.HandleFunc("/gitlab-receive", gitLabReceiveHandler).Methods("POST")
