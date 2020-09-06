@@ -47,31 +47,36 @@
                 <div class="card mb-4">
                     <div class="card-header">
                         <i class="fas fa-chart-area mr-1"></i>
-                        Most Recent Build Jobs
+                        Most Recent Build Executions
                     </div>
                     <div class="card-body">
-                        <table class="table table-bordered">
+                        <table class="table table-bordered table-hover">
                             <thead>
-                            <th>Build</th>
-                            <th>Duration</th>
-                            <th>Time</th>
-                            <th>Status</th>
+                            <tr>
+                                <th>Build</th>
+                                <th>Duration</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
                             </thead>
                             <tbody>
                             {{range .LatestBuilds}}
-                                {{$class := "btn-default"}}
+                                {{$class := "badge-default"}}
+                                {{$label := "DEFAULT"}}
                                 {{if eq .Result "success"}}
-                                    {{$class = "btn-success"}}
-                                {{else if eq .Result "success_with_warnings"}}
-                                    {{$class = "btn-warning"}}
+                                    {{$class = "badge-success"}}
+                                    {{$label = "SUCCESS"}}
                                 {{else if eq .Result "failed"}}
-                                    {{$class = "btn-danger"}}
+                                    {{$class = "badge-danger"}}
+                                    {{$label = "FAILED"}}
                                 {{end}}
                             <tr>
-                                <td>{{ getBuildDefCaption .BuildDefinitionId }}</td>
+                                <td><a href="/builddefinition/{{ .BuildDefinitionId }}/show">{{ getBuildDefCaption .BuildDefinitionId }}</a></td>
                                 <td>{{ .ExecutionTime }}s</td>
                                 <td>{{ .ExecutedAt }}</td>
-                                <td class="{{$class}}">{{ .Result }}</td>
+                                <td><span class="badge {{ $class }}">{{ $label }}</span></td>
+                                <td><a class="btn btn-sm btn-info" href="/builds/executions/{{ .Id }}/show">Show</a></td>
                             </tr>
                             {{else}}
                             <tr>
@@ -88,7 +93,7 @@
                     <div class="card-header">
                         <i class="fas fa-chart-bar mr-1"></i>
                         Most Recent Build Definitions
-                        <a class="btn btn-small btn-info" style="float:right;" href="/builds/definitions/add">Add new</a>
+                        <a class="btn btn-sm btn-info" style="float:right;" href="/builds/definitions/add">Add new</a>
                     </div>
                     <div class="card-body">
                         <table class="table table-bordered">
@@ -100,7 +105,7 @@
                             <tbody>
                             {{range .LatestBuildDefs}}
                                 <tr>
-                                    <td>{{ .Caption }}</td>
+                                    <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
                                     <td>{{ getUsernameById .AlteredBy }}</td>
                                     <td>{{ .AlteredAt }}</td>
                                 </tr>
