@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"time"
@@ -159,10 +160,27 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-
+	t := templates["password_request.html"]
+	if t != nil {
+		err := t.Execute(w, nil)
+		if err != nil {
+			fmt.Println("error:", err.Error())
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }
-func registrationHandler(w http.ResponseWriter, r *http.Request) {
 
+func registrationHandler(w http.ResponseWriter, r *http.Request) {
+	t := templates["register.html"]
+	if t != nil {
+		err := t.Execute(w, nil)
+		if err != nil {
+			fmt.Println("error:", err.Error())
+		}
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
 }
 
 func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +205,6 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		var errors uint8 = 0
 		form := r.FormValue("form")
 		if form == "security" {
-
 			securityDisableRegistration := r.FormValue("security_disable_registration")
 			if securityDisableRegistration != "1" {
 				securityDisableRegistration = "0"
@@ -253,9 +270,24 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				errors++
 				writeToConsole("could not set smtpEncryption")
 			}
+		} else if form == "executables" {
+			goExec := r.FormValue("golang_executable")
+			err = setSetting("golang_executable", goExec)
+			if err != nil {
+				errors++
+				writeToConsole("could not set goExec")
+			}
+
+			dotnetExec := r.FormValue("dotnet_executable")
+			err = setSetting("dotnet_executable", dotnetExec)
+			if err != nil {
+				errors++
+				writeToConsole("could not set dotnetExec")
+			}
 		}
 
 		if errors > 0 {
+			writeToConsole("When trying to save admin settings, 1 or more errors occured")
 			// add flashbag
 		}
 
@@ -284,6 +316,57 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("error:", err.Error())
 		}
 	} else {
+		w.WriteHeader(http.StatusNotFound)
+	}
+}
+
+func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	vars := mux.Vars(r) // id
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var bd buildDefinition
+	row := db.QueryRow("SELECT * FROM build_definition WHERE id = ?", vars["id"])
+	err = row.Scan(&bd.Id, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
+		&bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
+	if err != nil {
+		writeToConsole("could not scan buildDefinition: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		BuildDefinition buildDefinition
+		CurrentUser user
+	} {
+		BuildDefinition: bd,
+		CurrentUser: currentUser,
+	}
+
+	t := templates["build_definition_show.html"]
+	if t != nil {
+		err := t.Execute(w, data)
+		if err != nil {
+			fmt.Println("error:", err.Error())
+		}
+	} else {
+		writeToConsole("template build_definition_show.html not found")
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
