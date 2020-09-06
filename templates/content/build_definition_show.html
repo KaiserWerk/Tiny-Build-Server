@@ -3,6 +3,8 @@
 {{ $enabledLabel := "" }}
 {{ $deploymentEnabledClass := "" }}
 {{ $deploymentEnabledLabel := "" }}
+{{ $execClass := "" }}
+{{ $execLabel := "" }}
 <div class="container-fluid">
     <h1 class="mt-4">Build definition details</h1>
 
@@ -17,42 +19,115 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="row-xl-3">
-                            <h4>Details</h4>
-                            <table>
-                                <tbody>
-                                <tr>
-                                    {{ if eq .BuildDefinition.Enabled true }}
-                                        {{ $enabledClass = "primary" }}
-                                        {{ $enabledLabel = "Yes" }}
-                                    {{ else }}
-                                        {{ $enabledClass = "secondary" }}
-                                        {{ $enabledLabel = "No" }}
-                                    {{ end }}
-                                    <td>Enabled:</td>
-                                    <td><span class="badge badge-{{ $enabledClass }}">{{ $enabledLabel }}</span></td>
-                                </tr>
-                                <tr>
-                                    {{ if eq .BuildDefinition.DeploymentEnabled true }}
-                                        {{ $deploymentEnabledClass = "primary" }}
-                                        {{ $deploymentEnabledLabel = "Yes" }}
-                                    {{ else }}
-                                        {{ $deploymentEnabledClass = "secondary" }}
-                                        {{ $deploymentEnabledLabel = "No" }}
-                                    {{ end }}
-                                    <td>Deployment Enabled:</td>
-                                    <td><span class="badge badge-{{ $deploymentEnabledClass }}">{{ $deploymentEnabledLabel }}</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Repository Name:</td>
-                                    <td>{{ .BuildDefinition.RepoFullname }}</td>
-                                </tr>
-                                <tr>
-                                    <td>Repository Host:</td>
-                                    <td>{{ .BuildDefinition.RepoHoster }}</td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div class="col-xl-8">
+
+                            <div class="row">
+                                <div class="col-xl-8">
+                                    <h5>Details</h5>
+                                    <table class="table table-borderless table-condensed">
+                                        <tbody>
+                                        <tr>
+                                            {{ if eq .BuildDefinition.Enabled true }}
+                                                {{ $enabledClass = "primary" }}
+                                                {{ $enabledLabel = "Yes" }}
+                                            {{ else }}
+                                                {{ $enabledClass = "secondary" }}
+                                                {{ $enabledLabel = "No" }}
+                                            {{ end }}
+                                            <td>Enabled:</td>
+                                            <td><span class="badge badge-{{ $enabledClass }}">{{ $enabledLabel }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            {{ if eq .BuildDefinition.DeploymentEnabled true }}
+                                                {{ $deploymentEnabledClass = "primary" }}
+                                                {{ $deploymentEnabledLabel = "Yes" }}
+                                            {{ else }}
+                                                {{ $deploymentEnabledClass = "secondary" }}
+                                                {{ $deploymentEnabledLabel = "No" }}
+                                            {{ end }}
+                                            <td>Deployment Enabled:</td>
+                                            <td><span class="badge badge-{{ $deploymentEnabledClass }}">{{ $deploymentEnabledLabel }}</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Repository Name:</td>
+                                            <td>{{ .BuildDefinition.RepoFullname }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Repository Host:</td>
+                                            <td>{{ .BuildDefinition.RepoHoster }}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <h5>Recent build executions</h5>
+                                    <table class="table table-borderless table-hover table-condensed">
+                                        <thead>
+                                            <tr>
+                                                <th>Started at</th>
+                                                <th>Duration</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {{ range .RecentExecutions }}
+                                            {{ if eq .Result "success" }}
+                                                {{ $execClass = "success" }}
+                                                {{ $execLabel = "SUCCESS" }}
+                                            {{ else }}
+                                                {{ $execClass = "danger" }}
+                                                {{ $execLabel = "FAILED" }}
+                                            {{ end }}
+                                            <tr>
+                                                <td>{{ .ExecutedAt }}</td>
+                                                <td>{{ .ExecutionTime }} seconds</td>
+                                                <td><span class="badge badge-{{ $execClass }}">{{ $execLabel }}</span></td>
+                                            </tr>
+                                        {{ else }}
+                                            <tr>
+                                                <td colspan="3" style="text-align: center;">No recent build executions.</td>
+                                            </tr>
+                                        {{ end }}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <h5>Metrics</h5>
+                                    <table class="table table-borderless table-condensed">
+                                        <tbody>
+                                            <tr>
+                                                <td>Total Execution Count</td>
+                                                <td>{{ .TotalBuildCount }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Failed Execution Count</td>
+                                                <td>{{ .FailedBuildCount }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Successful Execution Count</td>
+                                                <td>{{ .SuccessBuildCount }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Success Rate</td>
+                                                <td>{{ .SuccessRate }}%</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Average Runtime</td>
+                                                <td>{{ .AvgRuntime }} seconds</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="col-xl-4">
+                            Build steps here
                         </div>
                     </div>
                 </div>
