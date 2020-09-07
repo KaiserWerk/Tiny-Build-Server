@@ -336,10 +336,27 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 
 func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	data := struct {
+		CurrentUser user
+	} {
+		CurrentUser: currentUser,
+	}
 
 	t := templates["build_definition_add.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
