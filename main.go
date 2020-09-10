@@ -17,27 +17,30 @@ import (
 
 var (
 	version = "0.0.0" // inject at compile time
+	commitHash = "xxx"
 	versionDate = time.Now() // inject at compile time
 	listenPort string
 	configFile string
 	centralConfig configuration
 	templates map[string]*template.Template
 	sessMgr *sessionstore.SessionManager
-	funcMap = template.FuncMap{
-		"getBuildDefCaption": getBuildDefCaption,
-		"getUsernameById": getUsernameById,
-	}
+
 )
 
 func main() {
-	writeToConsole("Tiny Build Server, Version " + version + " from " + versionDate.String())
+	writeToConsole("Tiny Build Server, Version " + version + " build from commit " + commitHash + " at " + versionDate.String())
 	flag.StringVar(&listenPort, "p", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "c", "app.yaml", "The location of the configuration file")
 	flag.Parse()
 
 	centralConfig = getConfiguration()
-	templates = populateTemplates()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
+	funcMap := template.FuncMap{
+		"getBuildDefCaption": getBuildDefCaption,
+		"getUsernameById": getUsernameById,
+		"getFlashbag": getFlashbag(sessMgr),
+	}
+	templates = populateTemplates(funcMap)
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	writeToConsole("server will be handling requests at port " + listenPort)
@@ -68,7 +71,17 @@ func main() {
 	router.HandleFunc("/password/request", requestNewPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
+
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/buildtarget/list", adminBuildTargetListHandler).Methods("GET")
+	router.HandleFunc("/admin/buildtarget/add", adminBuildTargetAddHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/buildtarget/{id}/edit", adminBuildTargetEditHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/buildtarget/{id}/remove", adminBuildTargetRemoveHandler).Methods("GET")
+	router.HandleFunc("/admin/buildstep/list", adminBuildStepListHandler).Methods("GET")
+	router.HandleFunc("/admin/buildstep/add", adminBuildStepAddHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/buildstep/{id}/edit", adminBuildStepEditHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/buildstep/{id}/remove", adminBuildStepRemoveHandler).Methods("GET")
+	// show?
 
 	router.HandleFunc("/builddefinition/list", buildDefinitionListHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/add", buildDefinitionAddHandler).Methods("GET", "POST")
@@ -122,15 +135,15 @@ func main() {
 	writeToConsole("server shutdown complete. Have a nice day!")
 }
 
-func populateTemplates() map[string]*template.Template {
+func populateTemplates(fm template.FuncMap) map[string]*template.Template {
 	result := make(map[string]*template.Template)
 	const basePath = "templates"
-	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(funcMap)
-	//template.Must(layout.ParseFiles(...
+	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(fm)
 	dir, err := os.Open(basePath + "/content")
 	if err != nil {
 		panic("failed to open template block directory: " + err.Error())
 	}
+	defer dir.Close()
 	fis, err := dir.Readdir(-1)
 	if err != nil {
 		panic("failed to contents of content directory: " + err.Error())
@@ -144,7 +157,7 @@ func populateTemplates() map[string]*template.Template {
 		if err != nil {
 			panic("failed to read content from file '"+fi.Name()+"': " + err.Error())
 		}
-		f.Close()
+		_ = f.Close()
 		tmpl := template.Must(layout.Clone())
 		_, err = tmpl.Parse(string(content))
 		if err != nil {
