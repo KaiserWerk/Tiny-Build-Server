@@ -6,9 +6,9 @@
 {{ $execClass := "" }}
 {{ $execLabel := "" }}
 <div class="container-fluid">
-    <h1 class="mt-4">Build definition details</h1>
-
+    <h1 class="mt-4 mb-3 offset-2">Build definition Details</h1>
     <div class="row">
+        {{ getFlashbag }}
         <div class="col-xl-10">
             <div class="card mb-4">
                 <div class="card-header">
@@ -55,6 +55,10 @@
                                         <tr>
                                             <td>Repository Host:</td>
                                             <td>{{ .BuildDefinition.RepoHoster }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Meta - Migration ID (SQL):</td>
+                                            <td>{{ .BuildDefinition.MetaMigrationId }}</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -122,6 +126,13 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <h5>Deployments</h5>
+
                                 </div>
                             </div>
 

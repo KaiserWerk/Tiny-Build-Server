@@ -1,0 +1,33 @@
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Edit Build Target</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-plus-circle"></i>
+                    Edit Build Target
+                </div>
+                <div class="card-body">
+                    <form class="form-horizontal" method="post">
+                        <input type="hidden" name="id" value="{{ .BuildTarget.Id }}">
+                        <div class="form-group">
+                            <label class="control-label" for="description">Description / Label:</label><br>
+                            <input type="text" class="form-control" name="description" id="description"
+                                   placeholder="Name of language or framework" value="{{ .BuildTarget.Description }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-9">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}
