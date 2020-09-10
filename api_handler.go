@@ -217,6 +217,7 @@ func giteaReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	//	w.Write([]byte("could not decode request body"))
 	//	return
 	//}
+	// defer r.Body.Close()
 	//queryParams, err := url.ParseQuery(r.URL.RawQuery)
 	//if err != nil {
 	//	fmt.Println("Could not parse query params")
