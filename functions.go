@@ -4,12 +4,46 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/sessionstore"
 	"gopkg.in/yaml.v2"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
+
+func getFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
+	return func() template.HTML {
+		if mgr == nil {
+			writeToConsole("mgr is nil")
+			return template.HTML("")
+		}
+		var sb strings.Builder
+		var source string
+		const msgSuccess = `<div class="alert alert-success alert-dismissable"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>Success!</strong> %%message%%</div>`
+		const msgError = `<div class="alert alert-danger alert-dismissable"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>Error!</strong> %%message%%</div>`
+		const msgWarning = `<div class="alert alert-warning alert-dismissable"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>Warning!</strong> %%message%%</div>`
+		const msgInfo = `<div class="alert alert-info alert-dismissable"><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>Info!</strong> %%message%%</div>`
+
+		for _, v := range mgr.GetMessages() {
+			if v.MessageType == "success" {
+				source = msgSuccess
+			} else if v.MessageType == "error" {
+				source = msgError
+			} else if v.MessageType == "warning" {
+				source = msgWarning
+			} else if v.MessageType == "info" {
+				source = msgInfo
+			}
+
+			sb.WriteString(strings.Replace(source, "%%message%%", v.Content, 1))
+		}
+
+		return template.HTML(sb.String())
+	}
+}
 
 func getHeaderIfSet(r *http.Request, key string) (string, error) {
 	header := r.Header.Get(key)
