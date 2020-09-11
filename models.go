@@ -30,6 +30,7 @@ type sysConfig struct {
 
 type buildDefinition struct {
 	Id					int
+	BuildTargetId		int
 	AlteredBy			int
 	Caption				string
 	Enabled				bool

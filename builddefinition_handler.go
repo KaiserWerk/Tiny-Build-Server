@@ -88,7 +88,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	var bd buildDefinition
 	row := db.QueryRow("SELECT * FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bd.Id, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
+	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
 		&bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt, &bd.MetaMigrationId)
 	if err != nil {
 		writeToConsole("could not scan buildDefinition: " + err.Error())
