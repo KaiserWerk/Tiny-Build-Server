@@ -18,7 +18,7 @@ import (
 var (
 	version = "0.0.0" // inject at compile time
 	commitHash = "xxx"
-	versionDate = time.Now() // inject at compile time
+	versionDate = "0000-00-00 00:00:00" // inject at compile time
 	listenPort string
 	configFile string
 	centralConfig configuration
@@ -28,7 +28,7 @@ var (
 )
 
 func main() {
-	writeToConsole("Tiny Build Server, Version " + version + " build from commit " + commitHash + " at " + versionDate.String())
+	writeToConsole("Tiny Build Server, Version " + version + " build from commit " + commitHash + " at " + versionDate)
 	flag.StringVar(&listenPort, "p", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "c", "app.yaml", "The location of the configuration file")
 	flag.Parse()
