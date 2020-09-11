@@ -1,9 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
@@ -143,10 +145,56 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBuildTargetListHandler(w http.ResponseWriter, r *http.Request) {
-	// read, nigga, read!
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection in adminBuildTargetListHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var btList []buildTarget
+	rows, err := db.Query("SELECT id, description FROM build_target")
+	if err != nil {
+		writeToConsole("could not get buildTargets: " + err.Error())
+	} else {
+		var bt buildTarget
+		for rows.Next() {
+			err = rows.Scan(&bt.Id, &bt.Description)
+			if err != nil {
+				writeToConsole("could not scan in adminBuildTargetListHandler: " + err.Error())
+				continue
+			}
+			btList = append(btList, bt)
+			bt = buildTarget{}
+		}
+	}
+	data := struct {
+		CurrentUser 	user
+		BuildTargets	[]buildTarget
+	}{
+		CurrentUser:  	currentUser,
+		BuildTargets: 	btList,
+	}
+
 	t := templates["admin_buildtarget_list.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -186,8 +234,13 @@ func adminBuildTargetAddHandler(w http.ResponseWriter, r *http.Request) {
 			_, err = db.Exec("INSERT INTO build_target (description) VALUES (?)", description)
 			if err != nil {
 				writeToConsole("could not insert new build step: " + err.Error())
-				// add flashbag
+				sessMgr.AddMessage("error", "An error occured.")
 			}
+
+			http.Redirect(w, r, "/admin/buildtarget/list", http.StatusSeeOther)
+			return
+		} else {
+			sessMgr.AddMessage("error", "You need so supply a description.")
 		}
 	}
 
@@ -216,7 +269,7 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser, err := getUserFromSession(session)
 	if err != nil {
-		writeToConsole("could not fetch user by ID")
+		writeToConsole("could not fetch user from session")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -245,7 +298,14 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		id := r.FormValue("id")
+		description := r.FormValue("description")
+		_, err = db.Exec("UPDATE build_target SET description = ? WHERE id = ?", description, id)
+		if err != nil {
+			writeToConsole("could not update buildtarget: " + err.Error())
+		}
+
+		http.Redirect(w, r, "/admin/buildtarget/list", http.StatusSeeOther)
 		return
 	}
 
@@ -269,10 +329,44 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBuildTargetRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user from session")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	sessMgr.AddMessage("error", "Could not be removed (not implemented).")
+	// check if build steps exist
+	// check if build definitions exist
+	// check if build executions exist
+	writeToConsole("adminBuildTargetRemoveHandler. not implemented yet")
+	//vars := mux.Vars(r)
+	//
+	//db, err := getDbConnection()
+	//if err != nil {
+	//	writeToConsole("could not establish DB connection in adminBuildTargetRemoveHandler: " + err.Error())
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+
+	data := struct {
+		CurrentUser		user
+	}{
+		CurrentUser: 	currentUser,
+	}
 
 	t := templates["admin_buildtarget_remove.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -282,10 +376,101 @@ func adminBuildTargetRemoveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user from session")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not establish DB connection in adminBuildStepListHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var btList []buildTarget
+	var bt buildTarget
+	rowsBt, err := db.Query("SELECT * FROM build_target")
+	if err != nil {
+		writeToConsole("could not query bt rows in adminBuildStepListHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	for rowsBt.Next() {
+		err = rowsBt.Scan(&bt.Id, &bt.Description)
+		if err != nil {
+			writeToConsole("could not scan bt in adminBuildStepListHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		btList = append(btList, bt)
+		bt = buildTarget{}
+	}
+
+	type preparedBuildStep struct {
+		Id					int
+		Description			string
+		Caption				string
+		Command				string
+		Enabled				bool
+	}
+
+	var bsList []preparedBuildStep
+	var bs preparedBuildStep
+	var rowsBs *sql.Rows
+	target := r.URL.Query().Get("target")
+	if target != "" {
+		rowsBs, err = db.Query("SELECT bs.id, bt.description, bs.caption, bs.command, bs.enabled FROM build_step bs, " +
+			"build_target bt WHERE bs.build_target_id = bt.id AND build_target_id = ?", target)
+	} else {
+		rowsBs, err = db.Query("SELECT bs.id, bt.description, bs.caption, bs.command, bs.enabled FROM build_step bs, " +
+			"build_target bt WHERE bs.build_target_id = bt.id")
+	}
+	if err != nil {
+		writeToConsole("could not query bs rows in adminBuildStepListHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+	for rowsBs.Next() {
+		err = rowsBs.Scan(&bs.Id, &bs.Description, &bs.Caption, &bs.Command, &bs.Enabled)
+		if err != nil {
+			writeToConsole("could not scan bs in adminBuildStepListHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		bsList = append(bsList, bs)
+		bs = preparedBuildStep{}
+	}
+
+	targetId, _ := strconv.Atoi(target)
+
+	data := struct {
+		CurrentUser		user
+		BuildTargets	[]buildTarget
+		BuildSteps		[]preparedBuildStep
+		TargetId		int
+	}{
+		CurrentUser: 	currentUser,
+		BuildTargets: 	btList,
+		BuildSteps: 	bsList,
+		TargetId: 		targetId,
+	}
 
 	t := templates["admin_buildstep_list.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -295,10 +480,38 @@ func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBuildStepAddHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user from session")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not establish DB connection in adminBuildStepListHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		CurrentUser		user
+	}{
+		CurrentUser: 	currentUser,
+	}
 
 	t := templates["admin_buildstep_add.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
