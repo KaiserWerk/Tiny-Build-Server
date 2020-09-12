@@ -17,20 +17,22 @@ import (
 
 var (
 	version = "0.0.0" // inject at compile time
-	commitHash = "xxx"
+	commitHash string
 	versionDate = "0000-00-00 00:00:00" // inject at compile time
 	listenPort string
 	configFile string
 	centralConfig configuration
 	templates map[string]*template.Template
 	sessMgr *sessionstore.SessionManager
-
 )
 
 func main() {
-	writeToConsole("Tiny Build Server, Version " + version + " build from commit " + commitHash + " at " + versionDate)
-	flag.StringVar(&listenPort, "p", "8271", "The port which the build server should listen on")
-	flag.StringVar(&configFile, "c", "app.yaml", "The location of the configuration file")
+	writeToConsole("Tiny Build Server")
+	writeToConsole("  Version: " + version)
+	writeToConsole("  Commit: " + commitHash)
+	writeToConsole("  From: " + versionDate)
+	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
+	flag.StringVar(&configFile, "config", "app.yaml", "The location of the configuration file")
 	flag.Parse()
 
 	centralConfig = getConfiguration()
