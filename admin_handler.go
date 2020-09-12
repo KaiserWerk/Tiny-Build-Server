@@ -498,15 +498,62 @@ func adminBuildStepAddHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := getDbConnection()
 	if err != nil {
-		writeToConsole("could not establish DB connection in adminBuildStepListHandler: " + err.Error())
+		writeToConsole("could not establish DB connection in adminBuildStepAddHandler: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	if r.Method == http.MethodPost {
+
+		targetId := r.FormValue("target_id")
+		caption := r.FormValue("caption")
+		command := r.FormValue("command")
+		var enabled bool
+		if r.FormValue("enabled") == "1" {
+			enabled = true
+		} else {
+			enabled = false
+		}
+
+		if caption == "" || command == "" {
+			sessMgr.AddMessage("error", "You must supply a caption and a command.")
+			http.Redirect(w, r, "/admin/buildstep/add", http.StatusSeeOther)
+			return
+		}
+
+		_, err = db.Exec("INSERT INTO build_step (build_target_id, caption, command, enabled) VALUES (?, ?, ?, ?)",
+			targetId, caption, command, enabled)
+
+		http.Redirect(w, r, "/admin/buildstep/list", http.StatusSeeOther)
+		return
+	}
+
+	var btList []buildTarget
+	var bt buildTarget
+	rowsBt, err := db.Query("SELECT * FROM build_target")
+	if err != nil {
+		writeToConsole("could not query bt rows in adminBuildStepAddHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	for rowsBt.Next() {
+		err = rowsBt.Scan(&bt.Id, &bt.Description)
+		if err != nil {
+			writeToConsole("could not scan bt in adminBuildStepAddHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		btList = append(btList, bt)
+		bt = buildTarget{}
+	}
+
 	data := struct {
 		CurrentUser		user
+		BuildTargets	[]buildTarget
 	}{
 		CurrentUser: 	currentUser,
+		BuildTargets: 	btList,
 	}
 
 	t := templates["admin_buildstep_add.html"]
