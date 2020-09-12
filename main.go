@@ -91,16 +91,17 @@ func main() {
 	router.HandleFunc("/builddefinition/{id}/edit", buildDefinitionEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/remove", buildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", buildDefinitionListExecutionsHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/restart", nil).Methods("GET") // TODO
 
 	router.HandleFunc("/buildexecution/list", buildExecutionListHandler).Methods("GET")
 	router.HandleFunc("/buildexecution/{id}/show", buildExecutionShowHandler).Methods("GET")
 
 	// API handlers
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
-	apiRouter.HandleFunc("/bitbucket-receive", bitBucketReceiveHandler).Methods("POST")
-	apiRouter.HandleFunc("/github-receive", gitHubReceiveHandler).Methods("POST")
-	apiRouter.HandleFunc("/gitlab-receive", gitLabReceiveHandler).Methods("POST")
-	apiRouter.HandleFunc("/gitea-receive", giteaReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/bitbucket", bitBucketReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/github", gitHubReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/gitlab", gitLabReceiveHandler).Methods("POST")
+	apiRouter.HandleFunc("/gitea", giteaReceiveHandler).Methods("POST")
 
 	server := &http.Server{
 		Addr:         listenAddr,
