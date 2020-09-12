@@ -7,11 +7,71 @@ import (
 )
 
 func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection in buildDefinitionListHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	type preparedBuildDefinition struct {
+		Id					int
+		Caption				string
+		Target				string
+		Executions			int
+		RepoHost			string
+		RepoName			string
+		Enabled				bool
+		DeploymentEnabled	bool
+	}
+
+	var bdList []preparedBuildDefinition
+	var bd preparedBuildDefinition
+	rows, err := db.Query("SELECT bd.id, bd.caption, bt.description AS target, COUNT(be.id), bd.repo_hoster," +
+		" bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd, build_target bt, build_execution " +
+		"be WHERE bd.build_target_id = bt.id GROUP BY bd.id")
+	if err != nil {
+		writeToConsole("could not query build definitions in buildDefinitionListHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.Executions, &bd.RepoHost, &bd.RepoName, &bd.Enabled,
+			&bd.DeploymentEnabled)
+		if err != nil {
+			writeToConsole("could not scan buildDefinition in buildDefinitionListHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		bdList = append(bdList, bd)
+		bd = preparedBuildDefinition{}
+	}
+
+	data := struct {
+		CurrentUser			user
+		BuildDefinitions	[]preparedBuildDefinition
+	}{
+		CurrentUser: 		currentUser,
+		BuildDefinitions: 	bdList,
+	}
 
 	t := templates["builddefinition_list.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}
@@ -85,6 +145,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	var bd buildDefinition
 	row := db.QueryRow("SELECT * FROM build_definition WHERE id = ?", vars["id"])
@@ -130,14 +191,9 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		avg += v.ExecutionTime
 		i++
 	}
-	//writeToConsole("total execution time: " + fmt.Sprintf("%v in %v iterations", avg, i))
+
 	avg = avg / float64(i)
-
-
-
 	successRate := float64(successBuildCount) / float64(i) * 100
-
-
 	var recentExecutions []buildExecution
 	if len(beList) >= 5 {
 		recentExecutions = beList[:5]
