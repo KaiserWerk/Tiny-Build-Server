@@ -167,6 +167,7 @@ func adminBuildTargetListHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	var btList []buildTarget
 	rows, err := db.Query("SELECT id, description FROM build_target")
@@ -286,6 +287,7 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	row := db.QueryRow("SELECT id, description FROM build_target WHERE id = ?", vars["id"])
 	var bt buildTarget
@@ -357,6 +359,7 @@ func adminBuildTargetRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	//	w.WriteHeader(http.StatusInternalServerError)
 	//	return
 	//}
+	//defer db.Close()
 
 	data := struct {
 		CurrentUser		user
@@ -398,6 +401,7 @@ func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	var btList []buildTarget
 	var bt buildTarget
@@ -502,6 +506,7 @@ func adminBuildStepAddHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
 
 	if r.Method == http.MethodPost {
 
@@ -568,10 +573,104 @@ func adminBuildStepAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminBuildStepEditHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user from session")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not establish DB connection in adminBuildStepEditHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	vars := mux.Vars(r)
+
+	if r.Method == http.MethodPost {
+		id := vars["id"]
+		targetId := r.FormValue("target_id")
+		caption := r.FormValue("caption")
+		command := r.FormValue("command")
+		var enabled bool
+		if r.FormValue("enabled") == "1" {
+			enabled = true
+		} else {
+			enabled = false
+		}
+
+		if caption == "" || command == "" {
+			sessMgr.AddMessage("error", "You must supply a caption and a command.")
+			http.Redirect(w, r, "/admin/buildstep/" + id + "/edit", http.StatusSeeOther)
+			return
+		}
+
+		_, err = db.Exec("UPDATE build_step SET build_target_id = ?, caption = ?, command = ?, enabled = ? WHERE id = ?",
+			targetId, caption, command, enabled, id)
+
+		http.Redirect(w, r, "/admin/buildstep/list", http.StatusSeeOther)
+		return
+	}
+
+	var btList []buildTarget
+	var bt buildTarget
+	rowsBt, err := db.Query("SELECT * FROM build_target")
+	if err != nil {
+		writeToConsole("could not query bt rows in adminBuildStepEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	for rowsBt.Next() {
+		err = rowsBt.Scan(&bt.Id, &bt.Description)
+		if err != nil {
+			writeToConsole("could not scan bt in adminBuildStepEditHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		btList = append(btList, bt)
+		bt = buildTarget{}
+	}
+
+	var bs buildStep
+	row := db.QueryRow("SELECT id, build_target_id, caption, command, enabled FROM build_step WHERE id = ?",
+		vars["id"])
+	err = row.Scan(&bs.Id, &bs.BuildTargetId, &bs.Caption, &bs.Command, &bs.Enabled)
+	if err != nil {
+		writeToConsole("could not scan bs in adminBuildStepEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	tid, _ := strconv.Atoi(vars["id"])
+
+	data := struct {
+		CurrentUser		user
+		BuildTargets	[]buildTarget
+		BuildStep		buildStep
+		TargetId		int
+	}{
+		CurrentUser: 	currentUser,
+		BuildTargets: 	btList,
+		BuildStep: 		bs,
+		TargetId: 		tid,
+	}
 
 	t := templates["admin_buildstep_edit.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}

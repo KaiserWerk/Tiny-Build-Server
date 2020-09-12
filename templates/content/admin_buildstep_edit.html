@@ -1,1 +1,57 @@
-not yet
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Edit Build Step</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-edit"></i>
+                    Edit Build Step
+                </div>
+                <div class="card-body">
+
+                    <form class="form-horizontal" method="post">
+                        <div class="form-group">
+                            <label class="control-label" for="target_id">Build Target</label>
+                            <select class="form-control" size="1" name="target_id" id="target_id" required>
+                                {{ $targetId := .TargetId }}
+                                {{ range .BuildTargets }}
+                                    <option value="{{ .Id }}"{{ if eq .Id $targetId }} selected{{ end }}>
+                                        {{ .Description }}
+                                    </option>
+                                {{ end }}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="caption">Caption:</label><br>
+                            <input type="text" class="form-control" name="caption" id="caption"
+                                   placeholder="Caption" value="{{ .BuildStep.Caption }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="command">Command:</label><br>
+                            <input type="text" class="form-control" name="command" id="command"
+                                   placeholder="Command" value="{{ .BuildStep.Command }}" required>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label class="control-label" for="enabled">
+                                    <input type="checkbox" name="enabled" id="enabled"
+                                           value="1"{{ if eq .BuildStep.Enabled true }} checked{{ end }}>
+                                    Enabled
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}
