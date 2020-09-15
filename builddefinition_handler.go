@@ -150,8 +150,9 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 			return
 		}
-		buildSteps := r.Form["build_steps"]
+
 		// add build step references to newly inserted build definition
+		buildSteps := r.Form["build_steps"]
 		for _, v := range buildSteps {
 			_, err = db.Exec("INSERT INTO definition_step_taxonomy (build_definition_id, build_step_id) VALUES (?, ?)",
 				liid, v)
@@ -163,7 +164,7 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		if action == "save_depl" {
 			writeToConsole("redirect to edit deployments")
-			http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
+			http.Redirect(w, r, "/builddefinition/" + strconv.Itoa(int(liid)) + "/edit?tab=deployments", http.StatusSeeOther)
 			return
 		}
 
