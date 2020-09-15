@@ -92,7 +92,7 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 		return beList, err
 	}
 	defer db.Close()
-	query := "SELECT id, build_definition_id, action_log, result, execution_time, " +
+	query := "SELECT id, build_definition_id, initiated_by, manual_run, action_log, result, execution_time, " +
 		"executed_at FROM build_execution ORDER BY executed_at DESC"
 	if limit > 0 {
 		query += " LIMIT " + strconv.Itoa(limit)
@@ -103,7 +103,8 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.ActionLog, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
+		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun,
+			&be.ActionLog, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
 		if err != nil {
 			return beList, err
 		}
@@ -209,4 +210,60 @@ func setSetting(name, value string) error {
 	}
 
 	return nil
+}
+
+func getBuildTargets() ([]buildTarget, error) {
+	db, err := getDbConnection()
+	if err != nil {
+		return nil, errors.New("could not get DB connection in getBuildTargets: " + err.Error())
+	}
+	defer db.Close()
+
+	var btList []buildTarget
+	rows, err := db.Query("SELECT id, description FROM build_target")
+	if err != nil {
+		return nil, errors.New("could not get buildTargets in getBuildTargets: " + err.Error())
+	} else {
+		var bt buildTarget
+		for rows.Next() {
+			err = rows.Scan(&bt.Id, &bt.Description)
+			if err != nil {
+				writeToConsole("could not scan in getBuildTargets: " + err.Error())
+				continue
+			}
+			btList = append(btList, bt)
+			bt = buildTarget{}
+		}
+	}
+
+	return btList, nil
+}
+
+func getBuildStepsForTarget(id int) ([]buildStep, error) {
+	db, err := getDbConnection()
+	if err != nil {
+		return nil, errors.New("could not get DB connection in getBuildStepsForTarget: " + err.Error())
+	}
+	defer db.Close()
+
+	var bsList []buildStep
+	rows, err := db.Query("SELECT id, build_target_id, caption, command, enabled FROM build_step WHERE " +
+		"enabled = 1 AND build_target_id = ?",
+		id)
+	if err != nil {
+		return nil, errors.New("could not get buildSteps in getBuildStepsForTarget: " + err.Error())
+	} else {
+		var bs buildStep
+		for rows.Next() {
+			err = rows.Scan(&bs.Id, &bs.BuildTargetId, &bs.Caption, &bs.Command, &bs.Enabled)
+			if err != nil {
+				writeToConsole("could not scan in getBuildStepsForTarget: " + err.Error())
+				continue
+			}
+			bsList = append(bsList, bs)
+			bs = buildStep{}
+		}
+	}
+
+	return bsList, nil
 }

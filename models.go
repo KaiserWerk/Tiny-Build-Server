@@ -48,6 +48,8 @@ type buildDefinition struct {
 type buildExecution struct {
 	Id					int
 	BuildDefinitionId	int
+	InitiatedBy			int
+	ManualRun			bool
 	ActionLog			string
 	Result				string
 	ExecutionTime		float64

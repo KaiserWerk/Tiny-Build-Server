@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +83,6 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
-
 	session, err := checkLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -94,10 +95,105 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection in buildDefinitionAddHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	btList, err := getBuildTargets()
+	if err != nil {
+		writeToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
+		w.WriteHeader(500)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		targetId := r.FormValue("target_id")
+		caption := r.FormValue("caption")
+		var enabled bool
+		if r.FormValue("enabled") == "1" {
+			enabled = true
+		}
+
+		repoHoster := r.FormValue("repo_hoster")
+		repoHosterUrl := r.FormValue("repo_hoster_url")
+		repoFullname := r.FormValue("repo_fullname")
+		repoUsername := r.FormValue("repo_username")
+		repoSecret := r.FormValue("repo_secret")
+		repoBranch := r.FormValue("repo_branch")
+
+		action := r.FormValue("action")
+
+		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, " +
+			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, " +
+			"repo_branch, altered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			targetId, currentUser.Id, caption, enabled, 0, repoHoster, repoHosterUrl, repoFullname, repoUsername,
+			repoSecret, repoBranch, time.Now())
+		if err != nil {
+			writeToConsole("could not insert build definition in buildDefinitionAddHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		liid, err := result.LastInsertId()
+		if err != nil {
+			writeToConsole("could not get lastInsertId in buildDefinitionAddHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+
+		err = r.ParseForm() // Required if you don't call r.FormValue()
+		if err != nil {
+			writeToConsole("could not parse form in buildDefinitionAddHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		buildSteps := r.Form["build_steps"]
+		// add build step references to newly inserted build definition
+		for _, v := range buildSteps {
+			_, err = db.Exec("INSERT INTO definition_step_taxonomy (build_definition_id, build_step_id) VALUES (?, ?)",
+				liid, v)
+			if err != nil {
+				writeToConsole("could not insert taxonomy entry in buildDefinitionAddHandler: " + err.Error())
+				continue
+			}
+		}
+
+		if action == "save_depl" {
+			writeToConsole("redirect to edit deployments")
+			http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
+			return
+		}
+
+		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
+		return
+	}
+
+	var selectedTarget int
+	temp := r.URL.Query().Get("target")
+	if temp != "" {
+		selectedTarget, _ = strconv.Atoi(temp)
+	}
+
+	bsList, err := getBuildStepsForTarget(selectedTarget)
+	if err != nil {
+		writeToConsole("could not fetch buildSteps in buildDefinitionAddHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
 	data := struct {
-		CurrentUser user
+		CurrentUser 			user
+		BuildTargets			[]buildTarget
+		SelectedTarget			int
+		AvailableBuildSteps		[]buildStep
 	} {
-		CurrentUser: currentUser,
+		CurrentUser: 			currentUser,
+		BuildTargets:   		btList,
+		SelectedTarget: 		selectedTarget,
+		AvailableBuildSteps: 	bsList,
 	}
 
 	t := templates["builddefinition_add.html"]
@@ -159,7 +255,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	var be buildExecution
 	var beList = make([]buildExecution, 0)
-	rows, err := db.Query("SELECT id, result, execution_time, executed_at FROM build_execution WHERE " +
+	rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE " +
 		"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
 	if err != nil {
 		writeToConsole("could not fetch most recent build executions: " + err.Error())
@@ -168,7 +264,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&be.Id, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
+		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
 		if err != nil {
 			writeToConsole("could not scan build execution: " + err.Error())
 			continue
