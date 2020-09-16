@@ -125,6 +125,8 @@ func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request) {
+
+
 	t := templates["register.html"]
 	if t != nil {
 		err := t.Execute(w, nil)

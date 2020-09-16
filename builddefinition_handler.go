@@ -231,6 +231,10 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
+	if r.Method == http.MethodPost {
+
+	}
+
 	var buildDefinitionTemp buildDefinition
 	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, " +
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, " +

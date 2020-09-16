@@ -1,4 +1,4 @@
-{{template "header_auth"}}
+{{template "header_auth" .}}
     <div class="col-lg-7">
         <div class="card shadow-lg border-0 rounded-lg mt-5">
             <div class="card-header">
@@ -8,40 +8,29 @@
             <div class="card-body">
                 <form method="post">
                     <div class="form-group">
-                        <label class="small mb-1" for="register_display_name">Display Name</label>
+                        <label class="small mb-1" for="display_name">Display Name</label>
                         <input class="form-control py-4"
-                               name="register_display_name"
-                               id="register_display_name"
+                               name="display_name"
+                               id="display_name"
                                type="text"
                                placeholder="Display Name" />
                     </div>
                     <div class="form-group">
-                        <label class="small mb-1" for="register_email">Email</label>
-                        <input class="form-control py-4"
-                               name="register_email"
-                               id="register_email"
-                               type="email"
-                               placeholder="Email address" />
+                        <label class="small mb-1" for="email">Email</label>
+                        <input class="form-control py-4" name="email" id="email" type="email" placeholder="Email address">
                     </div>
                     <div class="form-row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="small mb-1" for="register_password">Password</label>
-                                <input class="form-control py-4"
-                                       name="register_password"
-                                       id="register_password"
-                                       type="password"
-                                       placeholder="Password" />
+                                <label class="small mb-1" for="password">Password</label>
+                                <input class="form-control py-4" name="password" id="password" type="password" placeholder="Password" />
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="small mb-1" for="register_password_confirm">Confirm Password</label>
-                                <input class="form-control py-4"
-                                       name="register_password_confirm"
-                                       id="register_password_confirm"
-                                       type="password"
-                                       placeholder="Confirm password" />
+                                <label class="small mb-1" for="password_confirm">Confirm Password</label>
+                                <input class="form-control py-4" name="password_confirm" id="password_confirm"
+                                       type="password"  placeholder="Confirm password" />
                             </div>
                         </div>
                     </div>
@@ -51,8 +40,8 @@
                 </form>
             </div>
             <div class="card-footer text-center">
-                <div class="small"><a href="/login">Have an account? Go to login</a></div>
+                <div class="small"><a href="/login">Already have an account? Log in!</a></div>
             </div>
         </div>
     </div>
-{{template "footer_auth"}}
+{{template "footer_auth" .}}
