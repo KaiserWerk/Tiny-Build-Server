@@ -209,11 +209,56 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := checkLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := getUserFromSession(session)
+	if err != nil {
+		writeToConsole("could not fetch user by ID in buildDefinitionEditHandler")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
 
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection in buildDefinitionEditHandler: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	vars := mux.Vars(r)
+
+	var bd buildDefinition
+	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, " +
+		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, " +
+		"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
+	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled,
+		&bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch,
+		&bd.AlteredAt, &bd.MetaMigrationId)
+	if err != nil {
+		writeToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	selectedTab := r.URL.Query().Get("tab")
+
+	data := struct {
+		CurrentUser					user
+		SelectedBuildDefinition		buildDefinition
+		SelectedTab					string
+	}{
+		CurrentUser: 				currentUser,
+		SelectedBuildDefinition: 	bd,
+		SelectedTab: 				selectedTab,
+	}
 
 	t := templates["builddefinition_edit.html"]
 	if t != nil {
-		err := t.Execute(w, nil)
+		err := t.Execute(w, data)
 		if err != nil {
 			fmt.Println("error:", err.Error())
 		}

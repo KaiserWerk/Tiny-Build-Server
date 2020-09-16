@@ -1,1 +1,116 @@
-not yet
+{{template "header_default" .}}
+{{ $tab := .SelectedTab }}
+{{ $sbd := .SelectedBuildDefinition }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Edit Build Definition </h1>
+
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    Edit build Definition
+                </div>
+                <div class="card-body">
+
+                    <ul class="nav nav-tabs mb-2">
+                        <li class="nav-item">
+                            <a class="nav-link{{ if or (eq $tab "basic") (eq $tab "") }} active{{ end }}" data-toggle="tab" href="#basic">Basic Data &amp; Data Source</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link{{ if eq $tab "steps" }} active{{ end }}" data-toggle="tab" href="#steps">Build Steps</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link{{ if eq $tab "deployments" }} active{{ end }}" data-toggle="tab" href="#deployments">Deployments</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div id="basic" class="tab-pane{{ if or (eq $tab "basic") (eq $tab "") }} active{{ end }}">
+
+                            <form class="form-horizontal" method="post">
+                                <h3>Basic Data</h3>
+
+                                <div class="form-group">
+                                    <label class="control-label" for="caption">Caption:</label><br>
+                                    <input type="text" class="form-control" name="caption" id="caption"
+                                           placeholder="Caption" value="{{ $sbd.Caption }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-md-4">
+                                        <div class="checkbox">
+                                            <label class="control-label" for="enabled">
+                                                <input type="checkbox" class="custom-checkbox" name="enabled"
+                                                       id="enabled" value="1"{{ if eq $sbd.Enabled true }} checked{{ end }}>
+                                                This Build Definition is enabled
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h3>Data Source</h3>
+
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_hoster">Repository Hoster (*)</label>
+                                    <select class="form-control" name="repo_hoster" id="repo_hoster" size="1" required>
+                                        <option value="github"{{ if eq $sbd.RepoHoster "github" }} selected{{ end }}>GitHub</option>
+                                        <option value="bitbucket"{{ if eq $sbd.RepoHoster "bitbucket" }} selected{{ end }}>BitBucket</option>
+                                        <option value="gitlab"{{ if eq $sbd.RepoHoster "gitlab" }} selected{{ end }}>GitLab</option>
+                                        <option value="gitea"{{ if eq $sbd.RepoHoster "gitea" }} selected{{ end }}>Gitea</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_hoster_url">Repository Hoster URL</label>
+                                    <input type="text" class="form-control" name="repo_hoster_url" id="repo_hoster_url"
+                                           placeholder="Base URL of your Git Installation, if custom"
+                                           value="{{ $sbd.RepoHosterUrl }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_fullname">Repository Full Name (*)</label>
+                                    <input type="text" class="form-control" name="repo_fullname" id="repo_fullname"
+                                           placeholder="Vendor/RepositoryName" required
+                                           value="{{ $sbd.RepoFullname }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_username">Repository Username</label>
+                                    <input type="text" class="form-control" name="repo_username" id="repo_username"
+                                           placeholder="Username; might not be necessary"
+                                           value="{{ $sbd.RepoUsername }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_secret">Repository Secret (*)</label>
+                                    <input type="password" class="form-control" name="repo_secret" id="repo_secret"
+                                           placeholder="Secret, e.g. Password or Access Token" required
+                                           value="{{ $sbd.RepoSecret }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label" for="repo_branch">Repository Branch (*)</label>
+                                    <input type="text" class="form-control" name="repo_branch" id="repo_branch"
+                                           placeholder="Branch" required
+                                           value="{{ $sbd.RepoBranch }}">
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary float-right">Save changes</button>
+                                </div>
+                            </form>
+
+                        </div>
+                        <div id="steps" class="tab-pane{{ if eq $tab "steps" }} active{{ end }}">
+                            <h3>Menu 1</h3>
+                            <p>Some content in menu 1.</p>
+                        </div>
+                        <div id="deployments" class="tab-pane{{ if eq $tab "deployments" }} active{{ end }}">
+                            <h3>Menu 2</h3>
+                            <p>Some content in menu 2.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{{template "footer_default" .}}
