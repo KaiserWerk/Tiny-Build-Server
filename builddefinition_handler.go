@@ -231,17 +231,66 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	var bd buildDefinition
+	var buildDefinitionTemp buildDefinition
 	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, " +
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, " +
 		"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled,
-		&bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch,
-		&bd.AlteredAt, &bd.MetaMigrationId)
+	err = row.Scan(&buildDefinitionTemp.Id, &buildDefinitionTemp.BuildTargetId, &buildDefinitionTemp.AlteredBy,
+		&buildDefinitionTemp.Caption, &buildDefinitionTemp.Enabled, &buildDefinitionTemp.DeploymentEnabled,
+		&buildDefinitionTemp.RepoHoster, &buildDefinitionTemp.RepoHosterUrl, &buildDefinitionTemp.RepoFullname,
+		&buildDefinitionTemp.RepoUsername, &buildDefinitionTemp.RepoSecret, &buildDefinitionTemp.RepoBranch,
+		&buildDefinitionTemp.AlteredAt, &buildDefinitionTemp.MetaMigrationId)
 	if err != nil {
 		writeToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
 		w.WriteHeader(500)
 		return
+	}
+
+
+	var buildStepTemp buildStep
+	var buildStepList []buildStep
+	rows, err := db.Query("SELECT id, build_target_id, caption FROM build_step WHERE build_target_id = ?", buildDefinitionTemp.BuildTargetId)
+	if err != nil {
+		writeToConsole("could not query buildSteps in buildDefinitionEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+	for rows.Next() {
+		err = rows.Scan(&buildStepTemp.Id, &buildStepTemp.BuildTargetId, &buildStepTemp.Caption)
+		if err != nil {
+			writeToConsole("could not scan buildStepTemp in buildDefinitionEditHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		buildStepList = append(buildStepList, buildStepTemp)
+		buildStepTemp = buildStep{}
+	}
+
+	var tax definitionStepTaxonomy
+	var taxList []definitionStepTaxonomy
+	rows, err = db.Query("SELECT id, build_definition_id, build_step_id, enabled FROM definition_step_taxonomy " +
+		"WHERE build_definition_id = ?", buildDefinitionTemp.Id)
+	if err != nil {
+		writeToConsole("could not query definitionStepTaxonomy entries in buildDefinitionEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+	for rows.Next() {
+		err = rows.Scan(&tax.Id, &tax.BuildDefinitionId, &tax.BuildStepId, &tax.Enabled)
+		if err != nil {
+			writeToConsole("could not scan definitionStepTaxonomy entry in buildDefinitionEditHandler: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+		taxList = append(taxList, tax)
+		tax = definitionStepTaxonomy{}
+	}
+
+	// re-use the enabled property
+	for bsIndex, _ := range buildStepList {
+		for _, taxValue := range taxList {
+			buildStepList[bsIndex].Enabled = taxValue.Enabled
+		}
 	}
 
 	selectedTab := r.URL.Query().Get("tab")
@@ -249,11 +298,13 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CurrentUser					user
 		SelectedBuildDefinition		buildDefinition
+		SelectedBuildSteps			[]buildStep
 		SelectedTab					string
 	}{
-		CurrentUser: 				currentUser,
-		SelectedBuildDefinition: 	bd,
-		SelectedTab: 				selectedTab,
+		CurrentUser:             	currentUser,
+		SelectedBuildDefinition: 	buildDefinitionTemp,
+		SelectedBuildSteps:      	buildStepList,
+		SelectedTab:             	selectedTab,
 	}
 
 	t := templates["builddefinition_edit.html"]

@@ -1,6 +1,7 @@
 {{template "header_default" .}}
 {{ $tab := .SelectedTab }}
 {{ $sbd := .SelectedBuildDefinition }}
+{{ $sbs := .SelectedBuildSteps }}
 <div class="container-fluid">
     <h1 class="mt-4 mb-3 offset-2">Edit Build Definition </h1>
 
@@ -98,7 +99,19 @@
 
                         </div>
                         <div id="steps" class="tab-pane{{ if eq $tab "steps" }} active{{ end }}">
-                            <h3>Menu 1</h3>
+                            <form class="form-horizontal" method="post">
+                                <h3>Build Steps</h3>
+
+                                <div class="form-group">
+                                    <label class="control-label" for="build_steps">build Steps</label>
+                                    <select class="form-control" name="build_steps" id="build_steps" size="10" multiple>
+                                        {{ range $sbs }}
+                                            <option value="{{ .Id }}"{{ if eq .Enabled true }} selected{{ end }}>{{ .Caption }}</option>
+                                        {{ end }}
+                                    </select>
+                                </div>
+                            </form>
+
                             <p>Some content in menu 1.</p>
                         </div>
                         <div id="deployments" class="tab-pane{{ if eq $tab "deployments" }} active{{ end }}">
