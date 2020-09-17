@@ -1,1 +1,25 @@
-not yet
+{{ template "header_default" . }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Remove Build definition</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Remove Build Definition &quot;{{ .BuildDefinition.Caption }}&quot;
+                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/show">
+                        <i class="fa fa-eye"></i>
+                        Show
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>Do you really want to remove the Build Definition &quot;<b>{{ .BuildDefinition.Caption }}</b>&quot;?
+                       This can <b>not</b> be undone.</p>
+                    <a class="btn btn-primary float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/show">Cancel</a>
+                    <a class="btn btn-primary float-right mr-2" href="/builddefinition/{{ .BuildDefinition.Id }}/remove?confirm=yes">Confirm removal</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ template "footer_default" . }}
