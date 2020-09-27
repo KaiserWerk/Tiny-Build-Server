@@ -14,6 +14,9 @@ func limit(next http.Handler) http.Handler {
 			return
 		}
 
+		// hmm
+		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+
 		next.ServeHTTP(w, r)
 	})
 }

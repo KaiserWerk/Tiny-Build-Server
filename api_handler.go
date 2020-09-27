@@ -4,76 +4,89 @@ import (
 	"net/http"
 )
 
+func payloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
+	bd, err := checkPayloadRequest(r)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(`{"status": "error", "message": "` + err.Error() + `"}`))
+		return
+	}
+
+	go
+
+	w.Write([]byte(`{"status": "success", "message": "build execution initiated"}`))
+}
+
 func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	//var payload bitBucketPushPayload
-	//err := json.NewDecoder(r.Body).Decode(&payload)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	w.Write([]byte("could not decode request body"))
-	//	return
-	//}
-	//
-	//queryParams, err := url.ParseQuery(r.URL.RawQuery)
-	//if err != nil {
-	//	fmt.Println("Could not parse query params")
-	//	return
-	//}
-	//
-	//if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
-	//	fmt.Println("Missing r parameters")
-	//	return
-	//}
-	//// AUCH HEADER PRÜFEN!
-	//
-	//headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
-	//headerValues := make([]string, len(headers))
-	//for i := range headers {
-	//	headerValues[i], err = getHeaderIfSet(r, headers[i])
-	//	if err != nil {
-	//		log.Printf("could not get header %v\n", headers[i])
-	//	}
-	//}
-	//
-	//// all strings
-	//id := queryParams["Id"][0]
-	//token := queryParams["token"][0]
-	//branch := payload.Push.Changes[0].New.Name
-	//repoFullName := payload.Repository.FullName
-	//
-	//fmt.Println("Id: " + id)
-	//fmt.Println("token: " + token)
-	//
-	//fmt.Println("branch: " + branch)
-	//fmt.Println("repo full name: " + repoFullName)
-	//
-	//buildDefinition, err := loadBuildDefinition(id)
-	//if err != nil {
-	//	fmt.Println("error while loading build configuration:", err.Error())
-	//	w.WriteHeader(http.StatusBadRequest)
-	//	w.Write([]byte("received, but bad request"))
-	//	return
-	//}
-	//
-	//if buildDefinition.AuthToken != token {
-	//	fmt.Println("no auth token match")
-	//	w.WriteHeader(http.StatusUnauthorized)
-	//	w.Write([]byte("received, but auth token mismatch"))
-	//	return
-	//}
-	//
-	//if buildDefinition.Repository.FullName != repoFullName || buildDefinition.Repository.Branch != branch {
-	//	fmt.Println("repo name or branch mismatch")
-	//	w.WriteHeader(http.StatusBadRequest)
-	//	w.Write([]byte("received, but repository name/branch mismatch"))
-	//}
-	//
-	//// now we can start the build process
-	//// something like
-	//fmt.Println("starting build process for Id " + id)
-	//go startBuildProcess(id, buildDefinition)
-	//
-	//w.WriteHeader(http.StatusOK)
-	//w.Write([]byte("received, build process initiated, everything fine"))
+//	var payload bitBucketPushPayload
+//	err := json.NewDecoder(r.Body).Decode(&payload)
+//	if err != nil {
+//		fmt.Println(err.Error())
+//		w.Write([]byte("could not decode request body"))
+//		return
+//	}
+//
+//	queryParams, err := url.ParseQuery(r.URL.RawQuery)
+//	if err != nil {
+//		fmt.Println("Could not parse query params")
+//		return
+//	}
+//
+//	if len(queryParams["Id"]) == 0 || len(queryParams["token"]) == 0 {
+//		fmt.Println("Missing r parameters")
+//		return
+//	}
+//	// AUCH HEADER PRÜFEN!
+//
+//	headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+//	headerValues := make([]string, len(headers))
+//	for i := range headers {
+//		headerValues[i], err = getHeaderIfSet(r, headers[i])
+//		if err != nil {
+//			log.Printf("could not get header %v\n", headers[i])
+//		}
+//	}
+//
+//	// all strings
+//	id := queryParams["Id"][0]
+//	token := queryParams["token"][0]
+//	branch := payload.Push.Changes[0].New.Name
+//	repoFullName := payload.Repository.FullName
+//
+//	fmt.Println("Id: " + id)
+//	fmt.Println("token: " + token)
+//
+//	fmt.Println("branch: " + branch)
+//	fmt.Println("repo full name: " + repoFullName)
+//
+//	buildDefinition, err := loadBuildDefinition(id)
+//	if err != nil {
+//		fmt.Println("error while loading build configuration:", err.Error())
+//		w.WriteHeader(http.StatusBadRequest)
+//		w.Write([]byte("received, but bad request"))
+//		return
+//	}
+//
+//	if buildDefinition.AuthToken != token {
+//		fmt.Println("no auth token match")
+//		w.WriteHeader(http.StatusUnauthorized)
+//		w.Write([]byte("received, but auth token mismatch"))
+//		return
+//	}
+//
+//	if buildDefinition.Repository.FullName != repoFullName || buildDefinition.Repository.Branch != branch {
+//		fmt.Println("repo name or branch mismatch")
+//		w.WriteHeader(http.StatusBadRequest)
+//		w.Write([]byte("received, but repository name/branch mismatch"))
+//	}
+//
+//	// now we can start the build process
+//	// something like
+//	fmt.Println("starting build process for Id " + id)
+//	go startBuildProcess(id, buildDefinition)
+//
+//	w.WriteHeader(http.StatusOK)
+//	w.Write([]byte("received, build process initiated, everything fine"))
 }
 
 func gitHubReceiveHandler(w http.ResponseWriter, r *http.Request) {

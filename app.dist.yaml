@@ -1,3 +1,7 @@
 database:
   driver: mysql
   dsn: "root:root@tcp(127.0.0.1:3306)/tiny_build_server?charset=utf8&parseTime=true"
+tls:
+  enabled: false
+  certfile:
+  keyfile:

@@ -21,11 +21,11 @@ type configuration struct {
 		Driver	string	`yaml:"driver"`
 		DSN		string	`yaml:"dsn"`
 	} `yaml:"database"`
-}
-
-type sysConfig struct {
-	GolangExecutable string `yaml:"golang_executable"`
-	DotNetExecutable string `yaml:"dotnet_executable"`
+	Tls struct{
+		Enabled		bool	`yaml:"enabled"`
+		CertFile	string	`yaml:"certfile"`
+		KeyFile		string	`yaml:"keyfile"`
+	}
 }
 
 type buildDefinition struct {
@@ -42,7 +42,11 @@ type buildDefinition struct {
 	RepoSecret			string
 	RepoBranch			string
 	AlteredAt			time.Time
+	ApplyMigrations		bool
+	DatabaseDSN			string
 	MetaMigrationId		int
+	RunTests			bool
+	RunBenchmarkTests	bool
 }
 
 type buildExecution struct {

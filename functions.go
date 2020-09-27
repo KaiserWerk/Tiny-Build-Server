@@ -2,14 +2,14 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
-	"gopkg.in/yaml.v2"
 	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -52,19 +52,140 @@ func getHeaderIfSet(r *http.Request, key string) (string, error) {
 	}
 	return header, nil
 }
-func loadSysConfig() (sysConfig, error) {
-	cont, err := ioutil.ReadFile("config/app.yaml")
-	if err != nil {
-		return sysConfig{}, errors.New("could not read config/app.yaml file")
+
+func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
+	// get id
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		return nil, errors.New("could not determine ID of build definition")
 	}
-	var config sysConfig
-	err = yaml.Unmarshal(cont, &config)
+	// convert to integer
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return sysConfig{}, errors.New("could not parse config/app.yaml file")
+		return nil, errors.New("invalid ID value supplied")
+	}
+	// get DB connection
+	db, err := getDbConnection()
+	if err != nil {
+		return nil, errors.New("could not get DB connection")
+	}
+	// fetch the build definition
+	var bd buildDefinition
+	row := db.QueryRow("SELECT * FROM build_definition WHERE id = ?", id)
+	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled,
+		&bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch,
+		&bd.AlteredAt, &bd.ApplyMigrations, &bd.DatabaseDSN, &bd.MetaMigrationId, &bd.RunTests,
+		&bd.RunBenchmarkTests)
+	if err != nil {
+		return nil, errors.New("could not scan buildDefinition")
 	}
 
-	return config, nil
+	// check relevant headers and payload values
+	switch bd.RepoHoster {
+	case "bitbucket":
+		headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+		headerValues := make([]string, len(headers))
+		for i := range headers {
+			headerValues[i], err = getHeaderIfSet(r, headers[i])
+			if err != nil {
+				return nil, errors.New("could not get bitbucket header " + headers[i])
+			}
+		}
+
+		var payload bitBucketPushPayload
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return nil, errors.New("could not decode json payload")
+		}
+		if payload.Push.Changes[0].New.Name != bd.RepoBranch {
+			return nil, errors.New("branch names do not match (" + payload.Push.Changes[0].New.Name + ")")
+		}
+		if payload.Repository.FullName != bd.RepoFullname {
+			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+		}
+	case "github":
+		headers := []string{"X-GitHub-Delivery", "X-GitHub-Event", "X-Hub-Signature"}
+		headerValues := make([]string, len(headers))
+		for i := range headers {
+			headerValues[i], err = getHeaderIfSet(r, headers[i])
+			if err != nil {
+				return nil, errors.New("could not get github header " + headers[i])
+			}
+		}
+
+		var payload gitHubPushPayload
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return nil, errors.New("could not decode json payload")
+		}
+		if payload.Repository.DefaultBranch != bd.RepoBranch {
+			return nil, errors.New("branch names do not match (" + payload.Repository.DefaultBranch + ")")
+		}
+		if payload.Repository.FullName != bd.RepoFullname {
+			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+		}
+	case "gitlab":
+		headers := []string{"X-GitLab-Event"}
+		headerValues := make([]string, len(headers))
+		for i := range headers {
+			headerValues[i], err = getHeaderIfSet(r, headers[i])
+			if err != nil {
+				return nil, errors.New("could not get gitlab header " + headers[i])
+			}
+		}
+
+		var payload gitLabPushPayload
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return nil, errors.New("could not decode json payload")
+		}
+		branch := strings.Split(payload.Ref, "/")[2]
+		if branch != bd.RepoBranch {
+			return nil, errors.New("branch names do not match (" + branch + ")")
+		}
+		if payload.Project.PathWithNamespace != bd.RepoFullname {
+			return nil, errors.New("repository names do not match (" + payload.Project.PathWithNamespace + ")")
+		}
+	case "gitea":
+		headers := []string{"X-Gitea-Delivery", "X-Gitea-Event"}
+		headerValues := make([]string, len(headers))
+		for i := range headers {
+			headerValues[i], err = getHeaderIfSet(r, headers[i])
+			if err != nil {
+				return nil, errors.New("could not get gitea header " + headers[i])
+			}
+		}
+
+		var payload giteaPushPayload
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return nil, errors.New("could not decode json payload")
+		}
+		branch := strings.Split(payload.Ref, "/")[2]
+		if branch != bd.RepoBranch {
+			return nil, errors.New("branch names do not match (" + branch + ")")
+		}
+		if payload.Repository.FullName != bd.RepoFullname {
+			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+		}
+	}
+
+	return &bd, nil
 }
+
+//func loadSysConfig() (sysConfig, error) {
+//	cont, err := ioutil.ReadFile("config/app.yaml")
+//	if err != nil {
+//		return sysConfig{}, errors.New("could not read config/app.yaml file")
+//	}
+//	var config sysConfig
+//	err = yaml.Unmarshal(cont, &config)
+//	if err != nil {
+//		return sysConfig{}, errors.New("could not parse config/app.yaml file")
+//	}
+//
+//	return config, nil
+//}
 
 func readConsoleInput(externalShutdownCh chan os.Signal) {
 	reader := bufio.NewReader(os.Stdin)
@@ -143,131 +264,131 @@ You found the chicken. Hooray!`
 
 
 
-//func startBuildProcess(id string, definition buildDefinition) {
-//	/*
-//		* clone
-//		* restore
-//		* test
-//		* test bench
-//		* build arch
-//
-//		arch = window_amd64, darwin_amd32, raspi3, ...
-//	*/
-//
-//	repoName := strings.Split(definition.Repository.FullName, "/")[1]
-//
-//	fileExt := make(map[string]string)
-//	fileExt["windows"] = ".exe"
-//	fileExt["linux"] = ""
-//	fileExt["darwin"] = ".osx"
-//
-//	baseDir := "build_definitions/build_" + id
-//	cloneDir := baseDir + "/clone"
-//	//buildDir := baseDir + "/build"
-//	// remove the clone directory possibly remaining
-//	// from previous build processes
-//	os.RemoveAll(cloneDir)
-//
-//	// clone the repository
-//	repositoryUrl := getRepositoryUrl(definition, true)
-//	cmd := exec.Command("git", "clone", repositoryUrl, cloneDir)
-//	err := cmd.Run()
-//	if err != nil {
-//		fmt.Println("could not clone repository; aborting: " + err.Error())
-//		return
-//	}
-//
-//	sysConf, err := loadSysConfig()
-//	if err != nil {
-//		fmt.Println("could not load system config")
-//		return
-//	}
-//	// change dir
-//	err = os.Chdir(cloneDir)
-//	if err != nil {
-//		fmt.Println("could not change dir to clone: " + err.Error())
-//		return
-//	}
-//
-//	switch definition.ProjectType {
-//	case "go":
-//	case "golang":
-//		outputFile := ""
-//		for _, v := range definition.Actions {
-//			switch true {
-//			case strings.Contains(v, "restore"):
-//				// restore dependencies
-//				err = exec.Command(sysConf.GolangExecutable, "get", "-u").Run()
-//				if err != nil {
-//					fmt.Println("could not restore dependencies: " + err.Error())
-//					return
-//				}
-//			case strings.Contains(v, "test"):
-//				// tests and bench tests don't really matter for now
-//				err = exec.Command(sysConf.GolangExecutable, "test").Run()
-//				if err != nil {
-//					fmt.Println("could not restore dependencies: " + err.Error())
-//					return
-//				}
-//			case strings.Contains(v, "test bench"):
-//				err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
-//				if err != nil {
-//					fmt.Println("could not restore dependencies: " + err.Error())
-//					return
-//				}
-//			case strings.Contains(v, "build"):
-//				var (
-//					targetOS   string
-//					targetArch string
-//					targetArm  string
-//				)
-//
-//				osArch := strings.Split(v, " ")[1]
-//
-//				// its sth like raspi
-//				if !strings.Contains(osArch, "_") {
-//					switch osArch {
-//					case "raspi3":
-//						targetOS = "linux"
-//						targetArch = "arm"
-//						targetArm = "5"
-//					case "raspi4":
-//						targetOS = "linux"
-//						targetArch = "arm"
-//						targetArm = "6"
-//					}
-//				} else {
-//					parts := strings.Split(osArch, "_")
-//					targetOS = parts[0]
-//					targetArch = parts[1]
-//				}
-//
-//				_ = os.Setenv("GOOS", targetOS)
-//				_ = os.Setenv("GOARCH", targetArch)
-//				_ = os.Setenv("GOARM", targetArm)
-//				outputFile = fmt.Sprintf("../build/%s%s", repoName, fileExt[targetOS])
-//				err = exec.Command(sysConf.GolangExecutable, "build", "-o", outputFile).Run()
-//				if err != nil {
-//					fmt.Println("could not build: " + err.Error())
-//					return
-//				}
-//			}
-//		}
-//
-//		if definition.DeploymentEnabled {
-//			deployToHost(outputFile, definition)
-//		}
-//		// @TODO reset cwd?
-//
-//	case "cs":
-//	case "csharp":
-//		// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
-//		// sysconfig!
-//		// @TODO
-//	}
-//
-//	fmt.Println("build completed!")
-//}
+func startBuildProcess(id string, definition buildDefinition) {
+	/*
+		* clone
+		* restore
+		* test
+		* test bench
+		* build arch
+
+		arch = window_amd64, darwin_amd32, raspi3, ...
+	*/
+
+	repoName := strings.Split(definition.Repository.FullName, "/")[1]
+
+	fileExt := make(map[string]string)
+	fileExt["windows"] = ".exe"
+	fileExt["linux"] = ""
+	fileExt["darwin"] = ".osx"
+
+	baseDir := "build_definitions/build_" + id
+	cloneDir := baseDir + "/clone"
+	//buildDir := baseDir + "/build"
+	// remove the clone directory possibly remaining
+	// from previous build processes
+	os.RemoveAll(cloneDir)
+
+	// clone the repository
+	repositoryUrl := getRepositoryUrl(definition, true)
+	cmd := exec.Command("git", "clone", repositoryUrl, cloneDir)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("could not clone repository; aborting: " + err.Error())
+		return
+	}
+
+	sysConf, err := loadSysConfig()
+	if err != nil {
+		fmt.Println("could not load system config")
+		return
+	}
+	// change dir
+	err = os.Chdir(cloneDir)
+	if err != nil {
+		fmt.Println("could not change dir to clone: " + err.Error())
+		return
+	}
+
+	switch definition.ProjectType {
+	case "go":
+	case "golang":
+		outputFile := ""
+		for _, v := range definition.Actions {
+			switch true {
+			case strings.Contains(v, "restore"):
+				// restore dependencies
+				err = exec.Command(sysConf.GolangExecutable, "get", "-u").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "test"):
+				// tests and bench tests don't really matter for now
+				err = exec.Command(sysConf.GolangExecutable, "test").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "test bench"):
+				err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
+				if err != nil {
+					fmt.Println("could not restore dependencies: " + err.Error())
+					return
+				}
+			case strings.Contains(v, "build"):
+				var (
+					targetOS   string
+					targetArch string
+					targetArm  string
+				)
+
+				osArch := strings.Split(v, " ")[1]
+
+				// its sth like raspi
+				if !strings.Contains(osArch, "_") {
+					switch osArch {
+					case "raspi3":
+						targetOS = "linux"
+						targetArch = "arm"
+						targetArm = "5"
+					case "raspi4":
+						targetOS = "linux"
+						targetArch = "arm"
+						targetArm = "6"
+					}
+				} else {
+					parts := strings.Split(osArch, "_")
+					targetOS = parts[0]
+					targetArch = parts[1]
+				}
+
+				_ = os.Setenv("GOOS", targetOS)
+				_ = os.Setenv("GOARCH", targetArch)
+				_ = os.Setenv("GOARM", targetArm)
+				outputFile = fmt.Sprintf("../build/%s%s", repoName, fileExt[targetOS])
+				err = exec.Command(sysConf.GolangExecutable, "build", "-o", outputFile).Run()
+				if err != nil {
+					fmt.Println("could not build: " + err.Error())
+					return
+				}
+			}
+		}
+
+		if definition.DeploymentEnabled {
+			deployToHost(outputFile, definition)
+		}
+		// @TODO reset cwd?
+
+	case "cs":
+	case "csharp":
+		// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
+		// sysconfig!
+		// @TODO
+	}
+
+	fmt.Println("build completed!")
+}
 //
 //func deployToHost(outputFile string, definition buildDefinition) {
 //	for _, v := range definition.Deployments {

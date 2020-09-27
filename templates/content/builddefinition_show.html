@@ -9,12 +9,13 @@
     <h1 class="mt-4 mb-3 offset-2">Build definition Details</h1>
     <div class="row">
         {{ getFlashbag }}
-        <div class="col-xl-10">
+        <div class="col-xl-8 offset-2">
             <div class="card mb-4">
                 <div class="card-header">
                     {{ .BuildDefinition.Caption }}
-                    <a href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
+                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
                         <i class="fa fa-edit"></i>
+                        Edit
                     </a>
                 </div>
                 <div class="card-body">
