@@ -170,7 +170,7 @@ func adminBuildTargetListHandler(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	var btList []buildTarget
-	rows, err := db.Query("SELECT id, description FROM build_target")
+	rows, err := db.Query("SELECT id, caption FROM build_target")
 	if err != nil {
 		writeToConsole("could not get buildTargets: " + err.Error())
 	} else {
@@ -232,7 +232,7 @@ func adminBuildTargetAddHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			defer db.Close()
 
-			_, err = db.Exec("INSERT INTO build_target (description) VALUES (?)", description)
+			_, err = db.Exec("INSERT INTO build_target (caption) VALUES (?)", description)
 			if err != nil {
 				writeToConsole("could not insert new build step: " + err.Error())
 				sessMgr.AddMessage("error", "An error occured.")
@@ -289,7 +289,7 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	row := db.QueryRow("SELECT id, description FROM build_target WHERE id = ?", vars["id"])
+	row := db.QueryRow("SELECT id, caption FROM build_target WHERE id = ?", vars["id"])
 	var bt buildTarget
 	err = row.Scan(&bt.Id, &bt.Description)
 	if err != nil {
@@ -302,7 +302,7 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 
 		id := r.FormValue("id")
 		description := r.FormValue("description")
-		_, err = db.Exec("UPDATE build_target SET description = ? WHERE id = ?", description, id)
+		_, err = db.Exec("UPDATE build_target SET caption = ? WHERE id = ?", description, id)
 		if err != nil {
 			writeToConsole("could not update buildtarget: " + err.Error())
 		}
