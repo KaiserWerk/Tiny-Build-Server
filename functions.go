@@ -282,54 +282,84 @@ func startBuildProcess(definition buildDefinition) {
 		arch = window_amd64, darwin_amd32, raspi3, ...
 	*/
 
-	// tools for build output instantiated hehe
+	// instantiate tools for build output
 	var sb strings.Builder
 	messageCh := make(chan string, 100)
-	// definition ID as string determined
+	go func() {
+		for {
+			select {
+			case s, ok := <- messageCh:
+				if ok {
+					sb.WriteString(s)
+				}
+			}
+		}
+	}()
+
+	// determine definition ID as string
 	idString := strconv.Itoa(definition.Id)
-	// basepath festlegen
+
+	// set projectpath
 	projectPath := basePath + idString + "/" + strconv.FormatInt(time.Now().Unix(), 10)
+	buildPath := projectPath + "/build"
+	artifactPath := projectPath + "/artifact"
+	clonePath := projectPath + "/clone"
 	if fileExists(projectPath) {
 		err := os.RemoveAll(projectPath)
 		if err != nil {
-			sb.WriteString("could not remove stale build directory ("+ projectPath +"): " + err.Error())
+			messageCh <- "could not remove stale project directory ("+ projectPath +"): " + err.Error()
+			createBuildReport(definition, sb.String())
+			return
 		}
 	}
+
 	// create a new build directory
-	err := os.MkdirAll(projectPath + "/", 0664)
+	err := os.MkdirAll(buildPath, 0664)
 	if err != nil {
-		sb.WriteString("could not create build directory ("+ projectPath +"): " + err.Error())
+		messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
+		createBuildReport(definition, sb.String())
+		return
+	}
+	err = os.MkdirAll(artifactPath, 0664)
+	if err != nil {
+		messageCh <- "could not create artifact directory (" + artifactPath + "): " + err.Error()
+		createBuildReport(definition, sb.String())
+		return
+	}
+	err = os.MkdirAll(clonePath, 0664)
+	if err != nil {
+		messageCh <- "could not create clone directory (" + clonePath + "): " + err.Error()
+		createBuildReport(definition, sb.String())
+		return
 	}
 
+	// clone the repository
+	var withCredentials bool
+	if definition.RepoSecret != "" {
+		withCredentials = true
+	}
+	repositoryUrl := getRepositoryUrl(definition, withCredentials)
+	cmd := exec.Command("git", "clone", "--single-branch", "--branch", definition.RepoBranch, repositoryUrl, clonePath)
+	messageCh <- cmd.String()
+	err = cmd.Run()
+	if err != nil {
+		messageCh <- "could not clone repository: " + err.Error()
+		createBuildReport(definition, sb.String())
+		return
+	}
 
-	//baseDir := "build_definitions/build_" + id
-	//cloneDir := baseDir + "/clone"
-	////buildDir := baseDir + "/build"
-	//// remove the clone directory possibly remaining
-	//// from previous build processes
-	//os.RemoveAll(cloneDir)
-	//
-	//// clone the repository
-	//repositoryUrl := getRepositoryUrl(definition, true)
-	//cmd := exec.Command("git", "clone", repositoryUrl, cloneDir)
-	//err := cmd.Run()
-	//if err != nil {
-	//	fmt.Println("could not clone repository; aborting: " + err.Error())
-	//	return
-	//}
-	//
-	//sysConf, err := loadSysConfig()
-	//if err != nil {
-	//	fmt.Println("could not load system config")
-	//	return
-	//}
-	//// change dir
-	//err = os.Chdir(cloneDir)
-	//if err != nil {
-	//	fmt.Println("could not change dir to clone: " + err.Error())
-	//	return
-	//}
-	//
+	// determin project type (build target)
+	switch definition.BuildTargetId {
+	case 1: // golang
+
+	case 2: // dotnet
+
+	case 3: // php
+
+	case 4: // rust
+
+	}
+	
 	//switch definition.ProjectType {
 	//case "go":
 	//case "golang":
@@ -408,6 +438,10 @@ func startBuildProcess(definition buildDefinition) {
 	//}
 
 	fmt.Println("build completed!")
+}
+
+func createBuildReport(definition buildDefinition, report string) {
+
 }
 
 func deployToHost(outputFile string, definition buildDefinition) {
