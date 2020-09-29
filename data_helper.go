@@ -296,7 +296,7 @@ func getBuildTargets() ([]buildTarget, error) {
 	defer db.Close()
 
 	var btList []buildTarget
-	rows, err := db.Query("SELECT id, description FROM build_target")
+	rows, err := db.Query("SELECT id, caption FROM build_target")
 	if err != nil {
 		return nil, errors.New("could not get buildTargets in getBuildTargets: " + err.Error())
 	} else {
