@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
-	"golang.org/x/crypto/ssh"
 	"html/template"
 	"net/http"
 	"os"
@@ -59,31 +58,35 @@ func getHeaderIfSet(r *http.Request, key string) (string, error) {
 	return header, nil
 }
 
-func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
+func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 	// get id
 	idStr := r.URL.Query().Get("id")
 	if idStr == "" {
-		return nil, errors.New("could not determine ID of build definition")
+		return buildDefinition{}, errors.New("could not determine ID of build definition")
 	}
 	// convert to integer
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return nil, errors.New("invalid ID value supplied")
+		return buildDefinition{}, errors.New("invalid ID value supplied")
 	}
 	// get DB connection
 	db, err := getDbConnection()
 	if err != nil {
-		return nil, errors.New("could not get DB connection")
+		return buildDefinition{}, errors.New("could not get DB connection")
 	}
 	// fetch the build definition
 	var bd buildDefinition
-	row := db.QueryRow("SELECT * FROM build_definition WHERE id = ?", id)
-	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled,
+	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, " +
+		"enabled, deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, " +
+		"repo_branch, altered_at, apply_migrations, database_dns, meta_migration_id, run_tests, run_benchmark_tests " +
+		"FROM build_definition WHERE id = ?", id)
+	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
+		&bd.Enabled, &bd.DeploymentEnabled,
 		&bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch,
 		&bd.AlteredAt, &bd.ApplyMigrations, &bd.DatabaseDSN, &bd.MetaMigrationId, &bd.RunTests,
 		&bd.RunBenchmarkTests)
 	if err != nil {
-		return nil, errors.New("could not scan buildDefinition")
+		return buildDefinition{}, errors.New("could not scan buildDefinition")
 	}
 
 	// check relevant headers and payload values
@@ -94,20 +97,20 @@ func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return nil, errors.New("could not get bitbucket header " + headers[i])
+				return buildDefinition{}, errors.New("could not get bitbucket header " + headers[i])
 			}
 		}
 
 		var payload bitBucketPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
-			return nil, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("could not decode json payload")
 		}
 		if payload.Push.Changes[0].New.Name != bd.RepoBranch {
-			return nil, errors.New("branch names do not match (" + payload.Push.Changes[0].New.Name + ")")
+			return buildDefinition{}, errors.New("branch names do not match (" + payload.Push.Changes[0].New.Name + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	case "github":
 		headers := []string{"X-GitHub-Delivery", "X-GitHub-Event", "X-Hub-Signature"}
@@ -115,20 +118,20 @@ func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return nil, errors.New("could not get github header " + headers[i])
+				return buildDefinition{}, errors.New("could not get github header " + headers[i])
 			}
 		}
 
 		var payload gitHubPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
-			return nil, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("could not decode json payload")
 		}
 		if payload.Repository.DefaultBranch != bd.RepoBranch {
-			return nil, errors.New("branch names do not match (" + payload.Repository.DefaultBranch + ")")
+			return buildDefinition{}, errors.New("branch names do not match (" + payload.Repository.DefaultBranch + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	case "gitlab":
 		headers := []string{"X-GitLab-Event"}
@@ -136,21 +139,21 @@ func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return nil, errors.New("could not get gitlab header " + headers[i])
+				return buildDefinition{}, errors.New("could not get gitlab header " + headers[i])
 			}
 		}
 
 		var payload gitLabPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
-			return nil, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("could not decode json payload")
 		}
 		branch := strings.Split(payload.Ref, "/")[2]
 		if branch != bd.RepoBranch {
-			return nil, errors.New("branch names do not match (" + branch + ")")
+			return buildDefinition{}, errors.New("branch names do not match (" + branch + ")")
 		}
 		if payload.Project.PathWithNamespace != bd.RepoFullname {
-			return nil, errors.New("repository names do not match (" + payload.Project.PathWithNamespace + ")")
+			return buildDefinition{}, errors.New("repository names do not match (" + payload.Project.PathWithNamespace + ")")
 		}
 	case "gitea":
 		headers := []string{"X-Gitea-Delivery", "X-Gitea-Event"}
@@ -158,25 +161,25 @@ func checkPayloadRequest(r *http.Request) (*buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return nil, errors.New("could not get gitea header " + headers[i])
+				return buildDefinition{}, errors.New("could not get gitea header " + headers[i])
 			}
 		}
 
 		var payload giteaPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
 		if err != nil {
-			return nil, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("could not decode json payload")
 		}
 		branch := strings.Split(payload.Ref, "/")[2]
 		if branch != bd.RepoBranch {
-			return nil, errors.New("branch names do not match (" + branch + ")")
+			return buildDefinition{}, errors.New("branch names do not match (" + branch + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return nil, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	}
 
-	return &bd, nil
+	return bd, nil
 }
 
 //func loadSysConfig() (sysConfig, error) {
@@ -272,16 +275,6 @@ You found the chicken. Hooray!`
 
 func startBuildProcess(definition buildDefinition) {
 
-	/*
-		* clone
-		* restore
-		* test
-		* test bench
-		* build arch
-
-		arch = window_amd64, darwin_amd32, raspi3, ...
-	*/
-
 	// instantiate tools for build output
 	var sb strings.Builder
 	messageCh := make(chan string, 100)
@@ -308,7 +301,7 @@ func startBuildProcess(definition buildDefinition) {
 		err := os.RemoveAll(projectPath)
 		if err != nil {
 			messageCh <- "could not remove stale project directory ("+ projectPath +"): " + err.Error()
-			createBuildReport(definition, sb.String())
+			saveBuildReport(definition, sb.String())
 			return
 		}
 	}
@@ -317,19 +310,19 @@ func startBuildProcess(definition buildDefinition) {
 	err := os.MkdirAll(buildPath, 0664)
 	if err != nil {
 		messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
-		createBuildReport(definition, sb.String())
+		saveBuildReport(definition, sb.String())
 		return
 	}
 	err = os.MkdirAll(artifactPath, 0664)
 	if err != nil {
 		messageCh <- "could not create artifact directory (" + artifactPath + "): " + err.Error()
-		createBuildReport(definition, sb.String())
+		saveBuildReport(definition, sb.String())
 		return
 	}
 	err = os.MkdirAll(clonePath, 0664)
 	if err != nil {
 		messageCh <- "could not create clone directory (" + clonePath + "): " + err.Error()
-		createBuildReport(definition, sb.String())
+		saveBuildReport(definition, sb.String())
 		return
 	}
 
@@ -341,252 +334,314 @@ func startBuildProcess(definition buildDefinition) {
 	repositoryUrl := getRepositoryUrl(definition, withCredentials)
 	cmd := exec.Command("git", "clone", "--single-branch", "--branch", definition.RepoBranch, repositoryUrl, clonePath)
 	messageCh <- cmd.String()
-	err = cmd.Run()
+	cmdOutput, err := cmd.Output()
 	if err != nil {
-		messageCh <- "could not clone repository: " + err.Error()
-		createBuildReport(definition, sb.String())
+		messageCh <- "could not get command output: " + err.Error()
+		saveBuildReport(definition, sb.String())
 		return
+	} else {
+		messageCh <- string(cmdOutput)
 	}
 
-	// determin project type (build target)
+	// determine project type (build target)
 	switch definition.BuildTargetId {
 	case 1: // golang
+		err = handleGolangProject(golangBuildDefinition(definition), messageCh, projectPath)
 
 	case 2: // dotnet
-
+		err = handleDotnetProject(dotnetBuildDefinition(definition), messageCh, projectPath)
 	case 3: // php
-
+		err = handlePhpProject(phpBuildDefinition(definition), messageCh, projectPath)
 	case 4: // rust
-
+		err = handleRustProject(rustBuildDefinition(definition), messageCh, projectPath)
 	}
-	
-	//switch definition.ProjectType {
-	//case "go":
-	//case "golang":
-	//	outputFile := ""
-	//	for _, v := range definition.Actions {
-	//		switch true {
-	//		case strings.Contains(v, "restore"):
-	//			// restore dependencies
-	//			err = exec.Command(sysConf.GolangExecutable, "get", "-u").Run()
-	//			if err != nil {
-	//				fmt.Println("could not restore dependencies: " + err.Error())
-	//				return
-	//			}
-	//		case strings.Contains(v, "test"):
-	//			// tests and bench tests don't really matter for now
-	//			err = exec.Command(sysConf.GolangExecutable, "test").Run()
-	//			if err != nil {
-	//				fmt.Println("could not restore dependencies: " + err.Error())
-	//				return
-	//			}
-	//		case strings.Contains(v, "test bench"):
-	//			err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
-	//			if err != nil {
-	//				fmt.Println("could not restore dependencies: " + err.Error())
-	//				return
-	//			}
-	//		case strings.Contains(v, "build"):
-	//			var (
-	//				targetOS   string
-	//				targetArch string
-	//				targetArm  string
-	//			)
-	//
-	//			osArch := strings.Split(v, " ")[1]
-	//
-	//			// its sth like raspi
-	//			if !strings.Contains(osArch, "_") {
-	//				switch osArch {
-	//				case "raspi3":
-	//					targetOS = "linux"
-	//					targetArch = "arm"
-	//					targetArm = "5"
-	//				case "raspi4":
-	//					targetOS = "linux"
-	//					targetArch = "arm"
-	//					targetArm = "6"
-	//				}
-	//			} else {
-	//				parts := strings.Split(osArch, "_")
-	//				targetOS = parts[0]
-	//				targetArch = parts[1]
-	//			}
-	//
-	//			_ = os.Setenv("GOOS", targetOS)
-	//			_ = os.Setenv("GOARCH", targetArch)
-	//			_ = os.Setenv("GOARM", targetArm)
-	//			outputFile = fmt.Sprintf("../build/%s%s", repoName, fileExt[targetOS])
-	//			err = exec.Command(sysConf.GolangExecutable, "build", "-o", outputFile).Run()
-	//			if err != nil {
-	//				fmt.Println("could not build: " + err.Error())
-	//				return
-	//			}
-	//		}
-	//	}
-	//
-	//	if definition.DeploymentEnabled {
-	//		deployToHost(outputFile, definition)
-	//	}
-	//	// @TODO reset cwd?
-	//
-	//case "cs":
-	//case "csharp":
-	//	// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
-	//	// sysconfig!
-	//	// @TODO
-	//}
 
-	fmt.Println("build completed!")
+	fmt.Println("info received!") // set a proper response
 }
 
-func createBuildReport(definition buildDefinition, report string) {
-
-}
-
-func deployToHost(outputFile string, definition buildDefinition) {
-	for _, v := range definition.Deployments {
-		// first, the pre deployment actions
-		sshConfig := &ssh.ClientConfig{
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-			User:            v.Username,
-			Auth: []ssh.AuthMethod{
-				ssh.Password(v.Password),
-			},
-		}
-		sshClient, err := ssh.Dial("tcp", v.Host, sshConfig)
+func handleGolangProject(definition golangBuildDefinition, messageCh chan string, projectDir string) error {
+	var err error
+	if definition.RunTests {
+		err = definition.runTests(messageCh)
 		if err != nil {
-			fmt.Println("could not establish ssh connection:", err.Error())
-			return
+			messageCh <- "process cancelled by test run: " + err.Error()
+			return err
 		}
-
-		if len(v.PreDeploymentActions) > 0 {
-			for _, action := range v.PreDeploymentActions {
-				session, err := sshClient.NewSession()
-				if err != nil {
-					fmt.Printf("Failed to create session: %s\n", err.Error())
-					return
-				}
-				outp, err := session.Output(action)
-				if err != nil {
-					fmt.Println("could not execute pre deployment command: " + action)
-					//return
-				} else {
-					outpDisplay := string(outp)
-					if outpDisplay != "" {
-						fmt.Println("output from pre remote command:", outpDisplay)
-					}
-				}
-				_ = session.Close()
-			}
-		}
-
-		session, err := sshClient.NewSession()
-		if err != nil {
-			fmt.Printf("Failed to create session: %s\n", err.Error())
-			return
-		}
-
-		// then, the actual deployment
-		sftpClient, err := sftp.NewClient(sshClient)
-		if err != nil {
-			fmt.Println("could not create sftp client instance:", err.Error())
-			return
-		}
-
-		// create destination file
-		// @TODO really necessary?
-		dstFile, err := sftpClient.Create(v.WorkingDirectory)
-		if err != nil {
-			fmt.Println("failed to create remote file:", err.Error())
-			return
-		}
-
-		// create source file
-		srcFile, err := os.Open(outputFile)
-		if err != nil {
-			fmt.Println("failed to open source file:", err.Error())
-			return
-		}
-
-		// copy source file to destination file
-		bytes, err := io.Copy(dstFile, srcFile)
-		if err != nil {
-			fmt.Println("failed to copy file:", err.Error())
-			return
-		}
-		_ = dstFile.Close()
-		_ = srcFile.Close()
-		fmt.Printf("%d bytes copied\n", bytes)
-		_ = session.Close()
-
-		// then, the post deployment actions
-		if len(v.PostDeploymentActions) > 0 {
-			for _, action := range v.PostDeploymentActions {
-				session, err := sshClient.NewSession()
-				if err != nil {
-					fmt.Printf("Failed to create session: %s\n", err.Error())
-					return
-				}
-				outp, err := session.Output(action)
-				if err != nil {
-					fmt.Println("could not execute post deployment command:", action, "cause:", err.Error())
-					//return
-				} else {
-					outpDisplay := string(outp)
-					if outpDisplay != "" {
-						fmt.Println("output from post remote command:", outpDisplay)
-					}
-				}
-				_ = session.Close()
-			}
-		}
-
-		if sshClient != nil {
-			err = sshClient.Close()
-			if err != nil {
-				fmt.Println("could not close ssh client connection")
-				return
-			}
-		}
-
-		_ = sftpClient.Close()
 	}
+
+	if definition.RunBenchmarkTests {
+		err = definition.runBenchmarkTests(messageCh)
+		if err != nil {
+			messageCh <- "process cancelled by benchmark test run: " + err.Error()
+			return err
+		}
+	}
+
+	err = definition.buildArtifact(messageCh, projectDir)
+	if err != nil {
+		messageCh <- "process cancelled by artifact build: " + err.Error()
+		return err
+	}
+
+	if definition.ApplyMigrations {
+
+		//metaMigrationId := definition.MetaMigrationId
+
+		//err = definition.applyMigrations(messageCh)
+		//if err != nil {
+		//	messageCh <- "process cancelled by migration application: " + err.Error()
+		//	return err
+		//}
+	}
+
+	return nil
 }
 
-func getRepositoryUrl(d buildDefinition, withCredentials bool) string {
+func handleDotnetProject(definition dotnetBuildDefinition, messageCh chan string, projectDir string) error {
+
+	return nil
+}
+
+func handlePhpProject(definition phpBuildDefinition, messageCh chan string, projectDir string) error {
+
+	return nil
+}
+
+func handleRustProject(definition rustBuildDefinition, messageCh chan string, projectDir string) error {
+
+	return nil
+}
+
+
+//switch definition.ProjectType {
+//case "go":
+//case "golang":
+//	outputFile := ""
+//	for _, v := range definition.Actions {
+//		switch true {
+//		case strings.Contains(v, "restore"):
+//			// restore dependencies
+//			err = exec.Command(sysConf.GolangExecutable, "get", "-u").Run()
+//			if err != nil {
+//				fmt.Println("could not restore dependencies: " + err.Error())
+//				return
+//			}
+//		case strings.Contains(v, "test"):
+//			// tests and bench tests don't really matter for now
+//			err = exec.Command(sysConf.GolangExecutable, "test").Run()
+//			if err != nil {
+//				fmt.Println("could not restore dependencies: " + err.Error())
+//				return
+//			}
+//		case strings.Contains(v, "test bench"):
+//			err = exec.Command(sysConf.GolangExecutable, "test", "-bench=.").Run()
+//			if err != nil {
+//				fmt.Println("could not restore dependencies: " + err.Error())
+//				return
+//			}
+//		case strings.Contains(v, "build"):
+//			var (
+//				targetOS   string
+//				targetArch string
+//				targetArm  string
+//			)
+//
+//			osArch := strings.Split(v, " ")[1]
+//
+//			// its sth like raspi
+//			if !strings.Contains(osArch, "_") {
+//				switch osArch {
+//				case "raspi3":
+//					targetOS = "linux"
+//					targetArch = "arm"
+//					targetArm = "5"
+//				case "raspi4":
+//					targetOS = "linux"
+//					targetArch = "arm"
+//					targetArm = "6"
+//				}
+//			} else {
+//				parts := strings.Split(osArch, "_")
+//				targetOS = parts[0]
+//				targetArch = parts[1]
+//			}
+//
+//			_ = os.Setenv("GOOS", targetOS)
+//			_ = os.Setenv("GOARCH", targetArch)
+//			_ = os.Setenv("GOARM", targetArm)
+//			outputFile = fmt.Sprintf("../build/%s%s", repoName, fileExt[targetOS])
+//			err = exec.Command(sysConf.GolangExecutable, "build", "-o", outputFile).Run()
+//			if err != nil {
+//				fmt.Println("could not build: " + err.Error())
+//				return
+//			}
+//		}
+//	}
+//
+//	if definition.DeploymentEnabled {
+//		deployToHost(outputFile, definition)
+//	}
+//	// @TODO reset cwd?
+//
+//case "cs":
+//case "csharp":
+//	// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
+//	// sysconfig!
+//	// @TODO
+//}
+
+
+func saveBuildReport(definition buildDefinition, report string) {
+
+}
+
+func deployBinary() {
+
+}
+
+//func deployToHost(outputFile string, definition buildDefinition) {
+//	for _, v := range definition.Deployments {
+//		// first, the pre deployment actions
+//		sshConfig := &ssh.ClientConfig{
+//			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+//			User:            v.Username,
+//			Auth: []ssh.AuthMethod{
+//				ssh.Password(v.Password),
+//			},
+//		}
+//		sshClient, err := ssh.Dial("tcp", v.Host, sshConfig)
+//		if err != nil {
+//			fmt.Println("could not establish ssh connection:", err.Error())
+//			return
+//		}
+//
+//		if len(v.PreDeploymentActions) > 0 {
+//			for _, action := range v.PreDeploymentActions {
+//				session, err := sshClient.NewSession()
+//				if err != nil {
+//					fmt.Printf("Failed to create session: %s\n", err.Error())
+//					return
+//				}
+//				outp, err := session.Output(action)
+//				if err != nil {
+//					fmt.Println("could not execute pre deployment command: " + action)
+//					//return
+//				} else {
+//					outpDisplay := string(outp)
+//					if outpDisplay != "" {
+//						fmt.Println("output from pre remote command:", outpDisplay)
+//					}
+//				}
+//				_ = session.Close()
+//			}
+//		}
+//
+//		session, err := sshClient.NewSession()
+//		if err != nil {
+//			fmt.Printf("Failed to create session: %s\n", err.Error())
+//			return
+//		}
+//
+//		// then, the actual deployment
+//		sftpClient, err := sftp.NewClient(sshClient)
+//		if err != nil {
+//			fmt.Println("could not create sftp client instance:", err.Error())
+//			return
+//		}
+//
+//		// create destination file
+//		// @TODO really necessary?
+//		dstFile, err := sftpClient.Create(v.WorkingDirectory)
+//		if err != nil {
+//			fmt.Println("failed to create remote file:", err.Error())
+//			return
+//		}
+//
+//		// create source file
+//		srcFile, err := os.Open(outputFile)
+//		if err != nil {
+//			fmt.Println("failed to open source file:", err.Error())
+//			return
+//		}
+//
+//		// copy source file to destination file
+//		bytes, err := io.Copy(dstFile, srcFile)
+//		if err != nil {
+//			fmt.Println("failed to copy file:", err.Error())
+//			return
+//		}
+//		_ = dstFile.Close()
+//		_ = srcFile.Close()
+//		fmt.Printf("%d bytes copied\n", bytes)
+//		_ = session.Close()
+//
+//		// then, the post deployment actions
+//		if len(v.PostDeploymentActions) > 0 {
+//			for _, action := range v.PostDeploymentActions {
+//				session, err := sshClient.NewSession()
+//				if err != nil {
+//					fmt.Printf("Failed to create session: %s\n", err.Error())
+//					return
+//				}
+//				outp, err := session.Output(action)
+//				if err != nil {
+//					fmt.Println("could not execute post deployment command:", action, "cause:", err.Error())
+//					//return
+//				} else {
+//					outpDisplay := string(outp)
+//					if outpDisplay != "" {
+//						fmt.Println("output from post remote command:", outpDisplay)
+//					}
+//				}
+//				_ = session.Close()
+//			}
+//		}
+//
+//		if sshClient != nil {
+//			err = sshClient.Close()
+//			if err != nil {
+//				fmt.Println("could not close ssh client connection")
+//				return
+//			}
+//		}
+//
+//		_ = sftpClient.Close()
+//	}
+//}
+
+func getRepositoryUrl(bd buildDefinition, withCredentials bool) string {
 	var url string
 
-	switch d.RepoHoster {
+	switch bd.RepoHoster {
 	case "bitbucket":
-		url = "bitbucket.org/" + d.RepoFullname
+		url = "bitbucket.org/" + bd.RepoFullname
 		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", d.RepoUsername, d.RepoSecret, url)
+			url = fmt.Sprintf("%s:%s@%s", bd.RepoUsername, bd.RepoSecret, url)
 		}
 		return "https://" + url
 	case "github":
-		url = "github.com/" + d.RepoFullname
+		url = "github.com/" + bd.RepoFullname
 		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", d.RepoUsername, d.RepoSecret, url)
+			url = fmt.Sprintf("%s:%s@%s", bd.RepoUsername, bd.RepoSecret, url)
 		}
 		return "https://" + url
 	case "gitlab":
-		url = "gitlab.com/" + d.RepoFullname
+		url = "gitlab.com/" + bd.RepoFullname
 		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", d.RepoUsername, d.RepoSecret, url)
+			url = fmt.Sprintf("%s:%s@%s", bd.RepoUsername, bd.RepoSecret, url)
 		}
 		return "https://" + url
 	case "gitea":
-		url = d.RepoHosterUrl + "/" + d.RepoFullname
+		url = bd.RepoHosterUrl + "/" + bd.RepoFullname
 		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", d.RepoUsername, d.RepoSecret, url)
+			url = fmt.Sprintf("%s:%s@%s", bd.RepoUsername, bd.RepoSecret, url)
 		}
 		return "https://" + url
 
 	default:
-		url = d.RepoHosterUrl + "/" + d.RepoFullname
+		url = bd.RepoHosterUrl + "/" + bd.RepoFullname
 		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", d.RepoUsername, d.RepoSecret, url)
+			url = fmt.Sprintf("%s:%s@%s", bd.RepoUsername, bd.RepoSecret, url)
 		}
 		return "http://" + url // just http
 	}

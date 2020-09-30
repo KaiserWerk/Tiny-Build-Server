@@ -31,6 +31,8 @@ type configuration struct {
 type buildDefinition struct {
 	Id					int
 	BuildTargetId		int
+	BuildTargetOsArch	string
+	BuildTargetArm		int
 	AlteredBy			int
 	Caption				string
 	Enabled				bool
@@ -56,6 +58,7 @@ type buildExecution struct {
 	ManualRun			bool
 	ActionLog			string
 	Result				string
+	ArtifactPath		string
 	ExecutionTime		float64
 	ExecutedAt			time.Time
 }

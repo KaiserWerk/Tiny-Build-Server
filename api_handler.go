@@ -12,7 +12,7 @@ func payloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go
+	go startBuildProcess(bd)
 
 	w.Write([]byte(`{"status": "success", "message": "build execution initiated"}`))
 }
