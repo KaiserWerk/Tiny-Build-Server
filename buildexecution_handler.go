@@ -7,7 +7,6 @@ import (
 
 func buildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 
-
 	t := templates["buildexecution_list.html"]
 	if t != nil {
 		err := t.Execute(w, nil)
@@ -20,7 +19,6 @@ func buildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
-
 
 	t := templates["buildexecution_show.html"]
 	if t != nil {

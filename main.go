@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	version = "0.0.0" // inject at compile time
-	versionDate = "0000-00-00 00:00:00 +00:00" // inject at compile time
-	listenPort string
-	configFile string
+	version       = "0.0.0"                      // inject at compile time
+	versionDate   = "0000-00-00 00:00:00 +00:00" // inject at compile time
+	listenPort    string
+	configFile    string
 	centralConfig configuration
-	templates map[string]*template.Template
-	sessMgr *sessionstore.SessionManager
+	templates     map[string]*template.Template
+	sessMgr       *sessionstore.SessionManager
 )
 
 func main() {
@@ -39,8 +39,8 @@ func main() {
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 	funcMap := template.FuncMap{
 		"getBuildDefCaption": getBuildDefCaption,
-		"getUsernameById": getUsernameById,
-		"getFlashbag": getFlashbag(sessMgr),
+		"getUsernameById":    getUsernameById,
+		"getFlashbag":        getFlashbag(sessMgr),
 	}
 	templates = populateTemplates(funcMap)
 
@@ -56,7 +56,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.Use(limit)
-	router.NotFoundHandler = http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		t := templates["404.html"]
 		if t != nil {
@@ -68,7 +68,7 @@ func main() {
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID { tls.CurveP521, tls.CurveP384, tls.CurveP256 },
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		PreferServerCipherSuites: true,
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
@@ -192,17 +192,17 @@ func populateTemplates(fm template.FuncMap) map[string]*template.Template {
 	for _, fi := range fis {
 		f, err := os.Open(basePath + "/content/" + fi.Name())
 		if err != nil {
-			panic("failed to open template '"+fi.Name()+"': " + err.Error())
+			panic("failed to open template '" + fi.Name() + "': " + err.Error())
 		}
 		content, err := ioutil.ReadAll(f)
 		if err != nil {
-			panic("failed to read content from file '"+fi.Name()+"': " + err.Error())
+			panic("failed to read content from file '" + fi.Name() + "': " + err.Error())
 		}
 		_ = f.Close()
 		tmpl := template.Must(layout.Clone())
 		_, err = tmpl.Parse(string(content))
 		if err != nil {
-			panic("failed to parse contents of file '"+fi.Name()+"': " + err.Error())
+			panic("failed to parse contents of file '" + fi.Name() + "': " + err.Error())
 		}
 		result[fi.Name()] = tmpl
 	}

@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -76,9 +79,9 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 	}
 	// fetch the build definition
 	var bd buildDefinition
-	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, " +
-		"enabled, deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, " +
-		"repo_branch, altered_at, apply_migrations, database_dns, meta_migration_id, run_tests, run_benchmark_tests " +
+	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, "+
+		"enabled, deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, "+
+		"repo_branch, altered_at, apply_migrations, database_dns, meta_migration_id, run_tests, run_benchmark_tests "+
 		"FROM build_definition WHERE id = ?", id)
 	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
 		&bd.Enabled, &bd.DeploymentEnabled,
@@ -182,6 +185,11 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 	return bd, nil
 }
 
+func applyMigrations(definition buildDefinition, messageCh chan string, projectDir string) error {
+
+	return nil
+}
+
 //func loadSysConfig() (sysConfig, error) {
 //	cont, err := ioutil.ReadFile("config/app.yaml")
 //	if err != nil {
@@ -271,17 +279,14 @@ You found the chicken. Hooray!`
 //	return bd, nil
 //}
 
-
-
 func startBuildProcess(definition buildDefinition) {
-
 	// instantiate tools for build output
 	var sb strings.Builder
 	messageCh := make(chan string, 100)
 	go func() {
 		for {
 			select {
-			case s, ok := <- messageCh:
+			case s, ok := <-messageCh:
 				if ok {
 					sb.WriteString(s)
 				}
@@ -300,7 +305,7 @@ func startBuildProcess(definition buildDefinition) {
 	if fileExists(projectPath) {
 		err := os.RemoveAll(projectPath)
 		if err != nil {
-			messageCh <- "could not remove stale project directory ("+ projectPath +"): " + err.Error()
+			messageCh <- "could not remove stale project directory (" + projectPath + "): " + err.Error()
 			saveBuildReport(definition, sb.String())
 			return
 		}
@@ -343,48 +348,69 @@ func startBuildProcess(definition buildDefinition) {
 		messageCh <- string(cmdOutput)
 	}
 
+	//db, err := getDbConnection()
+	//if err != nil {
+	//
+	//}
+
 	// determine project type (build target)
 	switch definition.BuildTargetId {
 	case 1: // golang
-		err = handleGolangProject(golangBuildDefinition(definition), messageCh, projectPath)
+		_, err := handleGolangProject(golangBuildDefinition(definition), messageCh, projectPath)
+		if err != nil {
+			messageCh <- "could not build golang project (" + projectPath + ")"
+		} else {
+			// set artifact
 
+			// deploy artifact to any host
+			//err = deployArtifact(definition, artifact)
+		}
 	case 2: // dotnet
 		err = handleDotnetProject(dotnetBuildDefinition(definition), messageCh, projectPath)
+		if err != nil {
+			messageCh <- "could not build dotnet project (" + projectPath + ")"
+		}
 	case 3: // php
 		err = handlePhpProject(phpBuildDefinition(definition), messageCh, projectPath)
+		if err != nil {
+			messageCh <- "could not build php project (" + projectPath + ")"
+		}
 	case 4: // rust
 		err = handleRustProject(rustBuildDefinition(definition), messageCh, projectPath)
+		if err != nil {
+			messageCh <- "could not build rust project (" + projectPath + ")"
+		}
 	}
 
+	saveBuildReport(definition, sb.String())
 	fmt.Println("info received!") // set a proper response
 }
 
-func handleGolangProject(definition golangBuildDefinition, messageCh chan string, projectDir string) error {
+func handleGolangProject(definition golangBuildDefinition, messageCh chan string, projectDir string) (string, error) {
 	var err error
 	if definition.RunTests {
 		err = definition.runTests(messageCh)
 		if err != nil {
-			messageCh <- "process cancelled by test run: " + err.Error()
-			return err
+			//messageCh <- "process cancelled by test run: " + err.Error()
+			return "", err
 		}
 	}
 
 	if definition.RunBenchmarkTests {
 		err = definition.runBenchmarkTests(messageCh)
 		if err != nil {
-			messageCh <- "process cancelled by benchmark test run: " + err.Error()
-			return err
+			//messageCh <- "process cancelled by benchmark test run: " + err.Error()
+			return "", err
 		}
 	}
 
-	err = definition.buildArtifact(messageCh, projectDir)
+	artifact, err := definition.buildArtifact(messageCh, projectDir)
 	if err != nil {
-		messageCh <- "process cancelled by artifact build: " + err.Error()
-		return err
+		//messageCh <- "build failed: " + err.Error()
+		return "", err
 	}
 
 	if definition.ApplyMigrations {
-
 		//metaMigrationId := definition.MetaMigrationId
 
 		//err = definition.applyMigrations(messageCh)
@@ -394,7 +420,38 @@ func handleGolangProject(definition golangBuildDefinition, messageCh chan string
 		//}
 	}
 
-	return nil
+	db, err := getDbConnection()
+	if err != nil {
+		messageCh <- "could not establish database connection: " + err.Error()
+		return "", err
+	}
+
+	var depList []deploymentDefinition
+	var dep deploymentDefinition
+	rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, " +
+		"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition " +
+		"WHERE build_definition_id = ?", definition.Id)
+	if err != nil {
+		messageCh <- "could not fetch deployment definitions for build definition: " + err.Error()
+		return "", err
+	}
+	for rows.Next() {
+		err = rows.Scan(&dep.Id, &dep.BuildDefinitionId, &dep.Caption, &dep.Host, &dep.Username, &dep.Password,
+			&dep.ConnectionType, &dep.WorkingDirectory, &dep.PreDeploymentActions, &dep.PostDeploymentActions)
+		if err != nil {
+			messageCh <- "could not scan row"
+			continue
+		}
+		depList = append(depList, dep)
+		dep = deploymentDefinition{}
+	}
+
+	if len(depList) > 0 && definition.DeploymentEnabled {
+		err = deployArtifact(depList, messageCh, artifact)
+	}
+
+
+	return artifact, nil
 }
 
 func handleDotnetProject(definition dotnetBuildDefinition, messageCh chan string, projectDir string) error {
@@ -411,7 +468,6 @@ func handleRustProject(definition rustBuildDefinition, messageCh chan string, pr
 
 	return nil
 }
-
 
 //switch definition.ProjectType {
 //case "go":
@@ -490,124 +546,121 @@ func handleRustProject(definition rustBuildDefinition, messageCh chan string, pr
 //	// @TODO
 //}
 
-
 func saveBuildReport(definition buildDefinition, report string) {
 
 }
 
-func deployBinary() {
+func deployArtifact(deploymentDefinitions []deploymentDefinition, messageCh chan string, artifact string) error {
+	for _, deployment := range deploymentDefinitions {
+		// first, the pre deployment actions
+		sshConfig := &ssh.ClientConfig{
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			User:            deployment.Username,
+			Auth: []ssh.AuthMethod{
+				ssh.Password(deployment.Password),
+			},
+		}
+		sshClient, err := ssh.Dial("tcp", deployment.Host, sshConfig)
+		if err != nil {
+			return err
+		}
 
+		var preDeploymentActions []string
+		if deployment.PreDeploymentActions != "" {
+			preDeploymentActions = strings.Split(deployment.PreDeploymentActions,"\n")
+		}
+
+		if len(preDeploymentActions) > 0 {
+			for _, action := range preDeploymentActions {
+				session, err := sshClient.NewSession()
+				if err != nil {
+					return err
+				}
+				outp, err := session.Output(action)
+				if err != nil {
+					return err
+				} else {
+					outpDisplay := string(outp)
+					if outpDisplay != "" {
+						fmt.Println("output from pre remote command:", outpDisplay)
+					}
+				}
+				_ = session.Close()
+			}
+		}
+
+		session, err := sshClient.NewSession()
+		if err != nil {
+			return err
+		}
+
+		// then, the actual deployment
+		sftpClient, err := sftp.NewClient(sshClient)
+		if err != nil {
+			return err
+		}
+
+		// create destination file
+		// @TODO really necessary?
+		dstFile, err := sftpClient.Create(deployment.WorkingDirectory)
+		if err != nil {
+			return err
+		}
+
+		// create source file
+		srcFile, err := os.Open(artifact)
+		if err != nil {
+			return err
+		}
+
+		// copy source file to destination file
+		bytes, err := io.Copy(dstFile, srcFile)
+		if err != nil {
+			return err
+		}
+		_ = dstFile.Close()
+		_ = srcFile.Close()
+		fmt.Printf("%d bytes copied\n", bytes)
+		_ = session.Close()
+
+		// then, the post deployment actions
+
+		var postDeploymentActions []string
+		if deployment.PostDeploymentActions != "" {
+			postDeploymentActions = strings.Split(deployment.PostDeploymentActions,"\n")
+		}
+
+		if len(postDeploymentActions) > 0 {
+			for _, action := range postDeploymentActions {
+				session, err := sshClient.NewSession()
+				if err != nil {
+					return err
+				}
+				outp, err := session.Output(action)
+				if err != nil {
+					return err
+				} else {
+					outpDisplay := string(outp)
+					if outpDisplay != "" {
+						fmt.Println("output from post remote command:", outpDisplay)
+					}
+				}
+				_ = session.Close()
+			}
+		}
+
+		if sshClient != nil {
+			err = sshClient.Close()
+			if err != nil {
+				return err
+			}
+		}
+
+		_ = sftpClient.Close()
+	}
+
+	return nil
 }
-
-//func deployToHost(outputFile string, definition buildDefinition) {
-//	for _, v := range definition.Deployments {
-//		// first, the pre deployment actions
-//		sshConfig := &ssh.ClientConfig{
-//			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-//			User:            v.Username,
-//			Auth: []ssh.AuthMethod{
-//				ssh.Password(v.Password),
-//			},
-//		}
-//		sshClient, err := ssh.Dial("tcp", v.Host, sshConfig)
-//		if err != nil {
-//			fmt.Println("could not establish ssh connection:", err.Error())
-//			return
-//		}
-//
-//		if len(v.PreDeploymentActions) > 0 {
-//			for _, action := range v.PreDeploymentActions {
-//				session, err := sshClient.NewSession()
-//				if err != nil {
-//					fmt.Printf("Failed to create session: %s\n", err.Error())
-//					return
-//				}
-//				outp, err := session.Output(action)
-//				if err != nil {
-//					fmt.Println("could not execute pre deployment command: " + action)
-//					//return
-//				} else {
-//					outpDisplay := string(outp)
-//					if outpDisplay != "" {
-//						fmt.Println("output from pre remote command:", outpDisplay)
-//					}
-//				}
-//				_ = session.Close()
-//			}
-//		}
-//
-//		session, err := sshClient.NewSession()
-//		if err != nil {
-//			fmt.Printf("Failed to create session: %s\n", err.Error())
-//			return
-//		}
-//
-//		// then, the actual deployment
-//		sftpClient, err := sftp.NewClient(sshClient)
-//		if err != nil {
-//			fmt.Println("could not create sftp client instance:", err.Error())
-//			return
-//		}
-//
-//		// create destination file
-//		// @TODO really necessary?
-//		dstFile, err := sftpClient.Create(v.WorkingDirectory)
-//		if err != nil {
-//			fmt.Println("failed to create remote file:", err.Error())
-//			return
-//		}
-//
-//		// create source file
-//		srcFile, err := os.Open(outputFile)
-//		if err != nil {
-//			fmt.Println("failed to open source file:", err.Error())
-//			return
-//		}
-//
-//		// copy source file to destination file
-//		bytes, err := io.Copy(dstFile, srcFile)
-//		if err != nil {
-//			fmt.Println("failed to copy file:", err.Error())
-//			return
-//		}
-//		_ = dstFile.Close()
-//		_ = srcFile.Close()
-//		fmt.Printf("%d bytes copied\n", bytes)
-//		_ = session.Close()
-//
-//		// then, the post deployment actions
-//		if len(v.PostDeploymentActions) > 0 {
-//			for _, action := range v.PostDeploymentActions {
-//				session, err := sshClient.NewSession()
-//				if err != nil {
-//					fmt.Printf("Failed to create session: %s\n", err.Error())
-//					return
-//				}
-//				outp, err := session.Output(action)
-//				if err != nil {
-//					fmt.Println("could not execute post deployment command:", action, "cause:", err.Error())
-//					//return
-//				} else {
-//					outpDisplay := string(outp)
-//					if outpDisplay != "" {
-//						fmt.Println("output from post remote command:", outpDisplay)
-//					}
-//				}
-//				_ = session.Close()
-//			}
-//		}
-//
-//		if sshClient != nil {
-//			err = sshClient.Close()
-//			if err != nil {
-//				fmt.Println("could not close ssh client connection")
-//				return
-//			}
-//		}
-//
-//		_ = sftpClient.Close()
-//	}
-//}
 
 func getRepositoryUrl(bd buildDefinition, withCredentials bool) string {
 	var url string

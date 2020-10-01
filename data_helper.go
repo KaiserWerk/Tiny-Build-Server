@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var golangRuntime = []string {
+var golangRuntime = []string{
 	"aix/ppc64",
 	"android/386",
 	"android/amd64",
@@ -52,7 +52,7 @@ var golangRuntime = []string {
 	"windows/amd64",
 	"windows/arm",
 }
-var dotnetRuntime = []string {
+var dotnetRuntime = []string{
 	"win-x64",
 	"win-x86",
 	"win-arm",
@@ -323,7 +323,7 @@ func getBuildStepsForTarget(id int) ([]buildStep, error) {
 	defer db.Close()
 
 	var bsList []buildStep
-	rows, err := db.Query("SELECT id, build_target_id, caption, command, enabled FROM build_step WHERE " +
+	rows, err := db.Query("SELECT id, build_target_id, caption, command, enabled FROM build_step WHERE "+
 		"enabled = 1 AND build_target_id = ?",
 		id)
 	if err != nil {

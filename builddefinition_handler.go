@@ -30,14 +30,14 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	type preparedBuildDefinition struct {
-		Id					int
-		Caption				string
-		Target				string
-		Executions			int
-		RepoHost			string
-		RepoName			string
-		Enabled				bool
-		DeploymentEnabled	bool
+		Id                int
+		Caption           string
+		Target            string
+		Executions        int
+		RepoHost          string
+		RepoName          string
+		Enabled           bool
+		DeploymentEnabled bool
 	}
 
 	var bdList []preparedBuildDefinition
@@ -64,11 +64,11 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser			user
-		BuildDefinitions	[]preparedBuildDefinition
+		CurrentUser      user
+		BuildDefinitions []preparedBuildDefinition
 	}{
-		CurrentUser: 		currentUser,
-		BuildDefinitions: 	bdList,
+		CurrentUser:      currentUser,
+		BuildDefinitions: bdList,
 	}
 
 	t := templates["builddefinition_list.html"]
@@ -127,8 +127,8 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		action := r.FormValue("action")
 
-		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, " +
-			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, " +
+		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, "+
+			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, "+
 			"repo_branch, altered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			targetId, currentUser.Id, caption, enabled, 0, repoHoster, repoHosterUrl, repoFullname, repoUsername,
 			repoSecret, repoBranch, time.Now())
@@ -164,7 +164,7 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		if action == "save_depl" {
 			writeToConsole("redirect to edit deployments")
-			http.Redirect(w, r, "/builddefinition/" + strconv.Itoa(int(liid)) + "/edit?tab=deployments", http.StatusSeeOther)
+			http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
 			return
 		}
 
@@ -186,15 +186,15 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser 			user
-		BuildTargets			[]buildTarget
-		SelectedTarget			int
-		AvailableBuildSteps		[]buildStep
-	} {
-		CurrentUser: 			currentUser,
-		BuildTargets:   		btList,
-		SelectedTarget: 		selectedTarget,
-		AvailableBuildSteps: 	bsList,
+		CurrentUser         user
+		BuildTargets        []buildTarget
+		SelectedTarget      int
+		AvailableBuildSteps []buildStep
+	}{
+		CurrentUser:         currentUser,
+		BuildTargets:        btList,
+		SelectedTarget:      selectedTarget,
+		AvailableBuildSteps: bsList,
 	}
 
 	t := templates["builddefinition_add.html"]
@@ -236,9 +236,9 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var bdt buildDefinition
-	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, " +
-		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, " +
-		"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests " +
+	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
+		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
+		"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
 		"FROM build_definition WHERE id = ?", vars["id"])
 	err = row.Scan(&bdt.Id, &bdt.BuildTargetId, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
 		&bdt.RepoHoster, &bdt.RepoHosterUrl, &bdt.RepoFullname, &bdt.RepoUsername, &bdt.RepoSecret, &bdt.RepoBranch,
@@ -251,17 +251,16 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	selectedTab := r.URL.Query().Get("tab")
 
 	data := struct {
-		CurrentUser					user
-		SelectedBuildDefinition		buildDefinition
-		SelectedTab					string
+		CurrentUser             user
+		SelectedBuildDefinition buildDefinition
+		SelectedTab             string
 	}{
-		CurrentUser:             	currentUser,
-		SelectedBuildDefinition: 	bdt,
-		SelectedTab:             	selectedTab,
+		CurrentUser:             currentUser,
+		SelectedBuildDefinition: bdt,
+		SelectedTab:             selectedTab,
 	}
 
 	t := templates["builddefinition_edit.html"]
@@ -298,7 +297,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	var bd buildDefinition
-	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, repo_hoster, " +
+	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
 		"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
 	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
 		&bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt, &bd.MetaMigrationId)
@@ -310,7 +309,7 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	var be buildExecution
 	var beList = make([]buildExecution, 0)
-	rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE " +
+	rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE "+
 		"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
 	if err != nil {
 		writeToConsole("could not fetch most recent build executions: " + err.Error())
@@ -355,23 +354,23 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		BuildDefinition buildDefinition
-		RecentExecutions []buildExecution
-		CurrentUser user
-		TotalBuildCount int
-		FailedBuildCount int
+		BuildDefinition   buildDefinition
+		RecentExecutions  []buildExecution
+		CurrentUser       user
+		TotalBuildCount   int
+		FailedBuildCount  int
 		SuccessBuildCount int
-		SuccessRate	string
-		AvgRuntime string
-	} {
-		BuildDefinition: bd,
-		RecentExecutions: recentExecutions,
-		CurrentUser: currentUser,
-		TotalBuildCount: len(beList),
-		FailedBuildCount: failedBuildCount,
+		SuccessRate       string
+		AvgRuntime        string
+	}{
+		BuildDefinition:   bd,
+		RecentExecutions:  recentExecutions,
+		CurrentUser:       currentUser,
+		TotalBuildCount:   len(beList),
+		FailedBuildCount:  failedBuildCount,
 		SuccessBuildCount: successBuildCount,
-		SuccessRate: fmt.Sprintf("%.2f", successRate),
-		AvgRuntime: fmt.Sprintf("%.2f", avg),
+		SuccessRate:       fmt.Sprintf("%.2f", successRate),
+		AvgRuntime:        fmt.Sprintf("%.2f", avg),
 	}
 
 	t := templates["builddefinition_show.html"]
@@ -415,8 +414,8 @@ func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var buildDefinitionTemp buildDefinition
-	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, " +
-		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, " +
+	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
+		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
 		"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
 	err = row.Scan(&buildDefinitionTemp.Id, &buildDefinitionTemp.BuildTargetId, &buildDefinitionTemp.AlteredBy,
 		&buildDefinitionTemp.Caption, &buildDefinitionTemp.Enabled, &buildDefinitionTemp.DeploymentEnabled,
@@ -430,11 +429,11 @@ func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser					user
-		BuildDefinition		buildDefinition
-	} {
-		CurrentUser: 				currentUser,
-		BuildDefinition:    buildDefinitionTemp,
+		CurrentUser     user
+		BuildDefinition buildDefinition
+	}{
+		CurrentUser:     currentUser,
+		BuildDefinition: buildDefinitionTemp,
 	}
 
 	t := templates["builddefinition_remove.html"]

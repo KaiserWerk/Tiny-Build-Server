@@ -3,8 +3,8 @@ package main
 import "time"
 
 type adminSetting struct {
-	Name		string
-	Value		string
+	Name  string
+	Value string
 }
 
 type user struct {
@@ -17,70 +17,83 @@ type user struct {
 }
 
 type configuration struct {
-	Database struct{
-		Driver	string	`yaml:"driver"`
-		DSN		string	`yaml:"dsn"`
+	Database struct {
+		Driver string `yaml:"driver"`
+		DSN    string `yaml:"dsn"`
 	} `yaml:"database"`
-	Tls struct{
-		Enabled		bool	`yaml:"enabled"`
-		CertFile	string	`yaml:"certfile"`
-		KeyFile		string	`yaml:"keyfile"`
+	Tls struct {
+		Enabled  bool   `yaml:"enabled"`
+		CertFile string `yaml:"certfile"`
+		KeyFile  string `yaml:"keyfile"`
 	}
 }
 
 type buildDefinition struct {
-	Id					int
-	BuildTargetId		int
-	BuildTargetOsArch	string
-	BuildTargetArm		int
-	AlteredBy			int
-	Caption				string
-	Enabled				bool
-	DeploymentEnabled	bool
-	RepoHoster			string
-	RepoHosterUrl		string
-	RepoFullname		string
-	RepoUsername		string
-	RepoSecret			string
-	RepoBranch			string
-	AlteredAt			time.Time
-	ApplyMigrations		bool
-	DatabaseDSN			string
-	MetaMigrationId		int
-	RunTests			bool
-	RunBenchmarkTests	bool
+	Id                int
+	BuildTargetId     int
+	BuildTargetOsArch string
+	BuildTargetArm    int
+	AlteredBy         int
+	Caption           string
+	Enabled           bool
+	DeploymentEnabled bool
+	RepoHoster        string
+	RepoHosterUrl     string
+	RepoFullname      string
+	RepoUsername      string
+	RepoSecret        string
+	RepoBranch        string
+	AlteredAt         time.Time
+	ApplyMigrations   bool
+	DatabaseDSN       string
+	MetaMigrationId   int
+	RunTests          bool
+	RunBenchmarkTests bool
 }
 
 type buildExecution struct {
-	Id					int
-	BuildDefinitionId	int
-	InitiatedBy			int
-	ManualRun			bool
-	ActionLog			string
-	Result				string
-	ArtifactPath		string
-	ExecutionTime		float64
-	ExecutedAt			time.Time
+	Id                int
+	BuildDefinitionId int
+	InitiatedBy       int
+	ManualRun         bool
+	ActionLog         string
+	Result            string
+	ArtifactPath      string
+	ExecutionTime     float64
+	ExecutedAt        time.Time
 }
 
 type definitionStepTaxonomy struct {
-	Id					int
-	BuildDefinitionId	int
-	BuildStepId			int
-	Enabled				bool
+	Id                int
+	BuildDefinitionId int
+	BuildStepId       int
+	Enabled           bool
 }
 
 type buildStep struct {
-	Id					int
-	BuildTargetId		int
-	Caption				string
-	Command				string
-	Enabled				bool
+	Id            int
+	BuildTargetId int
+	Caption       string
+	Command       string
+	Enabled       bool
 }
 
 type buildTarget struct {
 	Id          int
 	Description string
+}
+
+type deploymentDefinition struct {
+	Id                    int
+	BuildDefinitionId     int
+	Caption               string
+	Host                  string
+	Username              string
+	Password              string
+	ConnectionType        string
+	WorkingDirectory      string
+	PreDeploymentActions  string
+	PostDeploymentActions string
 }
 
 type bitBucketPushPayload struct {

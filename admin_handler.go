@@ -126,7 +126,7 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	contextData := struct {
-		CurrentUser user
+		CurrentUser   user
 		AdminSettings map[string]string
 	}{
 		currentUser,
@@ -186,11 +186,11 @@ func adminBuildTargetListHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	data := struct {
-		CurrentUser 	user
-		BuildTargets	[]buildTarget
+		CurrentUser  user
+		BuildTargets []buildTarget
 	}{
-		CurrentUser:  	currentUser,
-		BuildTargets: 	btList,
+		CurrentUser:  currentUser,
+		BuildTargets: btList,
 	}
 
 	t := templates["admin_buildtarget_list.html"]
@@ -246,8 +246,8 @@ func adminBuildTargetAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser		user
-	} {
+		CurrentUser user
+	}{
 		CurrentUser: currentUser,
 	}
 
@@ -312,9 +312,9 @@ func adminBuildTargetEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser		user
-		BuildTarget		buildTarget
-	} {
+		CurrentUser user
+		BuildTarget buildTarget
+	}{
 		CurrentUser: currentUser,
 		BuildTarget: bt,
 	}
@@ -362,9 +362,9 @@ func adminBuildTargetRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	//defer db.Close()
 
 	data := struct {
-		CurrentUser		user
+		CurrentUser user
 	}{
-		CurrentUser: 	currentUser,
+		CurrentUser: currentUser,
 	}
 
 	t := templates["admin_buildtarget_remove.html"]
@@ -424,11 +424,11 @@ func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type preparedBuildStep struct {
-		Id					int
-		Description			string
-		Caption				string
-		Command				string
-		Enabled				bool
+		Id          int
+		Description string
+		Caption     string
+		Command     string
+		Enabled     bool
 	}
 
 	var bsList []preparedBuildStep
@@ -436,7 +436,7 @@ func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
 	var rowsBs *sql.Rows
 	target := r.URL.Query().Get("target")
 	if target != "" {
-		rowsBs, err = db.Query("SELECT bs.id, bt.description, bs.caption, bs.command, bs.enabled FROM build_step bs, " +
+		rowsBs, err = db.Query("SELECT bs.id, bt.description, bs.caption, bs.command, bs.enabled FROM build_step bs, "+
 			"build_target bt WHERE bs.build_target_id = bt.id AND build_target_id = ?", target)
 	} else {
 		rowsBs, err = db.Query("SELECT bs.id, bt.description, bs.caption, bs.command, bs.enabled FROM build_step bs, " +
@@ -461,15 +461,15 @@ func adminBuildStepListHandler(w http.ResponseWriter, r *http.Request) {
 	targetId, _ := strconv.Atoi(target)
 
 	data := struct {
-		CurrentUser		user
-		BuildTargets	[]buildTarget
-		BuildSteps		[]preparedBuildStep
-		TargetId		int
+		CurrentUser  user
+		BuildTargets []buildTarget
+		BuildSteps   []preparedBuildStep
+		TargetId     int
 	}{
-		CurrentUser: 	currentUser,
-		BuildTargets: 	btList,
-		BuildSteps: 	bsList,
-		TargetId: 		targetId,
+		CurrentUser:  currentUser,
+		BuildTargets: btList,
+		BuildSteps:   bsList,
+		TargetId:     targetId,
 	}
 
 	t := templates["admin_buildstep_list.html"]
@@ -554,11 +554,11 @@ func adminBuildStepAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser		user
-		BuildTargets	[]buildTarget
+		CurrentUser  user
+		BuildTargets []buildTarget
 	}{
-		CurrentUser: 	currentUser,
-		BuildTargets: 	btList,
+		CurrentUser:  currentUser,
+		BuildTargets: btList,
 	}
 
 	t := templates["admin_buildstep_add.html"]
@@ -613,7 +613,7 @@ func adminBuildStepEditHandler(w http.ResponseWriter, r *http.Request) {
 
 		if caption == "" || command == "" {
 			sessMgr.AddMessage("error", "You must supply a caption and a command.")
-			http.Redirect(w, r, "/admin/buildstep/" + id + "/edit", http.StatusSeeOther)
+			http.Redirect(w, r, "/admin/buildstep/"+id+"/edit", http.StatusSeeOther)
 			return
 		}
 
@@ -657,15 +657,15 @@ func adminBuildStepEditHandler(w http.ResponseWriter, r *http.Request) {
 	tid, _ := strconv.Atoi(vars["id"])
 
 	data := struct {
-		CurrentUser		user
-		BuildTargets	[]buildTarget
-		BuildStep		buildStep
-		TargetId		int
+		CurrentUser  user
+		BuildTargets []buildTarget
+		BuildStep    buildStep
+		TargetId     int
 	}{
-		CurrentUser: 	currentUser,
-		BuildTargets: 	btList,
-		BuildStep: 		bs,
-		TargetId: 		tid,
+		CurrentUser:  currentUser,
+		BuildTargets: btList,
+		BuildStep:    bs,
+		TargetId:     tid,
 	}
 
 	t := templates["admin_buildstep_edit.html"]
@@ -691,4 +691,3 @@ func adminBuildStepRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
-

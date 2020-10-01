@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := checkLogin(r)
 	if err != nil {
@@ -49,12 +48,3 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
-
-
-
-
-
-
-
-
-

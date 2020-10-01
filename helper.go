@@ -39,7 +39,7 @@ func getDbConnection() (*sql.DB, error) {
 func getConfiguration() configuration {
 	cont, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		panic("Could not read configuration file '"+configFile+"': " + err.Error())
+		panic("Could not read configuration file '" + configFile + "': " + err.Error())
 	}
 
 	var cfg configuration
@@ -90,5 +90,3 @@ func checkLogin(r *http.Request) (sessionstore.Session, error) {
 
 	return session, nil
 }
-
-
