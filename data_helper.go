@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var golangRuntime = []string{
+var golangRuntimes = []string{
 	"aix/ppc64",
 	"android/386",
 	"android/amd64",
@@ -52,7 +52,7 @@ var golangRuntime = []string{
 	"windows/amd64",
 	"windows/arm",
 }
-var dotnetRuntime = []string{
+var dotnetRuntimes = []string{
 	"win-x64",
 	"win-x86",
 	"win-arm",
@@ -168,8 +168,8 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 		return beList, err
 	}
 	defer db.Close()
-	query := "SELECT id, build_definition_id, initiated_by, manual_run, action_log, result, execution_time, " +
-		"executed_at FROM build_execution ORDER BY executed_at DESC"
+	query := "SELECT id, build_definition_id, initiated_by, manual_run, action_log, result, artifact_path, " +
+		"execution_time, executed_at FROM build_execution ORDER BY executed_at DESC"
 	if limit > 0 {
 		query += " LIMIT " + strconv.Itoa(limit)
 	}

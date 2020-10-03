@@ -33,6 +33,7 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		Id                int
 		Caption           string
 		Target            string
+		TargetOsArch	string
 		Executions        int
 		RepoHost          string
 		RepoName          string
@@ -42,9 +43,9 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 
 	var bdList []preparedBuildDefinition
 	var bd preparedBuildDefinition
-	rows, err := db.Query("SELECT bd.id, bd.caption, bt.description AS target, COUNT(be.id), bd.repo_hoster," +
-		" bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd, build_target bt, build_execution " +
-		"be WHERE bd.build_target_id = bt.id GROUP BY bd.id")
+	rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target, bd.build_target_os_arch, COUNT(be.id), " +
+		"bd.repo_hoster, bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd LEFT JOIN " +
+		"build_execution be ON be.build_definition_id = bd.id GROUP BY bd.id ORDER BY bd.caption")
 	if err != nil {
 		writeToConsole("could not query build definitions in buildDefinitionListHandler: " + err.Error())
 		w.WriteHeader(500)
@@ -52,8 +53,8 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.Executions, &bd.RepoHost, &bd.RepoName, &bd.Enabled,
-			&bd.DeploymentEnabled)
+		err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.TargetOsArch, &bd.Executions, &bd.RepoHost,
+			&bd.RepoName, &bd.Enabled, &bd.DeploymentEnabled)
 		if err != nil {
 			writeToConsole("could not scan buildDefinition in buildDefinitionListHandler: " + err.Error())
 			w.WriteHeader(500)
@@ -103,12 +104,12 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	btList, err := getBuildTargets()
-	if err != nil {
-		writeToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
-		w.WriteHeader(500)
-		return
-	}
+	//btList, err := getBuildTargets()
+	//if err != nil {
+	//	writeToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
+	//	w.WriteHeader(500)
+	//	return
+	//}
 
 	if r.Method == http.MethodPost {
 		targetId := r.FormValue("target_id")
@@ -125,13 +126,28 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		repoSecret := r.FormValue("repo_secret")
 		repoBranch := r.FormValue("repo_branch")
 
+		var applyMigrations bool
+		if r.FormValue("apply_migrations") == "1" {
+			applyMigrations = true
+		}
+		databaseDsn := r.FormValue("database_dsn")
+		var runTests bool
+		if r.FormValue("run_tests") == "1" {
+			runTests = true
+		}
+		var runBenchmarkTests bool
+		if r.FormValue("run_benchmark_tests") == "1" {
+			runBenchmarkTests = true
+		}
+
 		action := r.FormValue("action")
 
 		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, "+
 			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, "+
-			"repo_branch, altered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			"repo_branch, altered_at, apply_migrations, database_dsn, run_tests, run_benchmark_tests) " +
+			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			targetId, currentUser.Id, caption, enabled, 0, repoHoster, repoHosterUrl, repoFullname, repoUsername,
-			repoSecret, repoBranch, time.Now())
+			repoSecret, repoBranch, time.Now(), applyMigrations, databaseDsn, runTests, runBenchmarkTests)
 		if err != nil {
 			writeToConsole("could not insert build definition in buildDefinitionAddHandler: " + err.Error())
 			w.WriteHeader(500)
@@ -144,23 +160,13 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = r.ParseForm() // Required if you don't call r.FormValue()
-		if err != nil {
-			writeToConsole("could not parse form in buildDefinitionAddHandler: " + err.Error())
-			w.WriteHeader(500)
-			return
-		}
+		//err = r.ParseForm() // Required if you don't call r.FormValue()
+		//if err != nil {
+		//	writeToConsole("could not parse form in buildDefinitionAddHandler: " + err.Error())
+		//	w.WriteHeader(500)
+		//	return
+		//}
 
-		// add build step references to newly inserted build definition
-		buildSteps := r.Form["build_steps"]
-		for _, v := range buildSteps {
-			_, err = db.Exec("INSERT INTO definition_step_taxonomy (build_definition_id, build_step_id) VALUES (?, ?)",
-				liid, v)
-			if err != nil {
-				writeToConsole("could not insert taxonomy entry in buildDefinitionAddHandler: " + err.Error())
-				continue
-			}
-		}
 
 		if action == "save_depl" {
 			writeToConsole("redirect to edit deployments")
@@ -178,23 +184,26 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		selectedTarget, _ = strconv.Atoi(temp)
 	}
 
-	bsList, err := getBuildStepsForTarget(selectedTarget)
-	if err != nil {
-		writeToConsole("could not fetch buildSteps in buildDefinitionAddHandler: " + err.Error())
-		w.WriteHeader(500)
-		return
+	var runtimes []string
+	switch selectedTarget {
+	case 1:
+		runtimes = golangRuntimes
+	case 2:
+		runtimes = dotnetRuntimes
+	case 3:
+		// php does not have runtimes
+	case 4:
+		// rust + cross-compile? would be nice
 	}
 
 	data := struct {
 		CurrentUser         user
-		BuildTargets        []buildTarget
 		SelectedTarget      int
-		AvailableBuildSteps []buildStep
+		AvailableRuntimes   []string
 	}{
-		CurrentUser:         currentUser,
-		BuildTargets:        btList,
-		SelectedTarget:      selectedTarget,
-		AvailableBuildSteps: bsList,
+		CurrentUser:       currentUser,
+		SelectedTarget:    selectedTarget,
+		AvailableRuntimes: runtimes,
 	}
 
 	t := templates["builddefinition_add.html"]
@@ -236,7 +245,7 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var bdt buildDefinition
-	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
+	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, "+
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
 		"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
 		"FROM build_definition WHERE id = ?", vars["id"])
@@ -253,14 +262,28 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	selectedTab := r.URL.Query().Get("tab")
 
+	var runtimes []string
+	switch bdt.BuildTargetId {
+	case "golang":
+		runtimes = golangRuntimes
+	case "dotnet":
+		runtimes = dotnetRuntimes
+	case "php":
+		// php does not have runtimes
+	case "rust":
+		// rust + cross-compile? would be nice
+	}
+
 	data := struct {
 		CurrentUser             user
 		SelectedBuildDefinition buildDefinition
 		SelectedTab             string
+		AvailableRuntimes   	[]string
 	}{
 		CurrentUser:             currentUser,
 		SelectedBuildDefinition: bdt,
 		SelectedTab:             selectedTab,
+		AvailableRuntimes:		 runtimes,
 	}
 
 	t := templates["builddefinition_edit.html"]

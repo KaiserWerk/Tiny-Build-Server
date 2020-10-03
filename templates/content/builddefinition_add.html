@@ -18,7 +18,6 @@
                             {{ $selectedTarget := .SelectedTarget }}
                             <select class="form-control" size="1" name="target_id" id="target_id"
                                     onchange="window.location.href='?target='+this.value;" required>
-                                <option></option>
                                 {{ range .BuildTargets }}
                                     <option value="{{ .Id }}"{{ if eq .Id $selectedTarget }} selected{{ end }}>{{ .Description }}</option>
                                 {{ end }}
