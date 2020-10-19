@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,40 @@ import (
 
 var (
 	basePath = "data/"
+	funcMap = template.FuncMap{
+		"getBuildDefCaption": getBuildDefCaption,
+		"getUsernameById":    getUsernameById,
+		"getFlashbag":        getFlashbag(sessMgr),
+	}
 )
+
+
+func executeTemplate(w http.ResponseWriter, file string, data interface{}) error {
+
+	layout := template.Must(template.ParseFiles("templates/_layout.html")).Funcs(funcMap)
+
+	content, err := Asset("templates/content/" + file)
+	if err != nil {
+		return err
+	}
+
+	tmpl := template.Must(layout.Clone())
+	_, err = tmpl.Parse(string(content))
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New(filepath.Base(file)).Parse(string(content))
+	if err != nil {
+		return err
+	}
+	err = t.Execute(w, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func getFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
