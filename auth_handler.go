@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -47,15 +46,19 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t := templates["login.html"]
-	if t != nil {
-		err := t.Execute(w, nil)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "login.html", nil); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["login.html"]
+	//if t != nil {
+	//	err := t.Execute(w, nil)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -101,38 +104,51 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	t := templates["login.html"]
-	if t != nil {
-		err := t.Execute(w, nil)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "´password_request.html", nil); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["login.html"]
+	//if t != nil {
+	//	err := t.Execute(w, nil)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	t := templates["password_request.html"]
-	if t != nil {
-		err := t.Execute(w, nil)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+
+	if err := executeTemplate(w, "password_request.html", nil); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["password_request.html"]
+	//if t != nil {
+	//	err := t.Execute(w, nil)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request) {
 
-	t := templates["register.html"]
-	if t != nil {
-		err := t.Execute(w, nil)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "register.html", nil); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["register.html"]
+	//if t != nil {
+	//	err := t.Execute(w, nil)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }

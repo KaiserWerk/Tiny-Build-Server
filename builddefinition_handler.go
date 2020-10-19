@@ -72,15 +72,19 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinitions: bdList,
 	}
 
-	t := templates["builddefinition_list.html"]
-	if t != nil {
-		err := t.Execute(w, data)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "builddefinition_list.html", data); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["builddefinition_list.html"]
+	//if t != nil {
+	//	err := t.Execute(w, data)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
@@ -206,15 +210,19 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		AvailableRuntimes: runtimes,
 	}
 
-	t := templates["builddefinition_add.html"]
-	if t != nil {
-		err := t.Execute(w, data)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "builddefinition_add.html", data); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["builddefinition_add.html"]
+	//if t != nil {
+	//	err := t.Execute(w, data)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
@@ -264,13 +272,13 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	var runtimes []string
 	switch bdt.BuildTargetId {
-	case "golang":
+	case 1:
 		runtimes = golangRuntimes
-	case "dotnet":
+	case 2:
 		runtimes = dotnetRuntimes
-	case "php":
+	case 3:
 		// php does not have runtimes
-	case "rust":
+	case 4:
 		// rust + cross-compile? would be nice
 	}
 
@@ -286,15 +294,19 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		AvailableRuntimes:		 runtimes,
 	}
 
-	t := templates["builddefinition_edit.html"]
-	if t != nil {
-		err := t.Execute(w, data)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "builddefinition_edit.html", data); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["builddefinition_edit.html"]
+	//if t != nil {
+	//	err := t.Execute(w, data)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
@@ -396,16 +408,20 @@ func buildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		AvgRuntime:        fmt.Sprintf("%.2f", avg),
 	}
 
-	t := templates["builddefinition_show.html"]
-	if t != nil {
-		err := t.Execute(w, data)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		writeToConsole("template build_definition_show.html not found")
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "builddefinition_show.html", data); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["builddefinition_show.html"]
+	//if t != nil {
+	//	err := t.Execute(w, data)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	writeToConsole("template build_definition_show.html not found")
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
@@ -459,15 +475,19 @@ func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition: buildDefinitionTemp,
 	}
 
-	t := templates["builddefinition_remove.html"]
-	if t != nil {
-		err := t.Execute(w, data)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "builddefinition_remove.html", data); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["builddefinition_remove.html"]
+	//if t != nil {
+	//	err := t.Execute(w, data)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
 }
 
 func buildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {

@@ -35,21 +35,27 @@ func executeTemplate(w http.ResponseWriter, file string, data interface{}) error
 
 	content, err := Asset("templates/content/" + file)
 	if err != nil {
+		writeToConsole("could not find template " + file)
 		return err
 	}
+
+	//writeToConsole(string(content))
 
 	tmpl := template.Must(layout.Clone())
 	_, err = tmpl.Parse(string(content))
 	if err != nil {
+		writeToConsole("could not parse template into base layout")
 		return err
 	}
 
 	t, err := template.New(filepath.Base(file)).Parse(string(content))
 	if err != nil {
+		writeToConsole("could not parse " + file + ": " + err.Error())
 		return err
 	}
 	err = t.Execute(w, data)
 	if err != nil {
+		writeToConsole("could not execute template " + file)
 		return err
 	}
 
@@ -59,7 +65,7 @@ func executeTemplate(w http.ResponseWriter, file string, data interface{}) error
 func getFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
 		if mgr == nil {
-			writeToConsole("mgr is nil")
+			writeToConsole("sessionManager is nil in getFlashbag")
 			return template.HTML("")
 		}
 		var sb strings.Builder

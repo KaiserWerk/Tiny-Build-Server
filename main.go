@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -39,7 +38,7 @@ func main() {
 	centralConfig = getConfiguration()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 
-	templates = populateTemplates(funcMap)
+	//templates = populateTemplates(funcMap)
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	writeToConsole("  Server will be handling requests at port " + listenPort)
@@ -128,9 +127,10 @@ func main() {
 
 func setupRoutes(router *mux.Router) {
 	// asset file handlers
-	router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	router.PathPrefix("/js/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	router.PathPrefix("/assets/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
+	//router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
+	//router.PathPrefix("/js/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
+	//router.PathPrefix("/assets/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
+	router.HandleFunc("/public/{file}", staticAssetHandler)
 
 	// site handlers
 	router.HandleFunc("/", indexHandler).Methods("GET")
@@ -206,43 +206,3 @@ func populateTemplates(fm template.FuncMap) map[string]*template.Template {
 	return result
 }
 
-func staticHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := vars["file"]
-	data, err := Asset("public/" + file)
-	if err != nil {
-		fmt.Println("could not locate asset", file)
-		w.Write([]byte("error"))
-		return
-	}
-
-	var ext string
-	if strings.Contains(file, ".") {
-		parts := strings.Split(file, ".")
-		ext = parts[len(parts)-1]
-	}
-
-	var contentType string // = http.DetectContentType(data)
-	switch ext {
-	case "css":
-		contentType = "text/css"
-	case "js":
-		contentType = "text/javascript"
-	case "html":
-		contentType = "text/html"
-	case "jpg":
-		fallthrough
-	case "jpeg":
-		contentType = "image/jpeg"
-	case "gif":
-		contentType = "image/gif"
-	case "png":
-		contentType = "image/png"
-	default:
-		contentType = "text/plain"
-	}
-	fmt.Println("content-type:", contentType)
-	w.Header().Set("Content-Type", contentType)
-
-	w.Write(data)
-}

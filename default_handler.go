@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
+	"strings"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,15 +38,58 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	//otherwise ok (logged in)
-	//writeToConsole("login check ok")
-	t := templates["index.html"]
-	if t != nil {
-		err := t.Execute(w, indexData)
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
-	} else {
-		w.WriteHeader(http.StatusNotFound)
+	if err := executeTemplate(w, "index.html", indexData); err != nil {
+		w.WriteHeader(404)
 	}
+
+	//t := templates["index.html"]
+	//if t != nil {
+	//	err := t.Execute(w, indexData)
+	//	if err != nil {
+	//		fmt.Println("error:", err.Error())
+	//	}
+	//} else {
+	//	w.WriteHeader(http.StatusNotFound)
+	//}
+}
+
+func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	file := vars["file"]
+	data, err := Asset("public/" + file)
+	if err != nil {
+		fmt.Println("could not locate asset", file)
+		w.Write([]byte("error"))
+		return
+	}
+
+	var ext string
+	if strings.Contains(file, ".") {
+		parts := strings.Split(file, ".")
+		ext = parts[len(parts)-1]
+	}
+
+	var contentType string // = http.DetectContentType(data)
+	switch ext {
+	case "css":
+		contentType = "text/css"
+	case "js":
+		contentType = "text/javascript"
+	case "html":
+		contentType = "text/html"
+	case "jpg":
+		fallthrough
+	case "jpeg":
+		contentType = "image/jpeg"
+	case "gif":
+		contentType = "image/gif"
+	case "png":
+		contentType = "image/png"
+	default:
+		contentType = "text/plain"
+	}
+	fmt.Println("content-type:", contentType)
+	w.Header().Set("Content-Type", contentType)
+
+	w.Write(data)
 }
