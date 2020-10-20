@@ -180,7 +180,7 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 
 	for rows.Next() {
 		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun,
-			&be.ActionLog, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
+			&be.ActionLog, &be.Result, &be.ArtifactPath, &be.ExecutionTime, &be.ExecutedAt)
 		if err != nil {
 			return beList, err
 		}

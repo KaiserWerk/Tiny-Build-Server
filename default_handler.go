@@ -25,7 +25,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	latestBuildDefs, err := getNewestBuildDefinitions(5)
 	if err != nil {
-		writeToConsole("could not fetch latest build executions: " + err.Error())
+		writeToConsole("could not fetch latest build definitions: " + err.Error())
 	}
 
 	indexData := struct {
