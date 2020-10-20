@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -21,17 +20,23 @@ import (
 
 var (
 	basePath = "data/"
-	funcMap = template.FuncMap{
-		"getBuildDefCaption": getBuildDefCaption,
-		"getUsernameById":    getUsernameById,
-		"getFlashbag":        getFlashbag(sessMgr),
-	}
+
 )
 
 
 func executeTemplate(w http.ResponseWriter, file string, data interface{}) error {
+	var funcMap = template.FuncMap{
+		"getBuildDefCaption": getBuildDefCaption,
+		"getUsernameById":    getUsernameById,
+		"getFlashbag":        getFlashbag(sessMgr),
+	}
+	layoutContent, err := Asset("templates/_layout.html")
+	if err != nil {
+		writeToConsole("could not get layout template: " + err.Error())
+		return err
+	}
 
-	layout := template.Must(template.ParseFiles("templates/_layout.html")).Funcs(funcMap)
+	layout := template.Must(template.New("_layout.html").Parse(string(layoutContent))).Funcs(funcMap)
 
 	content, err := Asset("templates/content/" + file)
 	if err != nil {
@@ -48,14 +53,14 @@ func executeTemplate(w http.ResponseWriter, file string, data interface{}) error
 		return err
 	}
 
-	t, err := template.New(filepath.Base(file)).Parse(string(content))
+	//t, err := template.New(filepath.Base(file)).Parse(string(content))
+	//if err != nil {
+	//	writeToConsole("could not parse " + file + ": " + err.Error())
+	//	return err
+	//}
+	err = tmpl.Execute(w, data)
 	if err != nil {
-		writeToConsole("could not parse " + file + ": " + err.Error())
-		return err
-	}
-	err = t.Execute(w, data)
-	if err != nil {
-		writeToConsole("could not execute template " + file)
+		writeToConsole("could not execute template " + file + ": " + err.Error())
 		return err
 	}
 

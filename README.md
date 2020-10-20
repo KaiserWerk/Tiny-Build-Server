@@ -7,8 +7,6 @@ It is not meant to be used in production since it is a proof-of-concept, but thi
 It can be used in conjunction with BitBucket, GitHub and GitLab and it runs on 
 whatever platform you compile it for, be it Windows, Linux or MacOS, even a RaspberryPi.
 
-Build information are stored in files and folders which are placed in the ``build_definitions``
-subfolder. A build definition is a folder containing a YAML file.
 
 Prerequisites
 * Basic knowledge of the Go programming language

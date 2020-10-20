@@ -41,25 +41,27 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if err := executeTemplate(w, "index.html", indexData); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["index.html"]
-	//if t != nil {
-	//	err := t.Execute(w, indexData)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
+	//writeToConsole("asset handler hit")
 	vars := mux.Vars(r)
 	file := vars["file"]
-	data, err := Asset("public/" + file)
+
+	var path string
+	switch true {
+	case strings.Contains(r.URL.Path, "assets"):
+		path = "assets"
+	case strings.Contains(r.URL.Path, "js"):
+		path = "js"
+	case strings.Contains(r.URL.Path, "css"):
+		path = "css"
+	}
+
+	data, err := Asset("public/" + path + "/" + file)
 	if err != nil {
 		fmt.Println("could not locate asset", file)
-		w.Write([]byte("error"))
+		w.WriteHeader(404)
 		return
 	}
 
@@ -88,8 +90,7 @@ func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		contentType = "text/plain"
 	}
-	fmt.Println("content-type:", contentType)
 	w.Header().Set("Content-Type", contentType)
 
-	w.Write(data)
+	_, _ = w.Write(data)
 }

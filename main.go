@@ -54,10 +54,13 @@ func main() {
 	router.Use(limit)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		t := templates["404.html"]
-		if t != nil {
-			_ = t.Execute(w, r.URL.Path)
+		if err := executeTemplate(w, "404.html", r.URL.Path); err != nil {
+			w.WriteHeader(404)
 		}
+		//t := templates["404.html"]
+		//if t != nil {
+		//	_ = t.Execute(w, )
+		//}
 	})
 
 	setupRoutes(router)
@@ -130,7 +133,9 @@ func setupRoutes(router *mux.Router) {
 	//router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
 	//router.PathPrefix("/js/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
 	//router.PathPrefix("/assets/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	router.HandleFunc("/public/{file}", staticAssetHandler)
+	router.HandleFunc("/assets/{file}", staticAssetHandler)
+	router.HandleFunc("/js/{file}", staticAssetHandler)
+	router.HandleFunc("/css/{file}", staticAssetHandler)
 
 	// site handlers
 	router.HandleFunc("/", indexHandler).Methods("GET")
