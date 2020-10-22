@@ -16,7 +16,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
 			sessMgr.AddMessage("error", "Invalid credentials!")
-			// flashbag
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
