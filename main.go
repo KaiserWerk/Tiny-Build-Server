@@ -32,7 +32,7 @@ func main() {
 	writeToConsole("  Version: " + version)
 	writeToConsole("  From: " + versionDate)
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
-	flag.StringVar(&configFile, "config", "app.yaml", "The location of the configuration file")
+	flag.StringVar(&configFile, "config", "config/app.yaml", "The location of the configuration file")
 	flag.Parse()
 
 	centralConfig = getConfiguration()
