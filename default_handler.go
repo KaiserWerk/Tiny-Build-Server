@@ -50,11 +50,11 @@ func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
 
 	var path string
 	switch true {
-	case strings.Contains(r.URL.Path, "assets"):
+	case strings.Contains(r.URL.Path, "assets/"):
 		path = "assets"
-	case strings.Contains(r.URL.Path, "js"):
+	case strings.Contains(r.URL.Path, "js/"):
 		path = "js"
-	case strings.Contains(r.URL.Path, "css"):
+	case strings.Contains(r.URL.Path, "css/"):
 		path = "css"
 	}
 
