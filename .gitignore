@@ -1,6 +1,7 @@
 .idea/
 .git/
 
+vendor/
 build/
 
 app.yaml
