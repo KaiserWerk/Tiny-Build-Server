@@ -15,6 +15,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		u, err := getUserByEmail(email)
 		if err != nil {
 			writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+			sessMgr.AddMessage("error", "Invalid credentials!")
 			// flashbag
 			return
 		}
@@ -25,6 +26,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
 				writeToConsole("could not create session: " + err.Error())
+				sessMgr.AddMessage("error", "Could not create session!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
@@ -32,11 +34,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			err = sessMgr.SetCookie(w, sess.Id)
 			if err != nil {
 				writeToConsole("could not set cookie: " + err.Error())
+				sessMgr.AddMessage("error", "Session cookie could not be set!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 		} else {
 			writeToConsole("login not successful")
+			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
