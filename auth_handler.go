@@ -53,16 +53,6 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err := executeTemplate(w, "login.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["login.html"]
-	//if t != nil {
-	//	err := t.Execute(w, nil)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,66 +83,49 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-
 		email := r.FormValue("login_email")
 		if email != "" {
 			u, err := getUserByEmail(email)
 			if err != nil {
 				writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with " +
+					"instructions to set a new password")
 				return
 			}
 
 			writeToConsole("user: " + u.Displayname)
 			// email an user versenden
 			// zur reset seite weiterleiten
+			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with " +
+				"instructions to set a new password")
+			http.Redirect(w, r, "/password/reset", http.StatusSeeOther)
+			return
 		}
+
+
+		return
 	}
 
 	if err := executeTemplate(w, "´password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["login.html"]
-	//if t != nil {
-	//	err := t.Execute(w, nil)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
+	//r.Method == "POST" {
+
+	//}
+
 	if err := executeTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["password_request.html"]
-	//if t != nil {
-	//	err := t.Execute(w, nil)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request) {
 
+
 	if err := executeTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["register.html"]
-	//if t != nil {
-	//	err := t.Execute(w, nil)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
