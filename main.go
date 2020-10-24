@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
+	"github.com/KaiserWerk/Tiny-Build-Server/model"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
@@ -22,8 +23,8 @@ var (
 	versionDate   = "0000-00-00 00:00:00 +00:00" // inject at compile time
 	listenPort    string
 	configFile    string
-	centralConfig configuration
-	templates     map[string]*template.Template
+	centralConfig model.configuration
+	//templates     map[string]*template.Template
 	sessMgr       *sessionstore.SessionManager
 )
 
@@ -51,7 +52,7 @@ func main() {
 	//}
 
 	router := mux.NewRouter()
-	router.Use(limit)
+	router.Use(middleware.limit)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		if err := executeTemplate(w, "404.html", r.URL.Path); err != nil {
