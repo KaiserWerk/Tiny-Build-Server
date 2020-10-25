@@ -36,7 +36,7 @@
                                 <td>{{ .ExecutionTime }}s</td>
                                 <td>{{ .ExecutedAt }}</td>
                                 <td><span class="badge {{ $class }}">{{ $label }}</span></td>
-                                <td><a class="btn btn-sm btn-info" href="/builds/executions/{{ .Id }}/show">Show</a></td>
+                                <td><a class="btn btn-sm btn-info" href="/buildexecution/{{ .Id }}/show">Show</a></td>
                             </tr>
                             {{else}}
                             <tr>
