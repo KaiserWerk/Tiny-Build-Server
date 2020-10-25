@@ -1,1 +1,31 @@
-not yet
+{{ template "header_default" . }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Build definition Details</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <b>Execution #{{ .BuildExecution.Id }}</b> for build definition
+                    <b>{{ .BuildDefinition.Caption }}</b>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-xl-8">
+
+                            <div class="row">
+                                <div class="col-xl-8">
+                                    <h5>Details</h5>
+                                    <table class="table table-borderless table-condensed">
+
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{template "footer_default" .}}
