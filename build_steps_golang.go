@@ -40,6 +40,8 @@ func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir 
 	}
 	artifact := artifactDir + "/" + binaryName
 	// set env vars!!!!!!!!!!!!
+
+	// !!!
 	buildCommand := `build -o "<output>" -mod=vendor -a -v -work -x -ldflags "-s -w -X main.versionDate=` + dateStr + `" <input>`
 	buildCommand = strings.Replace(buildCommand, "<output>", artifact, 1)
 	buildCommand = strings.Replace(buildCommand, "<input>", cloneDir, 1)
