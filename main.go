@@ -57,10 +57,6 @@ func main() {
 		if err := executeTemplate(w, "404.html", r.URL.Path); err != nil {
 			w.WriteHeader(404)
 		}
-		//t := templates["404.html"]
-		//if t != nil {
-		//	_ = t.Execute(w, )
-		//}
 	})
 
 	setupRoutes(router)
