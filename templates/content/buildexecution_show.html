@@ -17,7 +17,30 @@
                                 <div class="col-xl-8">
                                     <h5>Details</h5>
                                     <table class="table table-borderless table-condensed">
-
+                                        <tr>
+                                            <td>Initiated by</td>
+                                            <td>{{ if eq .BuildExecution.InitiatedBy -1 }}Repository Push{{ else }}User <i>{{ getUsernameById .BuildExecution.InitiatedBy }}</i>{{ end }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Result</td>
+                                            <td>{{ .BuildExecution.Result }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Artifact path</td>
+                                            <td>{{ .BuildExecution.ArtifactPath }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Execution time</td>
+                                            <td>{{ .BuildExecution.ExecutionTime }} seconds</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Executed at</td>
+                                            <td>{{ .BuildExecution.ExecutedAt }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Build Log</td>
+                                            <td><pre>{{ .BuildExecution.ActionLog }}</pre></td>
+                                        </tr>
                                     </table>
                                 </div>
                             </div>
@@ -28,4 +51,4 @@
         </div>
     </div>
 </div>
-{{template "footer_default" .}}
+{{ template "footer_default" . }}

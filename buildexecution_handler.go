@@ -27,9 +27,9 @@ func buildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	data := struct {
-		CurrentUser		user
+		CurrentUser user
 	}{
-		CurrentUser: 	currentUser,
+		CurrentUser: currentUser,
 	}
 
 	if err := executeTemplate(w, "buildexecution_list.html", data); err != nil {
@@ -61,7 +61,7 @@ func buildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	var be buildExecution
-	row := db.QueryRow("SELECT id, build_definition_id, initiated_by, manual_run, action_log," +
+	row := db.QueryRow("SELECT id, build_definition_id, initiated_by, manual_run, action_log,"+
 		" result, artifact_path, execution_time, executed_at FROM build_execution WHERE id = ?", vars["id"])
 	err = row.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.ActionLog,
 		&be.Result, &be.ArtifactPath, &be.ExecutionTime, &be.ExecutedAt)
@@ -70,6 +70,8 @@ func buildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
+
+	//be.ActionLog = strings.ReplaceAll(be.ActionLog, "\n", "<br>")
 
 	var bd buildDefinition
 	row = db.QueryRow("SELECT id, caption FROM build_definition WHERE id = ?", be.BuildDefinitionId)
@@ -81,12 +83,12 @@ func buildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser		user
+		CurrentUser     user
 		BuildExecution  buildExecution
 		BuildDefinition buildDefinition
 	}{
-		CurrentUser: 	currentUser,
-		BuildExecution: be,
+		CurrentUser:     currentUser,
+		BuildExecution:  be,
 		BuildDefinition: bd,
 	}
 
