@@ -8,7 +8,6 @@ import (
 	"github.com/KaiserWerk/sessionstore"
 	"github.com/gorilla/mux"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -171,39 +170,38 @@ func setupRoutes(router *mux.Router) {
 	//apiRouter.HandleFunc("/gitea", giteaReceiveHandler).Methods("POST")
 	// ummodeln auf service-agnostischen handler.
 	// anhand der build definition wird festgestellt, welcher dienst genutzt wird.
-	// JSON -> datasweet/jsonmap
+	// JSON -> datasweet/jsonmap?
 }
 
-func populateTemplates(fm template.FuncMap) map[string]*template.Template {
-	result := make(map[string]*template.Template)
-	const basePath = "templates"
-	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(fm)
-	dir, err := os.Open(basePath + "/content")
-	if err != nil {
-		panic("failed to open template block directory: " + err.Error())
-	}
-	defer dir.Close()
-	fis, err := dir.Readdir(-1)
-	if err != nil {
-		panic("failed to contents of content directory: " + err.Error())
-	}
-	for _, fi := range fis {
-		f, err := os.Open(basePath + "/content/" + fi.Name())
-		if err != nil {
-			panic("failed to open template '" + fi.Name() + "': " + err.Error())
-		}
-		content, err := ioutil.ReadAll(f)
-		if err != nil {
-			panic("failed to read content from file '" + fi.Name() + "': " + err.Error())
-		}
-		_ = f.Close()
-		tmpl := template.Must(layout.Clone())
-		_, err = tmpl.Parse(string(content))
-		if err != nil {
-			panic("failed to parse contents of file '" + fi.Name() + "': " + err.Error())
-		}
-		result[fi.Name()] = tmpl
-	}
-	return result
-}
-
+//func populateTemplates(fm template.FuncMap) map[string]*template.Template {
+//	result := make(map[string]*template.Template)
+//	const basePath = "templates"
+//	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(fm)
+//	dir, err := os.Open(basePath + "/content")
+//	if err != nil {
+//		panic("failed to open template block directory: " + err.Error())
+//	}
+//	defer dir.Close()
+//	fis, err := dir.Readdir(-1)
+//	if err != nil {
+//		panic("failed to contents of content directory: " + err.Error())
+//	}
+//	for _, fi := range fis {
+//		f, err := os.Open(basePath + "/content/" + fi.Name())
+//		if err != nil {
+//			panic("failed to open template '" + fi.Name() + "': " + err.Error())
+//		}
+//		content, err := ioutil.ReadAll(f)
+//		if err != nil {
+//			panic("failed to read content from file '" + fi.Name() + "': " + err.Error())
+//		}
+//		_ = f.Close()
+//		tmpl := template.Must(layout.Clone())
+//		_, err = tmpl.Parse(string(content))
+//		if err != nil {
+//			panic("failed to parse contents of file '" + fi.Name() + "': " + err.Error())
+//		}
+//		result[fi.Name()] = tmpl
+//	}
+//	return result
+//}

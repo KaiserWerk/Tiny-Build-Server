@@ -20,9 +20,7 @@ import (
 
 var (
 	basePath = "data/"
-
 )
-
 
 func executeTemplate(w http.ResponseWriter, file string, data interface{}) error {
 	var funcMap = template.FuncMap{
@@ -473,8 +471,8 @@ func handleGolangProject(definition golangBuildDefinition, messageCh chan string
 
 	var depList []deploymentDefinition
 	var dep deploymentDefinition
-	rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, " +
-		"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition " +
+	rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, "+
+		"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition "+
 		"WHERE build_definition_id = ?", definition.Id)
 	if err != nil {
 		messageCh <- "could not fetch deployment definitions for build definition: " + err.Error()
@@ -494,7 +492,6 @@ func handleGolangProject(definition golangBuildDefinition, messageCh chan string
 	if len(depList) > 0 && definition.DeploymentEnabled {
 		err = deployArtifact(depList, messageCh, artifact)
 	}
-
 
 	return artifact, nil
 }
@@ -612,7 +609,7 @@ func deployArtifact(deploymentDefinitions []deploymentDefinition, messageCh chan
 
 		var preDeploymentActions []string
 		if deployment.PreDeploymentActions != "" {
-			preDeploymentActions = strings.Split(deployment.PreDeploymentActions,"\n")
+			preDeploymentActions = strings.Split(deployment.PreDeploymentActions, "\n")
 		}
 
 		if len(preDeploymentActions) > 0 {
@@ -672,7 +669,7 @@ func deployArtifact(deploymentDefinitions []deploymentDefinition, messageCh chan
 
 		var postDeploymentActions []string
 		if deployment.PostDeploymentActions != "" {
-			postDeploymentActions = strings.Split(deployment.PostDeploymentActions,"\n")
+			postDeploymentActions = strings.Split(deployment.PostDeploymentActions, "\n")
 		}
 
 		if len(postDeploymentActions) > 0 {

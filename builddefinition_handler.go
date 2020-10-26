@@ -33,7 +33,7 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		Id                int
 		Caption           string
 		Target            string
-		TargetOsArch	string
+		TargetOsArch      string
 		Executions        int
 		RepoHost          string
 		RepoName          string
@@ -148,7 +148,7 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, "+
 			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, "+
-			"repo_branch, altered_at, apply_migrations, database_dsn, run_tests, run_benchmark_tests) " +
+			"repo_branch, altered_at, apply_migrations, database_dsn, run_tests, run_benchmark_tests) "+
 			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			targetId, currentUser.Id, caption, enabled, 0, repoHoster, repoHosterUrl, repoFullname, repoUsername,
 			repoSecret, repoBranch, time.Now(), applyMigrations, databaseDsn, runTests, runBenchmarkTests)
@@ -170,7 +170,6 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		//	w.WriteHeader(500)
 		//	return
 		//}
-
 
 		if action == "save_depl" {
 			writeToConsole("redirect to edit deployments")
@@ -201,9 +200,9 @@ func buildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser         user
-		SelectedTarget      int
-		AvailableRuntimes   []string
+		CurrentUser       user
+		SelectedTarget    int
+		AvailableRuntimes []string
 	}{
 		CurrentUser:       currentUser,
 		SelectedTarget:    selectedTarget,
@@ -286,12 +285,12 @@ func buildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser             user
 		SelectedBuildDefinition buildDefinition
 		SelectedTab             string
-		AvailableRuntimes   	[]string
+		AvailableRuntimes       []string
 	}{
 		CurrentUser:             currentUser,
 		SelectedBuildDefinition: bdt,
 		SelectedTab:             selectedTab,
-		AvailableRuntimes:		 runtimes,
+		AvailableRuntimes:       runtimes,
 	}
 
 	if err := executeTemplate(w, "builddefinition_edit.html", data); err != nil {

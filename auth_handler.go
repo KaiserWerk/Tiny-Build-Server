@@ -88,7 +88,7 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			u, err := getUserByEmail(email)
 			if err != nil {
 				writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
-				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with " +
+				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 					"instructions to set a new password")
 				return
 			}
@@ -96,12 +96,11 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			writeToConsole("user: " + u.Displayname)
 			// email an user versenden
 			// zur reset seite weiterleiten
-			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with " +
+			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 				"instructions to set a new password")
 			http.Redirect(w, r, "/password/reset", http.StatusSeeOther)
 			return
 		}
-
 
 		return
 	}
@@ -123,7 +122,6 @@ func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func registrationHandler(w http.ResponseWriter, r *http.Request) {
-
 
 	if err := executeTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
