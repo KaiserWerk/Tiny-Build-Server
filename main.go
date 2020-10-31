@@ -14,6 +14,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+const (
+	version = "0.0.1"
 )
 
 var (
