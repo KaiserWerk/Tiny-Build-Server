@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/repository"
 )
 
 const (
@@ -30,7 +29,6 @@ var (
 )
 
 func main() {
-	repository.pkgtest()
 	writeToConsole("Tiny Build Server")
 	writeToConsole("  Version: " + version)
 	writeToConsole("  From: " + versionDate)
@@ -177,35 +175,3 @@ func setupRoutes(router *mux.Router) {
 	// JSON -> datasweet/jsonmap?
 }
 
-//func populateTemplates(fm template.FuncMap) map[string]*template.Template {
-//	result := make(map[string]*template.Template)
-//	const basePath = "templates"
-//	layout := template.Must(template.ParseFiles(basePath + "/_layout.html")).Funcs(fm)
-//	dir, err := os.Open(basePath + "/content")
-//	if err != nil {
-//		panic("failed to open template block directory: " + err.Error())
-//	}
-//	defer dir.Close()
-//	fis, err := dir.Readdir(-1)
-//	if err != nil {
-//		panic("failed to contents of content directory: " + err.Error())
-//	}
-//	for _, fi := range fis {
-//		f, err := os.Open(basePath + "/content/" + fi.Name())
-//		if err != nil {
-//			panic("failed to open template '" + fi.Name() + "': " + err.Error())
-//		}
-//		content, err := ioutil.ReadAll(f)
-//		if err != nil {
-//			panic("failed to read content from file '" + fi.Name() + "': " + err.Error())
-//		}
-//		_ = f.Close()
-//		tmpl := template.Must(layout.Clone())
-//		_, err = tmpl.Parse(string(content))
-//		if err != nil {
-//			panic("failed to parse contents of file '" + fi.Name() + "': " + err.Error())
-//		}
-//		result[fi.Name()] = tmpl
-//	}
-//	return result
-//}
