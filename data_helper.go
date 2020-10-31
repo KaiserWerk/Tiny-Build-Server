@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/KaiserWerk/sessionstore"
 	"strconv"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var golangRuntimes = []string{
@@ -101,19 +102,19 @@ func getUserByEmail(n string) (user, error) {
 	return u, nil
 }
 
-func getBuildDefCaption(id int) string {
+func getBuildDefCaption(id int) (string, error) {
 	db, err := getDbConnection()
 	if err != nil {
-		return "could not fetch"
+		return "", errors.New("could not fetch: " + err.Error())
 	}
 	defer db.Close()
 	var name string
 	row := db.QueryRow("SELECT caption FROM build_definition WHERE id = ?", id)
 	err = row.Scan(&name)
 	if err != nil {
-		return "could not scan"
+		return "", errors.New("could not scan: " + err.Error())
 	}
-	return name
+	return name, nil
 }
 
 func getUserById(id int) (user, error) {
@@ -264,7 +265,7 @@ func setSetting(name, value string) error {
 	err = row.Scan(&s.Name, &s.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeToConsole("no row, inserting")
+			//writeToConsole("no row, inserting")
 			_, err = db.Exec("INSERT INTO setting (setting_name, setting_value) VALUES (?, ?)", name, value)
 			if err != nil {
 				return err
@@ -278,7 +279,7 @@ func setSetting(name, value string) error {
 			return err
 		}
 	} else { // brauch ich den Zweig?
-		writeToConsole("row found, updating (2)")
+		//writeToConsole("row found, updating (2)")
 		_, err = db.Exec("UPDATE setting SET setting_value = ? WHERE setting_name = ?", value, name)
 		if err != nil {
 			return err
