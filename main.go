@@ -7,28 +7,30 @@ import (
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
 	"github.com/gorilla/mux"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/repository"
+)
+
 const (
 	version = "0.0.1"
 )
 
 var (
-	version       = "0.0.0"                      // inject at compile time
 	versionDate   = "0000-00-00 00:00:00 +00:00" // inject at compile time
 	listenPort    string
 	configFile    string
 	centralConfig configuration
-	templates     map[string]*template.Template
+	//templates     map[string]*template.Template
 	sessMgr       *sessionstore.SessionManager
 )
 
 func main() {
+	repository.pkgtest()
 	writeToConsole("Tiny Build Server")
 	writeToConsole("  Version: " + version)
 	writeToConsole("  From: " + versionDate)
