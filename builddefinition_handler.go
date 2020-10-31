@@ -43,7 +43,7 @@ func buildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 
 	var bdList []preparedBuildDefinition
 	var bd preparedBuildDefinition
-	rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target, bd.build_target_os_arch, COUNT(be.id), " +
+	rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target_id, bd.build_target_os_arch, COUNT(be.id), " +
 		"bd.repo_hoster, bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd LEFT JOIN " +
 		"build_execution be ON be.build_definition_id = bd.id GROUP BY bd.id ORDER BY bd.caption")
 	if err != nil {
