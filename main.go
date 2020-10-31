@@ -24,7 +24,6 @@ var (
 	listenPort    string
 	configFile    string
 	centralConfig configuration
-	//templates     map[string]*template.Template
 	sessMgr       *sessionstore.SessionManager
 )
 
@@ -39,17 +38,11 @@ func main() {
 	centralConfig = getConfiguration()
 	sessMgr = sessionstore.NewManager("tbs_sessid")
 
-	//templates = populateTemplates(funcMap)
-
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	writeToConsole("  Server will be handling requests at port " + listenPort)
 	if centralConfig.Tls.Enabled {
 		writeToConsole("  TLS is enabled")
 	}
-
-	//if _, err := loadSysConfig(); err != nil {
-	//	log.Fatal("could not handle config/app.yaml file; something went wrong")
-	//}
 
 	router := mux.NewRouter()
 	router.Use(limit)
@@ -80,7 +73,6 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	// make dependent on a user-defined variable
 	if centralConfig.Tls.Enabled {
 		server.TLSConfig = tlsConfig
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
@@ -88,7 +80,6 @@ func main() {
 
 	done := make(chan bool)
 	quit := make(chan os.Signal)
-	//signal.Notify(quit, os.Interrupt)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go readConsoleInput(quit)
