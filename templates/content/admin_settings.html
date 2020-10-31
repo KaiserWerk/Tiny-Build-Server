@@ -3,7 +3,43 @@
     <h1 class="mt-4 mb-3 offset-2">System Settings</h1>
 
     <div class="row">
-        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            {{ getFlashbag }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-cogs"></i>
+                    General Settings
+                </div>
+                <div class="card-body">
+                    <form class="form-horizontal" method="post">
+                        <input type="hidden" name="form" value="general_settings">
+
+                        {{/*                        <div class="form-group">*/}}
+                        {{/*                            <p>Hint: You only need to set these values if the command line build executables are <b>NOT</b> globally available.</p>*/}}
+                        {{/*                        </div>*/}}
+                        <div class="form-group">
+                            <label class="control-label" for="_basedatapath">Golang:</label><br>
+                            <input type="text" class="form-control" name="basedatapath" id="_basedatapath"
+                                   placeholder="Absolute path to base data directory" value="{{ index .AdminSettings "basedatapath" }}">
+                        </div>
+
+                        <br>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save General Settings</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xl-8 offset-2">
             <div class="card mb-4">
                 <div class="card-header">
@@ -121,11 +157,11 @@
                                 <option value="ssl"{{if eq $enc "ssl"}} selected{{end}}>SSL</option>
                             </select>
                         </div>
+                        <br>
                         <div class="form-group">
-                            <div class="col-sm-offset-2 col-sm-9">
-                                <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
-                            </div>
+                            <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
                         </div>
+
                     </form>
                 </div>
             </div>
@@ -136,7 +172,7 @@
         <div class="col-xl-8 offset-2">
             <div class="card mb-4">
                 <div class="card-header">
-                    <i class="fa fa-cog"></i>
+                    <i class="fa fa-folder-open"></i>
                     Paths to Build Executables
                 </div>
                 <div class="card-body">
@@ -152,20 +188,26 @@
                         </div>
                         <div class="form-group">
                             <label class="control-label" for="_dotnet_executable">DotNet (C#, F#, VB):</label><br>
-                            <input type="txt" class="form-control" name="dotnet_executable" id="_dotnet_executable"
+                            <input type="text" class="form-control" name="dotnet_executable" id="_dotnet_executable"
                                    placeholder="dotnet" value="{{ index .AdminSettings "dotnet_executable" }}">
                         </div>
-
                         <div class="form-group">
-                            <div class="col-sm-offset-2 col-sm-9">
-                                <button type="submit" class="btn btn-primary">Save Executable Paths</button>
-                            </div>
+                            <label class="control-label" for="_rust_executable">Cargo (Rust):</label><br>
+                            <input type="text" class="form-control" name="rust_executable" id="_rust_executable"
+                                   placeholder="cargo" value="{{ index .AdminSettings "rust_executable" }}">
                         </div>
+                        <br>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save Executable Paths</button>
+                        </div>
+
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+
 
 </div>
 {{template "footer_default" .}}
