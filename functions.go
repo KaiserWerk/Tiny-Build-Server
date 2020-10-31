@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/KaiserWerk/sessionstore"
 	"github.com/pkg/sftp"
+	"github.com/stvp/slug"
 	"golang.org/x/crypto/ssh"
 	"html/template"
 	"io"
@@ -397,11 +398,33 @@ func startBuildProcess(definition buildDefinition) {
 	//}
 
 	// determine project type (build target)
+
+	settings, err := getAllSettings()
+	if err != nil {
+		messageCh <- "could not obtain setting values: " + err.Error()
+		saveBuildReport(definition, sb.String())
+		return
+	}
+
+	baseDataPath, ok := settings["basedatapath"]
+	if !ok {
+		messageCh <- "could not fetch base data path"
+		saveBuildReport(definition, sb.String())
+		return
+	}
+
 	switch definition.BuildTargetId {
 	case 1: // golang
-		_, err := handleGolangProject(golangBuildDefinition(definition), messageCh, projectPath)
+		def := golangBuildDefinition{
+			cloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			artifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			buildDefinition: definition,
+		}
+		_, err = handleGolangProject(def, messageCh, projectPath)
 		if err != nil {
 			messageCh <- "could not build golang project (" + projectPath + ")"
+			saveBuildReport(definition, sb.String())
+			return
 		} else {
 			// set artifact
 
@@ -409,19 +432,40 @@ func startBuildProcess(definition buildDefinition) {
 			//err = deployArtifact(definition, artifact)
 		}
 	case 2: // dotnet
-		err = handleDotnetProject(dotnetBuildDefinition(definition), messageCh, projectPath)
+		def := dotnetBuildDefinition{
+			cloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			artifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			buildDefinition: definition,
+		}
+		err = handleDotnetProject(def, messageCh, projectPath)
 		if err != nil {
 			messageCh <- "could not build dotnet project (" + projectPath + ")"
+			saveBuildReport(definition, sb.String())
+			return
 		}
 	case 3: // php
-		err = handlePhpProject(phpBuildDefinition(definition), messageCh, projectPath)
+		def := phpBuildDefinition{
+			cloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			artifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			buildDefinition: definition,
+		}
+		err = handlePhpProject(def, messageCh, projectPath)
 		if err != nil {
 			messageCh <- "could not build php project (" + projectPath + ")"
+			saveBuildReport(definition, sb.String())
+			return
 		}
 	case 4: // rust
-		err = handleRustProject(rustBuildDefinition(definition), messageCh, projectPath)
+		def := rustBuildDefinition{
+			cloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			artifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
+			buildDefinition: definition,
+		}
+		err = handleRustProject(def, messageCh, projectPath)
 		if err != nil {
 			messageCh <- "could not build rust project (" + projectPath + ")"
+			saveBuildReport(definition, sb.String())
+			return
 		}
 	}
 
@@ -431,6 +475,7 @@ func startBuildProcess(definition buildDefinition) {
 
 func handleGolangProject(definition golangBuildDefinition, messageCh chan string, projectDir string) (string, error) {
 	var err error
+
 	if definition.RunTests {
 		err = definition.runTests(messageCh)
 		if err != nil {
@@ -583,7 +628,7 @@ func handleRustProject(definition rustBuildDefinition, messageCh chan string, pr
 //
 //case "cs":
 //case "csharp":
-//	// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -r win-x64
+//	// dotnet publish MyProject\Presentation\Presentation.csproj -o C:\MyProject -p:PublishSingleFile=true -p:PublishTrimmed=true -c Release -r win-x64
 //	// sysconfig!
 //	// @TODO
 //}
