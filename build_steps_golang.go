@@ -1,28 +1,50 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"github.com/stvp/slug"
+	"os"
 	"os/exec"
-	"runtime"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type golangBuildDefinition buildDefinition
+type golangBuildDefinition struct {
+	cloneDir string
+	artifactDir string
+	buildDefinition
+}
 
 func (bd golangBuildDefinition) runTests(messageCh chan string) error {
+	cmd := exec.Command("go", "test", "./...")
+	cmd.Dir = bd.cloneDir
 
+	output, err := cmd.Output()
+	if err != nil {
+		return errors.New("could not run unit tests: " + err.Error())
+	}
+
+	messageCh <- "unit test result:\n" + string(output)
 	return nil
 }
 
 func (bd golangBuildDefinition) runBenchmarkTests(messageCh chan string) error {
+	cmd := exec.Command("go", "test", "-bench=.")
+	cmd.Dir = bd.cloneDir
 
+	output, err := cmd.Output()
+	if err != nil {
+		return errors.New("could not run benchmark tests: " + err.Error())
+	}
+
+	messageCh <- "benchmark test result:\n" + string(output)
 	return nil
 }
 
 func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir string) (string, error) {
-	cloneDir := projectDir + "/clone"
-	artifactDir := projectDir + "/artifact"
-
+	var err error
 	slug.Replacement = '-'
 	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.RepoFullname, "/")[1]))
 	if strings.Contains(bd.BuildTargetOsArch, "win") {
@@ -30,24 +52,36 @@ func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir 
 	}
 	messageCh <- "binary name set to " + binaryName
 
-	// format all go files?
+	artifact := bd.artifactDir + "/" + binaryName
 
-	var dateStr string
-	if runtime.GOOS == "windows" {
-		dateStr = `Get-Date -Format "yyyy-MM-dd HH:mm:ss K"`
-	} else {
-		dateStr = `date -u +"%Y-%m-%d %H:%M:%S %:z"`
+	buildCommand := fmt.Sprintf(
+		`build -o %s -mod=vendor -a -v -work -x -ldflags "-s -w -X main.versionDate=%s" %s`,
+		artifact,
+		time.Now().Format(time.RFC3339),
+		bd.cloneDir,
+	)
+
+	// for go, the separator is a forward slash
+	buildTargetElements := strings.Split(bd.BuildTargetOsArch, "/")
+	err = os.Setenv("GOOS", buildTargetElements[0])
+	if err != nil {
+		messageCh <- "could not set environment variable GOOS: " + err.Error()
+		return "", err
 	}
-	artifact := artifactDir + "/" + binaryName
-	// set env vars!!!!!!!!!!!!
-
-	// !!!
-	buildCommand := `build -o "<output>" -mod=vendor -a -v -work -x -ldflags "-s -w -X main.versionDate=` + dateStr + `" <input>`
-	buildCommand = strings.Replace(buildCommand, "<output>", artifact, 1)
-	buildCommand = strings.Replace(buildCommand, "<input>", cloneDir, 1)
+	err = os.Setenv("GOARCH", buildTargetElements[1])
+	if err != nil {
+		messageCh <- "could not set environment variable GOARCH: " + err.Error()
+		return "", err
+	}
+	if bd.BuildTargetArm > 0 {
+		err = os.Setenv("GOARM", strconv.Itoa(bd.BuildTargetArm))
+		if err != nil {
+			messageCh <- "could not set environment variable GOARM: " + err.Error()
+			return "", err
+		}
+	}
 
 	cmd := exec.Command("go", strings.Split(buildCommand, " ")...)
-
 	messageCh <- "build command to be executed: '" + cmd.String() + "'"
 	result, err := cmd.Output()
 	if err != nil {

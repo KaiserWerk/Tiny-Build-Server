@@ -1,3 +1,7 @@
 package main
 
-type rustBuildDefinition buildDefinition
+type rustBuildDefinition struct {
+	cloneDir string
+	artifactDir string
+	buildDefinition
+}

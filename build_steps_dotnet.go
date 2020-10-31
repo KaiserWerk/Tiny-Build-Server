@@ -1,6 +1,10 @@
 package main
 
-type dotnetBuildDefinition buildDefinition
+type dotnetBuildDefinition struct {
+	cloneDir string
+	artifactDir string
+	buildDefinition
+}
 
 func (bd dotnetBuildDefinition) initialize() {
 
