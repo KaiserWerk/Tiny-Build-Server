@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -24,7 +25,15 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var errors uint8 = 0
 		form := r.FormValue("form")
-		if form == "security" {
+
+		if form == "general_settings" {
+			baseDatapath := r.FormValue("basedatapath")
+			err = setSetting("basedatapath", baseDatapath)
+			if err != nil {
+				errors++
+				writeToConsole("could not set baseDatapath")
+			}
+		} else if form == "security" {
 			securityDisableRegistration := r.FormValue("security_disable_registration")
 			if securityDisableRegistration != "1" {
 				securityDisableRegistration = "0"
@@ -43,6 +52,16 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				errors++
 				writeToConsole("could not set securityDisableRegistration")
+			}
+
+			securityEmailConfirmationRequired := r.FormValue("security_email_confirmation_required")
+			if securityEmailConfirmationRequired != "1" {
+				securityEmailConfirmationRequired = "0"
+			}
+			err = setSetting("security_email_confirmation_required", securityEmailConfirmationRequired)
+			if err != nil {
+				errors++
+				writeToConsole("could not set securityEmailConfirmationRequired")
 			}
 
 			security2fa := r.FormValue("security_2fa")
@@ -104,11 +123,22 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				errors++
 				writeToConsole("could not set dotnetExec")
 			}
+
+			rustExec := r.FormValue("rust_executable")
+			err = setSetting("rust_executable", rustExec)
+			if err != nil {
+				errors++
+				writeToConsole("could not set rustExec")
+			}
 		}
 
 		if errors > 0 {
-			writeToConsole("When trying to save admin settings, 1 or more errors occured")
+			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occured", errors)
+			writeToConsole(output)
+			sessMgr.AddMessage("error", output)
 			// add flashbag
+		} else {
+			sessMgr.AddMessage("success", "Settings saved successfully!")
 		}
 
 		http.Redirect(w, r, "/admin/settings", http.StatusSeeOther)
@@ -132,16 +162,6 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	if err = executeTemplate(w, "admin_settings.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["admin_settings.html"]
-	//if t != nil {
-	//	err := t.Execute(w, contextData)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 //func adminBuildTargetListHandler(w http.ResponseWriter, r *http.Request) {
