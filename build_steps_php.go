@@ -1,7 +1,7 @@
 package main
 
 type phpBuildDefinition struct {
-	cloneDir string
+	cloneDir    string
 	artifactDir string
 	buildDefinition
 }

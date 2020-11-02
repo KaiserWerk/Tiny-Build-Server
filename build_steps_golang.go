@@ -12,7 +12,7 @@ import (
 )
 
 type golangBuildDefinition struct {
-	cloneDir string
+	cloneDir    string
 	artifactDir string
 	buildDefinition
 }
