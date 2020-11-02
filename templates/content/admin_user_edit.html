@@ -1,0 +1,62 @@
+{{ template "header_default" . }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Edit User account</h1>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            {{ getFlashbag }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-user"></i>
+                    Edit User account
+                </div>
+                <div class="card-body">
+
+                    <form class="form-horizontal" method="post">
+                        <div class="form-group">
+                            <label class="control-label" for="_displayname">Display Name*:</label><br>
+                            <input type="text" class="form-control" name="displayname" id="_displayname"
+                                   placeholder="Display name of the user" value="{{ .UserToEdit.Displayname }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_email">Email address*:</label><br>
+                            <input type="email" class="form-control" name="email" id="_email"
+                                   placeholder="Email address" value="{{ .UserToEdit.Email }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_password">Password:</label><br>
+                            <input type="password" class="form-control" name="password" id="_password"
+                                   placeholder="Password (not required)">
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label class="control-label" for="_locked">
+                                    <input type="checkbox" name="locked" id="_locked" value="1"{{ if eq .UserToEdit.Locked true }} checked{{ end }}>
+                                    Locked
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label class="control-label" for="_admin">
+                                    <input type="checkbox" name="admin" id="_admin" value="1"{{ if eq .UserToEdit.Admin true }} checked{{ end }}>
+                                    Admin
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}

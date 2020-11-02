@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -178,10 +179,30 @@ func adminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vars := mux.Vars(r)
+
+	db, err := getDbConnection()
+	if err != nil {
+		writeToConsole("could not get DB connection in adminUserEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	var u user
+	row := db.QueryRow("SELECT id, displayname, email, locked, admin FROM user WHERE id = ?", vars["id"])
+	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Locked, &u.Admin)
+	if err != nil {
+		writeToConsole("could not scan user in adminUserEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
 	contextData := struct {
 		CurrentUser user
+		UserToEdit user
 	}{
-		currentUser,
+		CurrentUser: currentUser,
+		UserToEdit: u,
 	}
 
 	if err = executeTemplate(w, "admin_user_edit.html", contextData); err != nil {
@@ -320,7 +341,6 @@ func adminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occured", errors)
 			writeToConsole(output)
 			sessMgr.AddMessage("error", output)
-			// add flashbag
 		} else {
 			sessMgr.AddMessage("success", "Settings saved successfully!")
 		}
