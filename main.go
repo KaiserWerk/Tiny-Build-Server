@@ -137,14 +137,6 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/admin/user/add", adminUserAddHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/user/{id}/edit", adminUserEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
-	//router.HandleFunc("/admin/buildtarget/list", adminBuildTargetListHandler).Methods("GET")
-	//router.HandleFunc("/admin/buildtarget/add", adminBuildTargetAddHandler).Methods("GET", "POST")
-	//router.HandleFunc("/admin/buildtarget/{id}/edit", adminBuildTargetEditHandler).Methods("GET", "POST")
-	//router.HandleFunc("/admin/buildtarget/{id}/remove", adminBuildTargetRemoveHandler).Methods("GET")
-	//router.HandleFunc("/admin/buildstep/list", adminBuildStepListHandler).Methods("GET")
-	//router.HandleFunc("/admin/buildstep/add", adminBuildStepAddHandler).Methods("GET", "POST")
-	//router.HandleFunc("/admin/buildstep/{id}/edit", adminBuildStepEditHandler).Methods("GET", "POST")
-	//router.HandleFunc("/admin/buildstep/{id}/remove", adminBuildStepRemoveHandler).Methods("GET")
 
 	router.HandleFunc("/builddefinition/list", buildDefinitionListHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/add", buildDefinitionAddHandler).Methods("GET", "POST")
@@ -152,19 +144,12 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/builddefinition/{id}/edit", buildDefinitionEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/remove", buildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", buildDefinitionListExecutionsHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/restart", nil).Methods("GET") // TODO
+	router.HandleFunc("/builddefinition/{id}/restart", buildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
 
 	router.HandleFunc("/buildexecution/list", buildExecutionListHandler).Methods("GET")
 	router.HandleFunc("/buildexecution/{id}/show", buildExecutionShowHandler).Methods("GET")
 
 	// API handlers
 	router.HandleFunc("/api/v1/receive", payloadReceiveHandler).Methods(http.MethodPost)
-	//apiRouter := router.PathPrefix("/api/v1").Subrouter()
-	//apiRouter.HandleFunc("/bitbucket", bitBucketReceiveHandler).Methods("POST")
-	//apiRouter.HandleFunc("/github", gitHubReceiveHandler).Methods("POST")
-	//apiRouter.HandleFunc("/gitlab", gitLabReceiveHandler).Methods("POST")
-	//apiRouter.HandleFunc("/gitea", giteaReceiveHandler).Methods("POST")
-	// ummodeln auf service-agnostischen handler.
-	// anhand der build definition wird festgestellt, welcher dienst genutzt wird.
-	// JSON -> datasweet/jsonmap?
+	// TODO: JSON -> datasweet/jsonmap?
 }

@@ -477,18 +477,12 @@ func buildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	if err := executeTemplate(w, "builddefinition_remove.html", data); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["builddefinition_remove.html"]
-	//if t != nil {
-	//	err := t.Execute(w, data)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func buildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: implement or scrap
+}
 
+func buildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: implement
 }
