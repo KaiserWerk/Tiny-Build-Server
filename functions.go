@@ -52,11 +52,6 @@ func executeTemplate(w http.ResponseWriter, file string, data interface{}) error
 		return err
 	}
 
-	//t, err := template.New(filepath.Base(file)).Parse(string(content))
-	//if err != nil {
-	//	writeToConsole("could not parse " + file + ": " + err.Error())
-	//	return err
-	//}
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		writeToConsole("could not execute template " + file + ": " + err.Error())

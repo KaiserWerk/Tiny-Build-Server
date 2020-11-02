@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/KaiserWerk/sessionstore"
-	"strconv"
 	_ "github.com/go-sql-driver/mysql"
+	"strconv"
 )
 
 var golangRuntimes = []string{
