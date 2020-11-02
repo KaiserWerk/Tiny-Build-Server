@@ -133,6 +133,9 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
 
+	router.HandleFunc("/admin/user/list", adminUserListHandler).Methods("GET")
+	router.HandleFunc("/admin/user/add", adminUserAddHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/user/{id}/edit", adminUserEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
 	//router.HandleFunc("/admin/buildtarget/list", adminBuildTargetListHandler).Methods("GET")
 	//router.HandleFunc("/admin/buildtarget/add", adminBuildTargetAddHandler).Methods("GET", "POST")
@@ -165,4 +168,3 @@ func setupRoutes(router *mux.Router) {
 	// anhand der build definition wird festgestellt, welcher dienst genutzt wird.
 	// JSON -> datasweet/jsonmap?
 }
-
