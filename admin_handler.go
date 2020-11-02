@@ -163,6 +163,7 @@ func adminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func adminUserEditHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
 	session, err := checkLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -188,9 +189,73 @@ func adminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var u user
+
+
+	if r.Method == http.MethodPost {
+
+		displayname := r.FormValue("displayname")
+		email := r.FormValue("email")
+		password := r.FormValue("password")
+		var locked, admin bool
+		if r.FormValue("locked") == "1" {
+			locked = true
+		}
+		if r.FormValue("admin") == "1" {
+			admin = true
+		}
+
+		var u user
+
+		row := db.QueryRow("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, vars["id"])
+		err = row.Scan(&u.Id)
+		if err != nil && err != sql.ErrNoRows {
+			writeToConsole("display name already in use: " + err.Error())
+			sessMgr.AddMessage("error", "This display name is already in use!")
+			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
+			return
+		}
+
+		row = db.QueryRow("SELECT id FROM user WHERE email = ? AND id != ?", email, vars["id"])
+		err = row.Scan(&u.Id)
+		if err != nil && err != sql.ErrNoRows {
+			writeToConsole("display name already in use: " + err.Error())
+			sessMgr.AddMessage("error", "This display name is already in use!")
+			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
+			return
+		}
+
+		var pwQueryPart string
+		if password != "" {
+			pwQueryPart = "password = ? "
+		}
+		query := fmt.Sprintf("UPDATE user SET displayname = ?, email = ?, %slocked = ?, admin = ? WHERE id = ?", pwQueryPart)
+
+		// update user
+		if password != "" {
+			hashedPassword, err := hashString(password)
+			if err != nil {
+				writeToConsole("could not hash password: " + err.Error())
+				w.WriteHeader(500)
+				return
+			}
+		_, err = db.Exec(query, displayname, email, hashedPassword, locked, admin)
+		} else {
+			_, err = db.Exec(query, displayname, email, locked, admin)
+		}
+		if err != nil {
+			writeToConsole("could not update user: " + err.Error())
+			w.WriteHeader(500)
+			return
+		}
+
+		sessMgr.AddMessage("success", "Changes to user account saved!")
+		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+		return
+	}
+
+	var editedUser user
 	row := db.QueryRow("SELECT id, displayname, email, locked, admin FROM user WHERE id = ?", vars["id"])
-	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Locked, &u.Admin)
+	err = row.Scan(&editedUser.Id, &editedUser.Displayname, &editedUser.Email, &editedUser.Locked, &editedUser.Admin)
 	if err != nil {
 		writeToConsole("could not scan user in adminUserEditHandler: " + err.Error())
 		w.WriteHeader(500)
@@ -199,10 +264,10 @@ func adminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	contextData := struct {
 		CurrentUser user
-		UserToEdit user
+		UserToEdit  user
 	}{
 		CurrentUser: currentUser,
-		UserToEdit: u,
+		UserToEdit:  editedUser,
 	}
 
 	if err = executeTemplate(w, "admin_user_edit.html", contextData); err != nil {
