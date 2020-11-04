@@ -15,7 +15,7 @@ func payloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 
 	go startBuildProcess(bd)
 
-	_, _ = fmt.Fprint(w, `{"status": "success", "message": "build execution initiated"}`)
+	//_, _ = fmt.Fprint(w, `{"status": "success", "message": "build execution initiated"}`)
 }
 
 func bitBucketReceiveHandler(w http.ResponseWriter, r *http.Request) {
