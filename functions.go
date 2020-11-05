@@ -39,16 +39,14 @@ func executeTemplate(w http.ResponseWriter, file string, data interface{}) error
 
 	content, err := Asset("templates/content/" + file)
 	if err != nil {
-		writeToConsole("could not find template " + file)
+		writeToConsole("could not find template " + file + ": " + err.Error())
 		return err
 	}
-
-	//writeToConsole(string(content))
 
 	tmpl := template.Must(layout.Clone())
 	_, err = tmpl.Parse(string(content))
 	if err != nil {
-		writeToConsole("could not parse template into base layout")
+		writeToConsole("could not parse template into base layout: " + err.Error())
 		return err
 	}
 
@@ -139,20 +137,21 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return buildDefinition{}, errors.New("could not get bitbucket header " + headers[i])
+				return buildDefinition{}, errors.New("bitbucket: could not get bitbucket header " + headers[i])
 			}
 		}
 
 		var payload bitBucketPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
+		_ = r.Body.Close()
 		if err != nil {
-			return buildDefinition{}, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("bitbucket: could not decode json payload")
 		}
 		if payload.Push.Changes[0].New.Name != bd.RepoBranch {
-			return buildDefinition{}, errors.New("branch names do not match (" + payload.Push.Changes[0].New.Name + ")")
+			return buildDefinition{}, errors.New("bitbucket: branch names do not match (" + payload.Push.Changes[0].New.Name + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("bitbucket: repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	case "github":
 		headers := []string{"X-GitHub-Delivery", "X-GitHub-Event", "X-Hub-Signature"}
@@ -160,20 +159,21 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return buildDefinition{}, errors.New("could not get github header " + headers[i])
+				return buildDefinition{}, errors.New("github: could not get github header " + headers[i])
 			}
 		}
 
 		var payload gitHubPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
+		_ = r.Body.Close()
 		if err != nil {
-			return buildDefinition{}, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("github: could not decode json payload")
 		}
 		if payload.Repository.DefaultBranch != bd.RepoBranch {
-			return buildDefinition{}, errors.New("branch names do not match (" + payload.Repository.DefaultBranch + ")")
+			return buildDefinition{}, errors.New("github: branch names do not match (" + payload.Repository.DefaultBranch + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("github: repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	case "gitlab":
 		headers := []string{"X-GitLab-Event"}
@@ -181,21 +181,22 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return buildDefinition{}, errors.New("could not get gitlab header " + headers[i])
+				return buildDefinition{}, errors.New("gitlab: could not get gitlab header " + headers[i])
 			}
 		}
 
 		var payload gitLabPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
+		_ = r.Body.Close()
 		if err != nil {
-			return buildDefinition{}, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("gitlab: could not decode json payload")
 		}
 		branch := strings.Split(payload.Ref, "/")[2]
 		if branch != bd.RepoBranch {
-			return buildDefinition{}, errors.New("branch names do not match (" + branch + ")")
+			return buildDefinition{}, errors.New("gitlab: branch names do not match (" + branch + ")")
 		}
 		if payload.Project.PathWithNamespace != bd.RepoFullname {
-			return buildDefinition{}, errors.New("repository names do not match (" + payload.Project.PathWithNamespace + ")")
+			return buildDefinition{}, errors.New("gitlab: repository names do not match (" + payload.Project.PathWithNamespace + ")")
 		}
 	case "gitea":
 		headers := []string{"X-Gitea-Delivery", "X-Gitea-Event"}
@@ -203,21 +204,22 @@ func checkPayloadRequest(r *http.Request) (buildDefinition, error) {
 		for i := range headers {
 			headerValues[i], err = getHeaderIfSet(r, headers[i])
 			if err != nil {
-				return buildDefinition{}, errors.New("could not get gitea header " + headers[i])
+				return buildDefinition{}, errors.New("gitea: could not get gitea header " + headers[i])
 			}
 		}
 
 		var payload giteaPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
+		_ = r.Body.Close()
 		if err != nil {
-			return buildDefinition{}, errors.New("could not decode json payload")
+			return buildDefinition{}, errors.New("gitea: could not decode json payload")
 		}
 		branch := strings.Split(payload.Ref, "/")[2]
 		if branch != bd.RepoBranch {
-			return buildDefinition{}, errors.New("branch names do not match (" + branch + ")")
+			return buildDefinition{}, errors.New("gitea: branch names do not match (" + branch + ")")
 		}
 		if payload.Repository.FullName != bd.RepoFullname {
-			return buildDefinition{}, errors.New("repository names do not match (" + payload.Repository.FullName + ")")
+			return buildDefinition{}, errors.New("gitea: repository names do not match (" + payload.Repository.FullName + ")")
 		}
 	}
 
