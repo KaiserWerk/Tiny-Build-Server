@@ -1,19 +1,21 @@
-package main
+package handler
 
 import (
+	"Tiny-Build-Server/internal/helper"
+	"Tiny-Build-Server/internal/service"
 	"fmt"
 	"net/http"
 )
 
-func payloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
-	bd, err := checkPayloadRequest(r)
+func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
+	bd, err := helper.CheckPayloadRequest(r)
 	if err != nil {
 		w.WriteHeader(500)
 		_, _ = fmt.Fprintf(w, `{"status": "error", "message": "%s"}`, err.Error())
 		return
 	}
 
-	go startBuildProcess(bd)
+	go service.StartBuildProcess(bd)
 
 	//_, _ = fmt.Fprint(w, `{"status": "success", "message": "build execution initiated"}`)
 }

@@ -1,50 +1,53 @@
-package main
+package handler
 
 import (
+	"Tiny-Build-Server/internal"
+	"Tiny-Build-Server/internal/entity"
+	"Tiny-Build-Server/internal/helper"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 )
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := checkLogin(r)
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := getUserFromSession(session)
+	currentUser, err := helper.GetUserFromSession(session)
 	if err != nil {
-		writeToConsole("could not fetch user by ID")
+		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	latestBuilds, err := getNewestBuildExecutions(5)
+	latestBuilds, err := helper.GetNewestBuildExecutions(5)
 	if err != nil {
-		writeToConsole("could not fetch latest build executions: " + err.Error())
+		helper.WriteToConsole("could not fetch latest build executions: " + err.Error())
 	}
-	latestBuildDefs, err := getNewestBuildDefinitions(5)
+	latestBuildDefs, err := helper.GetNewestBuildDefinitions(5)
 	if err != nil {
-		writeToConsole("could not fetch latest build definitions: " + err.Error())
+		helper.WriteToConsole("could not fetch latest build definitions: " + err.Error())
 	}
 
 	indexData := struct {
-		CurrentUser     user
-		LatestBuilds    []buildExecution
-		LatestBuildDefs []buildDefinition
+		CurrentUser     entity.User
+		LatestBuilds    []entity.BuildExecution
+		LatestBuildDefs []entity.BuildDefinition
 	}{
 		CurrentUser:     currentUser,
 		LatestBuilds:    latestBuilds,
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := executeTemplate(w, "index.html", indexData); err != nil {
+	if err := helper.ExecuteTemplate(w, "index.html", indexData); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
-func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
-	//writeToConsole("asset handler hit")
+func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
+	//helper.WriteToConsole("asset handler hit")
 	vars := mux.Vars(r)
 	file := vars["file"]
 
@@ -58,7 +61,7 @@ func staticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-	data, err := Asset("public/" + path + "/" + file)
+	data, err := internal.FSByte(true, "public/" + path + "/" + file)
 	if err != nil {
 		fmt.Println("could not locate asset", file)
 		w.WriteHeader(404)

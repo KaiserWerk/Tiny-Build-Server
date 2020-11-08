@@ -1,31 +1,35 @@
-package main
+package handler
 
 import (
+	"Tiny-Build-Server/internal"
+	"Tiny-Build-Server/internal/helper"
+	"Tiny-Build-Server/internal/security"
+	"Tiny-Build-Server/internal/templates"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	sessMgr := internal.GetSessionManager()
 	if r.Method == http.MethodPost {
 
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
-		u, err := getUserByEmail(email)
+		u, err := helper.GetUserByEmail(email)
 		if err != nil {
-			writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+			helper.WriteToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
 			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		if doesHashMatch(password, u.Password) {
-			writeToConsole("user " + u.Displayname + " authenticated successfully")
+		if security.DoesHashMatch(password, u.Password) {
+			helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
-				writeToConsole("could not create session: " + err.Error())
+				helper.WriteToConsole("could not create session: " + err.Error())
 				sessMgr.AddMessage("error", "Could not create session!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
@@ -33,13 +37,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			sess.SetVar("user_id", strconv.Itoa(u.Id))
 			err = sessMgr.SetCookie(w, sess.Id)
 			if err != nil {
-				writeToConsole("could not set cookie: " + err.Error())
+				helper.WriteToConsole("could not set cookie: " + err.Error())
 				sessMgr.AddMessage("error", "Session cookie could not be set!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 		} else {
-			writeToConsole("login not successful")
+			helper.WriteToConsole("login not successful")
 			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -50,29 +54,30 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := executeTemplate(w, "login.html", nil); err != nil {
+	if err := templates.ExecuteTemplate(w, "login.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	writeToConsole("getting cookie value")
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	sessMgr := internal.GetSessionManager()
+	helper.WriteToConsole("getting cookie value")
 	sessId, err := sessMgr.GetCookieValue(r)
 	if err != nil {
-		writeToConsole("could not get cookie value: " + err.Error())
+		helper.WriteToConsole("could not get cookie value: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	//writeToConsole("getting session with Id "+sessId)
+	//helper.WriteToConsole("getting session with Id "+sessId)
 	session, err := sessMgr.GetSession(sessId)
 	if err != nil {
-		writeToConsole("could not get session: " + err.Error())
+		helper.WriteToConsole("could not get session: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	err = sessMgr.RemoveSession(session.Id)
 	if err != nil {
-		writeToConsole("could not remove session: " + err.Error())
+		helper.WriteToConsole("could not remove session: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -81,19 +86,20 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	sessMgr := internal.GetSessionManager()
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		if email != "" {
-			u, err := getUserByEmail(email)
+			u, err := helper.GetUserByEmail(email)
 			if err != nil {
-				writeToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+				helper.WriteToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
 				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 					"instructions to set a new password")
 				return
 			}
 
-			writeToConsole("user: " + u.Displayname)
+			helper.WriteToConsole("user: " + u.Displayname)
 			// email an user versenden
 			// zur reset seite weiterleiten
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
@@ -105,25 +111,25 @@ func requestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := executeTemplate(w, "´password_request.html", nil); err != nil {
+	if err := templates.ExecuteTemplate(w, "´password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
-func resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	//r.Method == "POST" {
 
 	//}
 
-	if err := executeTemplate(w, "password_request.html", nil); err != nil {
+	if err := templates.ExecuteTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
-func registrationHandler(w http.ResponseWriter, r *http.Request) {
+func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 
-	if err := executeTemplate(w, "register.html", nil); err != nil {
+	if err := templates.ExecuteTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }

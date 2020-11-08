@@ -1,6 +1,7 @@
-package main
+package helper
 
 import (
+	"Tiny-Build-Server/internal/entity"
 	"database/sql"
 	"errors"
 	"github.com/KaiserWerk/sessionstore"
@@ -8,7 +9,7 @@ import (
 	"strconv"
 )
 
-var golangRuntimes = []string{
+var GolangRuntimes = []string{
 	"aix/ppc64",
 	"android/386",
 	"android/amd64",
@@ -53,7 +54,7 @@ var golangRuntimes = []string{
 	"windows/amd64",
 	"windows/arm",
 }
-var dotnetRuntimes = []string{
+var DotnetRuntimes = []string{
 	"win-x64",
 	"win-x86",
 	"win-arm",
@@ -84,48 +85,37 @@ var dotnetRuntimes = []string{
 	"osx.10.14-x64",
 }
 
-func getUserByEmail(n string) (user, error) {
-	db, err := getDbConnection()
-	if err != nil {
-		return user{}, errors.New("could not get database connection")
-	}
-	defer db.Close()
+func GetUserByEmail(n string) (entity.User, error) {
+	db := GetDbConnection()
 	row := db.QueryRow("SELECT id, displayname, email, password, locked, admin FROM user WHERE email = ?", n)
-	var u user
+	var u entity.User
 	//var Locked int
 	//var Admin int
-	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Password, &u.Locked, &u.Admin)
+	err := row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Password, &u.Locked, &u.Admin)
 	if err != nil {
-		return user{}, errors.New("could not scan")
+		return entity.User{}, errors.New("could not scan")
 	}
 
 	return u, nil
 }
 
-func getBuildDefCaption(id int) (string, error) {
-	db, err := getDbConnection()
-	if err != nil {
-		return "", errors.New("could not fetch: " + err.Error())
-	}
-	defer db.Close()
+func GetBuildDefCaption(id int) (string, error) {
+	db := GetDbConnection()
+
 	var name string
 	row := db.QueryRow("SELECT caption FROM build_definition WHERE id = ?", id)
-	err = row.Scan(&name)
+	err := row.Scan(&name)
 	if err != nil {
 		return "", errors.New("could not scan: " + err.Error())
 	}
 	return name, nil
 }
 
-func getUserById(id int) (user, error) {
-	var u user
-	db, err := getDbConnection()
-	if err != nil {
-		return u, err
-	}
-	defer db.Close()
+func GetUserById(id int) (entity.User, error) {
+	var u entity.User
+	db := GetDbConnection()
 	row := db.QueryRow("SELECT Id, Displayname, Email, Admin FROM user WHERE Id = ?", id)
-	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
+	err := row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
 	if err != nil {
 		return u, err
 	}
@@ -133,26 +123,23 @@ func getUserById(id int) (user, error) {
 	return u, nil
 }
 
-func getUserFromSession(s sessionstore.Session) (user, error) {
+func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 	userIdStr, ok := s.GetVar("user_id")
 	if !ok {
-		return user{}, nil
+		return entity.User{}, nil
 	}
 
 	userId, _ := strconv.Atoi(userIdStr)
-	user, err := getUserById(userId)
+	user, err := GetUserById(userId)
 	return user, err
 }
 
-func getUsernameById(id int) string {
-	var u user
-	db, err := getDbConnection()
-	if err != nil {
-		return "not found"
-	}
-	defer db.Close()
+func GetUsernameById(id int) string {
+	var u entity.User
+	db := GetDbConnection()
+
 	row := db.QueryRow("SELECT Id, Displayname, Email, Admin FROM user WHERE Id = ?", id)
-	err = row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
+	err := row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Admin)
 	if err != nil {
 		return "not found"
 	}
@@ -160,15 +147,11 @@ func getUsernameById(id int) string {
 	return u.Displayname
 }
 
-func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
-	var be buildExecution
-	var beList []buildExecution
+func GetNewestBuildExecutions(limit int) ([]entity.BuildExecution, error) {
+	var be entity.BuildExecution
+	var beList []entity.BuildExecution
 
-	db, err := getDbConnection()
-	if err != nil {
-		return beList, err
-	}
-	defer db.Close()
+	db := GetDbConnection()
 	query := "SELECT id, build_definition_id, initiated_by, manual_run, action_log, result, artifact_path, " +
 		"execution_time, executed_at FROM build_execution ORDER BY executed_at DESC"
 	if limit > 0 {
@@ -187,21 +170,17 @@ func getNewestBuildExecutions(limit int) ([]buildExecution, error) {
 		}
 
 		beList = append(beList, be)
-		be = buildExecution{}
+		be = entity.BuildExecution{}
 	}
 
 	return beList, nil
 }
 
-func getNewestBuildDefinitions(limit int) ([]buildDefinition, error) {
-	var bd buildDefinition
-	var bdList []buildDefinition
+func GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
+	var bd entity.BuildDefinition
+	var bdList []entity.BuildDefinition
 
-	db, err := getDbConnection()
-	if err != nil {
-		return bdList, err
-	}
-	defer db.Close()
+	db := GetDbConnection()
 	query := "SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, repo_hoster, repo_hoster_url, " +
 		"repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition ORDER BY altered_at DESC"
 	if limit > 0 {
@@ -220,58 +199,48 @@ func getNewestBuildDefinitions(limit int) ([]buildDefinition, error) {
 		}
 
 		bdList = append(bdList, bd)
-		bd = buildDefinition{}
+		bd = entity.BuildDefinition{}
 	}
 
 	return bdList, nil
 }
 
-func getAllSettings() (map[string]string, error) {
+func GetAllSettings() (map[string]string, error) {
 	settings := make(map[string]string)
-	db, err := getDbConnection()
-	if err != nil {
-		return settings, err
-	}
-	defer db.Close()
+	db := GetDbConnection()
 
 	rows, err := db.Query("SELECT setting_name, setting_value FROM setting")
 	if err != nil {
 		return settings, err
 	}
 
-	var setting adminSetting
+	var setting entity.AdminSetting
 	for rows.Next() {
 		err = rows.Scan(&setting.Name, &setting.Value)
 		if err != nil {
 			return settings, err
 		}
 		settings[setting.Name] = setting.Value
-		setting = adminSetting{}
+		setting = entity.AdminSetting{}
 	}
-	//fmt.Println("settings:", settings)
 
 	return settings, nil
 }
 
-func setSetting(name, value string) error {
-	db, err := getDbConnection()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func SetSetting(name, value string) error {
+	db := GetDbConnection()
 	row := db.QueryRow("SELECT setting_name, setting_value FROM setting WHERE setting_name = ?", name)
-	var s adminSetting
-	err = row.Scan(&s.Name, &s.Value)
+	var s entity.AdminSetting
+	err := row.Scan(&s.Name, &s.Value)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			//writeToConsole("no row, inserting")
+			//helper.WriteToConsole("no row, inserting")
 			_, err = db.Exec("INSERT INTO setting (setting_name, setting_value) VALUES (?, ?)", name, value)
 			if err != nil {
 				return err
 			}
 		} else {
-			//writeToConsole("row found, updating")
+			//helper.WriteToConsole("row found, updating")
 			//_, err = db.Exec("UPDATE setting SET setting_value = ? WHERE setting_name = ?", value, name)
 			//if err != nil {
 			//	return err
@@ -279,7 +248,7 @@ func setSetting(name, value string) error {
 			return err
 		}
 	} else { // brauch ich den Zweig?
-		//writeToConsole("row found, updating (2)")
+		//helper.WriteToConsole("row found, updating (2)")
 		_, err = db.Exec("UPDATE setting SET setting_value = ? WHERE setting_name = ?", value, name)
 		if err != nil {
 			return err
@@ -289,56 +258,46 @@ func setSetting(name, value string) error {
 	return nil
 }
 
-func getBuildTargets() ([]buildTarget, error) {
-	db, err := getDbConnection()
-	if err != nil {
-		return nil, errors.New("could not get DB connection in getBuildTargets: " + err.Error())
-	}
-	defer db.Close()
-
-	var btList []buildTarget
+func GetBuildTargets() ([]entity.BuildTarget, error) {
+	db := GetDbConnection()
+	var btList []entity.BuildTarget
 	rows, err := db.Query("SELECT id, caption FROM build_target")
 	if err != nil {
 		return nil, errors.New("could not get buildTargets in getBuildTargets: " + err.Error())
 	} else {
-		var bt buildTarget
+		var bt entity.BuildTarget
 		for rows.Next() {
 			err = rows.Scan(&bt.Id, &bt.Description)
 			if err != nil {
-				writeToConsole("could not scan in getBuildTargets: " + err.Error())
+				WriteToConsole("could not scan in getBuildTargets: " + err.Error())
 				continue
 			}
 			btList = append(btList, bt)
-			bt = buildTarget{}
+			bt = entity.BuildTarget{}
 		}
 	}
 
 	return btList, nil
 }
 
-func getBuildStepsForTarget(id int) ([]buildStep, error) {
-	db, err := getDbConnection()
-	if err != nil {
-		return nil, errors.New("could not get DB connection in getBuildStepsForTarget: " + err.Error())
-	}
-	defer db.Close()
-
-	var bsList []buildStep
+func GetBuildStepsForTarget(id int) ([]entity.BuildStep, error) {
+	db := GetDbConnection()
+	var bsList []entity.BuildStep
 	rows, err := db.Query("SELECT id, build_target_id, caption, command, enabled FROM build_step WHERE "+
 		"enabled = 1 AND build_target_id = ?",
 		id)
 	if err != nil {
 		return nil, errors.New("could not get buildSteps in getBuildStepsForTarget: " + err.Error())
 	} else {
-		var bs buildStep
+		var bs entity.BuildStep
 		for rows.Next() {
 			err = rows.Scan(&bs.Id, &bs.BuildTargetId, &bs.Caption, &bs.Command, &bs.Enabled)
 			if err != nil {
-				writeToConsole("could not scan in getBuildStepsForTarget: " + err.Error())
+				WriteToConsole("could not scan in getBuildStepsForTarget: " + err.Error())
 				continue
 			}
 			bsList = append(bsList, bs)
-			bs = buildStep{}
+			bs = entity.BuildStep{}
 		}
 	}
 

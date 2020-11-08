@@ -1,6 +1,7 @@
-package main
+package buildsteps
 
 import (
+	"Tiny-Build-Server/internal/entity"
 	"errors"
 	"fmt"
 	"github.com/stvp/slug"
@@ -11,15 +12,15 @@ import (
 	"time"
 )
 
-type golangBuildDefinition struct {
-	cloneDir    string
-	artifactDir string
-	buildDefinition
+type GolangBuildDefinition struct {
+	CloneDir    string
+	ArtifactDir string
+	entity.BuildDefinition
 }
 
-func (bd golangBuildDefinition) runTests(messageCh chan string) error {
+func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "./...")
-	cmd.Dir = bd.cloneDir
+	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -30,9 +31,9 @@ func (bd golangBuildDefinition) runTests(messageCh chan string) error {
 	return nil
 }
 
-func (bd golangBuildDefinition) runBenchmarkTests(messageCh chan string) error {
+func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "-bench=.")
-	cmd.Dir = bd.cloneDir
+	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.Output()
 	if err != nil {
@@ -43,7 +44,7 @@ func (bd golangBuildDefinition) runBenchmarkTests(messageCh chan string) error {
 	return nil
 }
 
-func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir string) (string, error) {
+func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir string) (string, error) {
 	var err error
 	slug.Replacement = '-'
 	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.RepoFullname, "/")[1]))
@@ -52,13 +53,13 @@ func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir 
 	}
 	messageCh <- "binary name set to " + binaryName
 
-	artifact := bd.artifactDir + "/" + binaryName
+	artifact := bd.ArtifactDir + "/" + binaryName
 
 	buildCommand := fmt.Sprintf(
 		`build -o %s -mod=vendor -a -v -work -x -ldflags "-s -w -X main.versionDate=%s" %s`,
 		artifact,
 		time.Now().Format(time.RFC3339),
-		bd.cloneDir,
+		bd.CloneDir,
 	)
 
 	// for go, the separator is a forward slash
@@ -92,3 +93,4 @@ func (bd golangBuildDefinition) buildArtifact(messageCh chan string, projectDir 
 
 	return artifact, nil
 }
+

@@ -1,11 +1,15 @@
 package main
 
 import (
+	"Tiny-Build-Server/internal"
+	"Tiny-Build-Server/internal/handler"
+	"Tiny-Build-Server/internal/helper"
+	"Tiny-Build-Server/internal/middleware"
+	"Tiny-Build-Server/internal/templates"
 	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/sessionstore"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -23,32 +27,34 @@ var (
 	versionDate   = "0000-00-00 00:00:00 +00:00" // inject at compile time
 	listenPort    string
 	configFile    string
-	centralConfig configuration
-	sessMgr       *sessionstore.SessionManager
 )
 
 func main() {
-	writeToConsole("Tiny Build Server")
-	writeToConsole("  Version: " + version)
-	writeToConsole("  From: " + versionDate)
+	helper.WriteToConsole("Tiny Build Server")
+	helper.WriteToConsole("  Version: " + version)
+	helper.WriteToConsole("  From: " + versionDate)
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
-	flag.StringVar(&configFile, "config", "config/app.yaml", "The location of the configuration file")
+	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
 	flag.Parse()
 
-	centralConfig = getConfiguration()
-	sessMgr = sessionstore.NewManager("tbs_sessid")
+	if configFile != "" {
+		internal.SetConfigurationFile(configFile)
+	}
+
+	config := internal.GetConfiguration()
+
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
-	writeToConsole("  Server will be handling requests at port " + listenPort)
-	if centralConfig.Tls.Enabled {
-		writeToConsole("  TLS is enabled")
+	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
+	if config.Tls.Enabled {
+		helper.WriteToConsole("  TLS is enabled")
 	}
 
 	router := mux.NewRouter()
-	router.Use(limit)
+	router.Use(middleware.Limit)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		if err := executeTemplate(w, "404.html", r.URL.Path); err != nil {
+		if err := templates.ExecuteTemplate(w, "404.html", r.URL.Path); err != nil {
 			w.WriteHeader(404)
 		}
 	})
@@ -73,7 +79,7 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	if centralConfig.Tls.Enabled {
+	if config.Tls.Enabled {
 		server.TLSConfig = tlsConfig
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
@@ -82,13 +88,14 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	go readConsoleInput(quit)
+	go helper.ReadConsoleInput(quit)
 
 	go func() {
 		<-quit
-		writeToConsole("Server is shutting down...")
+		helper.WriteToConsole("Server is shutting down...")
+		helper.Cleanup()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
@@ -98,12 +105,12 @@ func main() {
 		close(done)
 	}()
 
-	if centralConfig.Tls.Enabled {
-		if !fileExists(centralConfig.Tls.CertFile) || !fileExists(centralConfig.Tls.CertFile) {
-			writeToConsole("TLS is enabled, but the certificate file or key file does not exist!")
+	if config.Tls.Enabled {
+		if !helper.FileExists(config.Tls.CertFile) || !helper.FileExists(config.Tls.CertFile) {
+			helper.WriteToConsole("TLS is enabled, but the certificate file or key file does not exist!")
 			quit <- os.Interrupt
 		} else {
-			if err := server.ListenAndServeTLS(centralConfig.Tls.CertFile, centralConfig.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
+			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
 				log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
 			}
 		}
@@ -113,7 +120,7 @@ func main() {
 		}
 	}
 	<-done
-	writeToConsole("Server shutdown complete. Have a nice day!")
+	helper.WriteToConsole("Server shutdown complete. Have a nice day!")
 }
 
 func setupRoutes(router *mux.Router) {
@@ -121,35 +128,35 @@ func setupRoutes(router *mux.Router) {
 	//router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
 	//router.PathPrefix("/js/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
 	//router.PathPrefix("/assets/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	router.HandleFunc("/assets/{file}", staticAssetHandler)
-	router.HandleFunc("/js/{file}", staticAssetHandler)
-	router.HandleFunc("/css/{file}", staticAssetHandler)
+	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
+	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
+	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
 
 	// site handlers
-	router.HandleFunc("/", indexHandler).Methods("GET")
-	router.HandleFunc("/login", loginHandler).Methods("GET", "POST")
-	router.HandleFunc("/logout", logoutHandler).Methods("GET", "POST")
-	router.HandleFunc("/password/request", requestNewPasswordHandler).Methods("GET", "POST")
-	router.HandleFunc("/password/reset", resetPasswordHandler).Methods("GET", "POST")
-	router.HandleFunc("/register", registrationHandler).Methods("GET", "POST")
+	router.HandleFunc("/", handler.IndexHandler).Methods("GET")
+	router.HandleFunc("/login", handler.LoginHandler).Methods("GET", "POST")
+	router.HandleFunc("/logout", handler.LogoutHandler).Methods("GET", "POST")
+	router.HandleFunc("/password/request", handler.RequestNewPasswordHandler).Methods("GET", "POST")
+	router.HandleFunc("/password/reset", handler.ResetPasswordHandler).Methods("GET", "POST")
+	router.HandleFunc("/register", handler.RegistrationHandler).Methods("GET", "POST")
 
-	router.HandleFunc("/admin/user/list", adminUserListHandler).Methods("GET")
-	router.HandleFunc("/admin/user/add", adminUserAddHandler).Methods("GET", "POST")
-	router.HandleFunc("/admin/user/{id}/edit", adminUserEditHandler).Methods("GET", "POST")
-	router.HandleFunc("/admin/settings", adminSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods("GET")
+	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/settings", handler.AdminSettingsHandler).Methods("GET", "POST")
 
-	router.HandleFunc("/builddefinition/list", buildDefinitionListHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/add", buildDefinitionAddHandler).Methods("GET", "POST")
-	router.HandleFunc("/builddefinition/{id}/show", buildDefinitionShowHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/edit", buildDefinitionEditHandler).Methods("GET", "POST")
-	router.HandleFunc("/builddefinition/{id}/remove", buildDefinitionRemoveHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/listexecutions", buildDefinitionListExecutionsHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/restart", buildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
+	router.HandleFunc("/builddefinition/list", handler.BuildDefinitionListHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/add", handler.BuildDefinitionAddHandler).Methods("GET", "POST")
+	router.HandleFunc("/builddefinition/{id}/show", handler.BuildDefinitionShowHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods("GET", "POST")
+	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods("GET")
+	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
 
-	router.HandleFunc("/buildexecution/list", buildExecutionListHandler).Methods("GET")
-	router.HandleFunc("/buildexecution/{id}/show", buildExecutionShowHandler).Methods("GET")
+	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods("GET")
+	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods("GET")
 
 	// API handlers
-	router.HandleFunc("/api/v1/receive", payloadReceiveHandler).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/receive", handler.PayloadReceiveHandler).Methods(http.MethodPost)
 	// TODO: JSON -> datasweet/jsonmap?
 }
