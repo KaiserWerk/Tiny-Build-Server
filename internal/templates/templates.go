@@ -1,12 +1,13 @@
 package templates
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/sessionstore"
 	"html/template"
 	"net/http"
 	"strings"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/sessionstore"
 )
 
 func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error {
@@ -23,7 +24,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 
 	layout := template.Must(template.New("_layout.html").Parse(layoutContent)).Funcs(funcMap)
 
-	content, err := internal.FSString(true, "templates/content/" + file) // with leading slash?
+	content, err := internal.FSString(true, "templates/content/"+file) // with leading slash?
 	if err != nil {
 		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
@@ -75,4 +76,3 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 		return template.HTML(sb.String())
 	}
 }
-

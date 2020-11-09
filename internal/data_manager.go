@@ -1,10 +1,11 @@
 package internal
 
 import (
-	"Tiny-Build-Server/internal/entity"
+	"io/ioutil"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/sessionstore"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 var sessMgr *sessionstore.SessionManager

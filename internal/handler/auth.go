@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/helper"
-	"Tiny-Build-Server/internal/security"
-	"Tiny-Build-Server/internal/templates"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"net/http"
 	"strconv"
 	"time"

@@ -1,7 +1,7 @@
 package buildsteps
 
 import (
-	"Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"errors"
 	"fmt"
 	"github.com/stvp/slug"
