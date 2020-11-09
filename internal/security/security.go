@@ -1,13 +1,14 @@
 package security
 
 import (
-	"Tiny-Build-Server/internal"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"net/http"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/sessionstore"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
 )
 
 func GenerateToken(length int) string {

@@ -2,6 +2,8 @@ github.com/KaiserWerk/sessionstore v0.0.0-20201022135203-7b2bfff8b9b1 h1:JRzdyDG
 github.com/KaiserWerk/sessionstore v0.0.0-20201022135203-7b2bfff8b9b1/go.mod h1:gCtJwx/tnbi3/V/0ye8w3bNwN0bhipLVvK/qHijQz2Q=
 github.com/KaiserWerk/sessionstore v0.0.0-20201029090542-9aa7425a0723 h1:pahjIxaKOy/my1UgQd6EVDW7zc4GKqetwK1xg6DaRVc=
 github.com/KaiserWerk/sessionstore v0.0.0-20201029090542-9aa7425a0723/go.mod h1:gCtJwx/tnbi3/V/0ye8w3bNwN0bhipLVvK/qHijQz2Q=
+github.com/KaiserWerk/sessionstore v0.0.0-20201103070619-3258c09669f7 h1:EvXTtvg74pGxPkf+vCQ/LOyAGIcvIZCF08yH8Sxi/dQ=
+github.com/KaiserWerk/sessionstore v0.0.0-20201103070619-3258c09669f7/go.mod h1:gCtJwx/tnbi3/V/0ye8w3bNwN0bhipLVvK/qHijQz2Q=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=
@@ -43,6 +45,8 @@ golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201101102859-da207088b7d1 h1:a/mKvvZr9Jcc8oKfcmgzyp7OwF73JPWsQLvH1z2Kxck=
 golang.org/x/sys v0.0.0-20201101102859-da207088b7d1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20201107080550-4d91cf3a1aaf h1:kt3wY1Lu5MJAnKTfoMR52Cu4gwvna4VTzNOiT8tY73s=
+golang.org/x/sys v0.0.0-20201107080550-4d91cf3a1aaf/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=

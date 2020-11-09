@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"Tiny-Build-Server/internal/helper"
-	"Tiny-Build-Server/internal/service"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/service"
 	"fmt"
 	"net/http"
 )

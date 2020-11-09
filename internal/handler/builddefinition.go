@@ -1,15 +1,16 @@
 package handler
 
 import (
-	"Tiny-Build-Server/internal/entity"
-	"Tiny-Build-Server/internal/helper"
-	"Tiny-Build-Server/internal/security"
-	"Tiny-Build-Server/internal/templates"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
+	"github.com/gorilla/mux"
 )
 
 func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {

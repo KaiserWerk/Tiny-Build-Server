@@ -1,12 +1,13 @@
 package helper
 
 import (
-	"Tiny-Build-Server/internal/entity"
 	"database/sql"
 	"errors"
+	"strconv"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/sessionstore"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 )
 
 var GolangRuntimes = []string{

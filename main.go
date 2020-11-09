@@ -1,11 +1,11 @@
 package main
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/handler"
-	"Tiny-Build-Server/internal/helper"
-	"Tiny-Build-Server/internal/middleware"
-	"Tiny-Build-Server/internal/templates"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"context"
 	"crypto/tls"
 	"flag"

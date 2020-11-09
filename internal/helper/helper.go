@@ -1,19 +1,20 @@
 package helper
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/entity"
 	"bufio"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
@@ -42,8 +43,6 @@ func GetDbConnection() *sql.DB {
 	return db
 }
 
-
-
 //func SendMail(m *gomail.Message) {
 //	// fetch data from system configuration
 //	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
@@ -51,8 +50,6 @@ func GetDbConnection() *sql.DB {
 //		WriteToConsole("could not send email: " + err.Error())
 //	}
 //}
-
-
 
 func Cleanup() {
 	// close DB connection
@@ -63,9 +60,6 @@ func Cleanup() {
 	}
 	// flush log writer
 }
-
-
-
 
 func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 	header := r.Header.Get(key)
