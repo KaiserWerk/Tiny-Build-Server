@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/entity"
-	"Tiny-Build-Server/internal/helper"
-	"Tiny-Build-Server/internal/security"
-	"Tiny-Build-Server/internal/templates"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"database/sql"
 	"fmt"
 	"github.com/gorilla/mux"

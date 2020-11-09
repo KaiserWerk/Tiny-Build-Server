@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"Tiny-Build-Server/internal"
-	"Tiny-Build-Server/internal/entity"
-	"Tiny-Build-Server/internal/helper"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/gorilla/mux"
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +62,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-	data, err := internal.FSByte(true, "public/" + path + "/" + file)
+	data, err := internal.FSByte(true, "public/"+path+"/"+file)
 	if err != nil {
 		fmt.Println("could not locate asset", file)
 		w.WriteHeader(404)
