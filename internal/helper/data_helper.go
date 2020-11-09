@@ -89,8 +89,6 @@ func GetUserByEmail(n string) (entity.User, error) {
 	db := GetDbConnection()
 	row := db.QueryRow("SELECT id, displayname, email, password, locked, admin FROM user WHERE email = ?", n)
 	var u entity.User
-	//var Locked int
-	//var Admin int
 	err := row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Password, &u.Locked, &u.Admin)
 	if err != nil {
 		return entity.User{}, errors.New("could not scan")
@@ -101,7 +99,6 @@ func GetUserByEmail(n string) (entity.User, error) {
 
 func GetBuildDefCaption(id int) (string, error) {
 	db := GetDbConnection()
-
 	var name string
 	row := db.QueryRow("SELECT caption FROM build_definition WHERE id = ?", id)
 	err := row.Scan(&name)
