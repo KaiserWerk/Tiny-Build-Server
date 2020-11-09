@@ -8,10 +8,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var sessMgr *sessionstore.SessionManager
-var config *entity.Configuration
-
-var configFile string = "config/app.yaml"
+var (
+	sessMgr *sessionstore.SessionManager
+	config *entity.Configuration
+	configFile string = "config/app.yaml"
+)
 
 func GetSessionManager() *sessionstore.SessionManager {
 	if sessMgr == nil {

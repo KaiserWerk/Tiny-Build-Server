@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
+	"crypto/tls"
+	"flag"
+	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
-	"context"
-	"crypto/tls"
-	"flag"
-	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"

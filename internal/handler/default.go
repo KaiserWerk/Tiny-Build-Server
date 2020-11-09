@@ -2,6 +2,8 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"net/http"
 	"strings"
 
@@ -12,7 +14,7 @@ import (
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -42,7 +44,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := helper.ExecuteTemplate(w, "index.html", indexData); err != nil {
+	if err := templates.ExecuteTemplate(w, "index.html", indexData); err != nil {
 		w.WriteHeader(404)
 	}
 }
