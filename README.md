@@ -2,14 +2,24 @@
 
 # Tiny Build Server
 
-This project is, or rather will be, a functioning, minimalistic build server for Golang and C# projects.
-It is not meant to be used in production since it is a proof-of-concept, but this is up to you.
-It can be used in conjunction with BitBucket, GitHub and GitLab and it runs on 
+This project is a functioning, minimal build server for Golang and C# projects (possibley PHP and Rust).
+
+It can be used in conjunction with BitBucket, GitHub, GitLab and Gitea and it runs on 
 whatever platform you compile it for, be it Windows, Linux or MacOS, even a RaspberryPi.
+Releases will deliver standalone binaries for the popular operating systems.
 
+### License
 
-Prerequisites
-* Basic knowledge of the Go programming language
+Free to use for any non-commercial purpose; refer to LICENSE.md
+
+### Custom build
+
+* You need Golang version 1.15+ installed
+* you need [mjibson/esc](https://github.com/mjibson/esc) to created embedded resources from 
+templates and static assets
+* Clone the repository
+* created the embedded resources with the command ``esc -pkg internal -o internal/embed.go templates/ public/``
+* Build the binary (refer to or use the ``build.ps1``)
 
 ### Documentation
 
