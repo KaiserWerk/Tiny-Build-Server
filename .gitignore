@@ -1,7 +1,5 @@
 .idea/
-
 vendor/
 build/
-
-app.yaml
-embed.go
+config/app.yaml
+internal/embed.go
