@@ -12,20 +12,20 @@ import (
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessMgr := internal.GetSessionManager()
-	if r.Method == http.MethodPost {
 
+	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
 		u, err := helper.GetUserByEmail(email)
 		if err != nil {
-			helper.WriteToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+			helper.WriteToConsole("could not get user by Email in LoginHandler: " + err.Error())
 			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
 		if security.DoesHashMatch(password, u.Password) {
-			helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
+			//helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
@@ -49,6 +49,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		helper.WriteToConsole("redirecting to dashboard")
 		sessMgr.AddMessage("success", "You are now logged in.")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -93,7 +94,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		if email != "" {
 			u, err := helper.GetUserByEmail(email)
 			if err != nil {
-				helper.WriteToConsole("could not get user by Email (maybe doesnt exist): " + err.Error())
+				helper.WriteToConsole("could not get user by Email in RequestNewPasswordHandler (maybe doesnt exist): " + err.Error())
 				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 					"instructions to set a new password")
 				return

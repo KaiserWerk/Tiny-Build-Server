@@ -16,7 +16,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 		"getUsernameById":    helper.GetUsernameById,
 		"getFlashbag":        GetFlashbag(internal.GetSessionManager()),
 	}
-	layoutContent, err := internal.FSString(true, "templates/_layout.html") // with leading slash?
+	layoutContent, err := internal.FSString(true, "/templates/_layout.html") // with leading slash?
 	if err != nil {
 		helper.WriteToConsole("could not get layout template: " + err.Error())
 		return err
@@ -24,7 +24,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 
 	layout := template.Must(template.New("_layout.html").Parse(layoutContent)).Funcs(funcMap)
 
-	content, err := internal.FSString(true, "templates/content/"+file) // with leading slash?
+	content, err := internal.FSString(true, "/templates/content/"+file) // with leading slash?
 	if err != nil {
 		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
