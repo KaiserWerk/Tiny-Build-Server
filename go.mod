@@ -3,7 +3,7 @@ module github.com/KaiserWerk/Tiny-Build-Server
 go 1.15
 
 require (
-	github.com/KaiserWerk/sessionstore v0.0.0-20201103070619-3258c09669f7
+	github.com/KaiserWerk/sessionstore v1.0.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/sftp v1.12.0
