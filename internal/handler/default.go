@@ -16,6 +16,7 @@ import (
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
+		helper.WriteToConsole("dashboard: redirect to login: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -64,7 +65,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-	data, err := internal.FSByte(true, "public/"+path+"/"+file)
+	data, err := internal.FSByte(true, "/public/"+path+"/"+file)
 	if err != nil {
 		fmt.Println("could not locate asset", file)
 		w.WriteHeader(404)
