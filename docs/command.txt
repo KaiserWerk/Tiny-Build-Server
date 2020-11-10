@@ -1,0 +1,1 @@
+esc -pkg internal -o internal/embed.go templates/ public/
