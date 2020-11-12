@@ -2,19 +2,16 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
-	"github.com/gorilla/mux"
 )
 
 func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -70,23 +67,13 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinitions: bdList,
 	}
 
-	if err := templates.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["builddefinition_list.html"]
-	//if t != nil {
-	//	err := t.Execute(w, data)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -99,13 +86,6 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := helper.GetDbConnection()
-
-	//btList, err := getBuildTargets()
-	//if err != nil {
-	//	helper.WriteToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
-	//	w.WriteHeader(500)
-	//	return
-	//}
 
 	if r.Method == http.MethodPost {
 		targetId := r.FormValue("target_id")
@@ -179,6 +159,13 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		selectedTarget, _ = strconv.Atoi(temp)
 	}
 
+	btList, err := helper.GetBuildTargets()
+	if err != nil {
+		helper.WriteToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
+		w.WriteHeader(500)
+		return
+	}
+
 	var runtimes []string
 	switch selectedTarget {
 	case 1:
@@ -194,20 +181,22 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CurrentUser       entity.User
 		SelectedTarget    int
+		BuildTargets      []entity.BuildTarget
 		AvailableRuntimes []string
 	}{
 		CurrentUser:       currentUser,
 		SelectedTarget:    selectedTarget,
+		BuildTargets:      btList,
 		AvailableRuntimes: runtimes,
 	}
 
-	if err := templates.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -267,23 +256,13 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		AvailableRuntimes:       runtimes,
 	}
 
-	if err := templates.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["builddefinition_edit.html"]
-	//if t != nil {
-	//	err := t.Execute(w, data)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -374,24 +353,13 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		AvgRuntime:        fmt.Sprintf("%.2f", avg),
 	}
 
-	if err := templates.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
-
-	//t := templates["builddefinition_show.html"]
-	//if t != nil {
-	//	err := t.Execute(w, data)
-	//	if err != nil {
-	//		fmt.Println("error:", err.Error())
-	//	}
-	//} else {
-	//	helper.WriteToConsole("template build_definition_show.html not found")
-	//	w.WriteHeader(http.StatusNotFound)
-	//}
 }
 
 func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -434,7 +402,7 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition: buildDefinitionTemp,
 	}
 
-	if err := templates.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }

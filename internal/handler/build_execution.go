@@ -5,13 +5,11 @@ import (
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"github.com/gorilla/mux"
 )
 
 func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -30,13 +28,13 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser: currentUser,
 	}
 
-	if err := templates.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {
+	if err := helper.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -83,7 +81,7 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition: bd,
 	}
 
-	if err = templates.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {
+	if err = helper.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }

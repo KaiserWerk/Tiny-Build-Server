@@ -1,16 +1,15 @@
-package internal
+package helper
 
 import (
-	"io/ioutil"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/sessionstore"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
 )
 
 var (
-	sessMgr *sessionstore.SessionManager
-	config *entity.Configuration
+	sessMgr    *sessionstore.SessionManager
+	config     *entity.Configuration
 	configFile string = "config/app.yaml"
 )
 
@@ -28,6 +27,9 @@ func SetConfigurationFile(f string) {
 
 func GetConfiguration() *entity.Configuration {
 	if config == nil {
+		if !FileExists(configFile) {
+			panic("configuration file '" + configFile + "' does not exist!")
+		}
 		cont, err := ioutil.ReadFile(configFile)
 		if err != nil {
 			panic("Could not read configuration file '" + configFile + "': " + err.Error())
