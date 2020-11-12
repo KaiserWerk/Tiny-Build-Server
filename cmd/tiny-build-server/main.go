@@ -5,11 +5,9 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -24,9 +22,9 @@ const (
 )
 
 var (
-	versionDate   = "0000-00-00 00:00:00 +00:00" // inject at compile time
-	listenPort    string
-	configFile    string
+	versionDate = "0000-00-00 00:00:00 +00:00" // inject at compile time
+	listenPort  string
+	configFile  string
 )
 
 func main() {
@@ -38,11 +36,10 @@ func main() {
 	flag.Parse()
 
 	if configFile != "" {
-		internal.SetConfigurationFile(configFile)
+		helper.SetConfigurationFile(configFile)
 	}
 
-	config := internal.GetConfiguration()
-
+	config := helper.GetConfiguration()
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
@@ -54,7 +51,7 @@ func main() {
 	router.Use(middleware.Limit)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		if err := templates.ExecuteTemplate(w, "404.html", r.URL.Path); err != nil {
+		if err := helper.ExecuteTemplate(w, "404.html", r.URL.Path); err != nil {
 			w.WriteHeader(404)
 		}
 	})
@@ -72,11 +69,12 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:         listenAddr,
-		Handler:      router,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  15 * time.Second,
+		Addr:              listenAddr,
+		Handler:           router,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	if config.Tls.Enabled {
@@ -95,7 +93,7 @@ func main() {
 		helper.WriteToConsole("Server is shutting down...")
 		helper.Cleanup()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
@@ -125,9 +123,6 @@ func main() {
 
 func setupRoutes(router *mux.Router) {
 	// asset file handlers
-	//router.PathPrefix("/css/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	//router.PathPrefix("/js/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
-	//router.PathPrefix("/assets/").Handler(http.FileServer(http.Dir("public"))).Methods("GET")
 	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
@@ -151,7 +146,11 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET")                                 // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/list", handler.DeploymentDefinitionListHandler).Methods("GET")            // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/add", handler.DeploymentDefinitionAddHandler).Methods("GET")              // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/edit", handler.DeploymentDefinitionEditHandler).Methods("GET")     // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/remove", handler.DeploymentDefinitionRemoveHandler).Methods("GET") // TODO: implement handler
 
 	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods("GET")
 	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods("GET")
