@@ -92,7 +92,7 @@ func GetUserByEmail(n string) (entity.User, error) {
 	var u entity.User
 	err := row.Scan(&u.Id, &u.Displayname, &u.Email, &u.Password, &u.Locked, &u.Admin)
 	if err != nil {
-		return entity.User{}, errors.New("could not scan ("+err.Error()+")")
+		return entity.User{}, errors.New("could not scan (" + err.Error() + ")")
 	}
 
 	return u, nil

@@ -2,19 +2,18 @@ package service
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/pkg/sftp"
 	"github.com/stvp/slug"
 	"golang.org/x/crypto/ssh"
+	"io"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var basePath string = "data/"

@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -33,7 +33,7 @@ func FileExists(filename string) bool {
 
 func GetDbConnection() *sql.DB {
 	if db == nil {
-		config := internal.GetConfiguration()
+		config := GetConfiguration()
 		handle, err := sql.Open(config.Database.Driver, config.Database.DSN)
 		if err != nil {
 			panic(err.Error())
@@ -226,16 +226,43 @@ You found the chicken. Hooray!`
 			WriteToConsole("done")
 		case "invalidate sessions":
 			WriteToConsole("invalidating all sessions...")
-			internal.GetSessionManager().RemoveAllSessions()
+			GetSessionManager().RemoveAllSessions()
 			time.Sleep(time.Second)
 			WriteToConsole("done")
 		case "list sessions":
 			WriteToConsole("all sessions:")
-			for _, v := range internal.GetSessionManager().Sessions {
+			for _, v := range GetSessionManager().Sessions {
 				WriteToConsole("Id: " + v.Id + "\tLifetime:" + v.Lifetime.Format("2006-01-02 15:04:05"))
 			}
 		default:
 			WriteToConsole("unrecognized command: " + string(input))
 		}
 	}
+}
+
+func SendEmailSMTP(messageType string, data interface{}, to []string) (bool, error) {
+	settings, err := GetAllSettings()
+	if err != nil {
+		WriteToConsole("could not get all settings: " + err.Error())
+		return false, err
+	}
+
+
+
+	emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
+
+	emailBody, err := ParseEmailTemplate(template, data)
+	if err != nil {
+		return false, errors.New("unable to parse email template")
+	}
+
+	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
+	subject := "Subject: " + "Test Email" + "!\n"
+	msg := []byte(subject + mime + "\n" + emailBody)
+	addr := fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_post"])
+
+	if err := smtp.SendMail(addr, emailAuth, settings["smtp_username"], to, msg); err != nil {
+		return false, err
+	}
+	return true, nil
 }
