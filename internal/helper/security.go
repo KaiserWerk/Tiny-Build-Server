@@ -1,14 +1,12 @@
-package security
+package helper
 
 import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"net/http"
-
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/sessionstore"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
 )
 
 func GenerateToken(length int) string {
@@ -30,7 +28,7 @@ func DoesHashMatch(password string, hash string) bool {
 }
 
 func CheckLogin(r *http.Request) (sessionstore.Session, error) {
-	sessMgr := internal.GetSessionManager()
+	sessMgr := GetSessionManager()
 	sessId, err := sessMgr.GetCookieValue(r)
 	if err != nil {
 		return sessionstore.Session{}, errors.New("could not get cookie: " + err.Error())
