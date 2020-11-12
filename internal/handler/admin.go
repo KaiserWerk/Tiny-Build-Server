@@ -1,19 +1,16 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"database/sql"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
 func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -62,13 +59,13 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 		AllUsers:    userList,
 	}
 
-	if err = templates.ExecuteTemplate(w, "admin_user_list.html", contextData); err != nil {
+	if err = helper.ExecuteTemplate(w, "admin_user_list.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -84,7 +81,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessMgr := internal.GetSessionManager()
+	sessMgr := helper.GetSessionManager()
 
 	if r.Method == "POST" {
 		// displayname, email, password, locked, admin
@@ -122,7 +119,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 
 			var passwordHash string
 			if password != "" {
-				passwordHash, err = security.HashString(password)
+				passwordHash, err = helper.HashString(password)
 				if err != nil {
 					helper.WriteToConsole("could not hash password: " + err.Error())
 					w.WriteHeader(500)
@@ -151,15 +148,15 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser: currentUser,
 	}
 
-	if err = templates.ExecuteTemplate(w, "admin_user_add.html", contextData); err != nil {
+	if err = helper.ExecuteTemplate(w, "admin_user_add.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
-	sessMgr := internal.GetSessionManager()
-	session, err := security.CheckLogin(r)
+	sessMgr := helper.GetSessionManager()
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -219,7 +216,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		helper.WriteToConsole("edit user: query to execute: " + query)
 		// update user
 		if password != "" {
-			hashedPassword, err := security.HashString(password)
+			hashedPassword, err := helper.HashString(password)
 			if err != nil {
 				helper.WriteToConsole("could not hash password: " + err.Error())
 				w.WriteHeader(500)
@@ -257,13 +254,13 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		UserToEdit:  editedUser,
 	}
 
-	if err = templates.ExecuteTemplate(w, "admin_user_edit.html", contextData); err != nil {
+	if err = helper.ExecuteTemplate(w, "admin_user_edit.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+	session, err := helper.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
@@ -279,7 +276,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessMgr := internal.GetSessionManager()
+	sessMgr := helper.GetSessionManager()
 
 	if r.Method == http.MethodPost {
 		var errors uint8 = 0
@@ -413,12 +410,11 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser   entity.User
 		AdminSettings map[string]string
 	}{
-		CurrentUser: currentUser,
+		CurrentUser:   currentUser,
 		AdminSettings: allSettings,
 	}
 
-	if err = templates.ExecuteTemplate(w, "admin_settings.html", contextData); err != nil {
+	if err = helper.ExecuteTemplate(w, "admin_settings.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
-

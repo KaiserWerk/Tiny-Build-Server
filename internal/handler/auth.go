@@ -1,18 +1,14 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templates"
 	"net/http"
 	"strconv"
 	"time"
 )
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	sessMgr := internal.GetSessionManager()
-
+	sessMgr := helper.GetSessionManager()
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
@@ -24,7 +20,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if security.DoesHashMatch(password, u.Password) {
+		if helper.DoesHashMatch(password, u.Password) {
 			//helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
@@ -55,13 +51,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templates.ExecuteTemplate(w, "login.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "login.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	sessMgr := internal.GetSessionManager()
+	sessMgr := helper.GetSessionManager()
 	helper.WriteToConsole("getting cookie value")
 	sessId, err := sessMgr.GetCookieValue(r)
 	if err != nil {
@@ -88,19 +84,20 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	sessMgr := internal.GetSessionManager()
+	sessMgr := helper.GetSessionManager()
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		if email != "" {
 			u, err := helper.GetUserByEmail(email)
 			if err != nil {
-				helper.WriteToConsole("could not get user by Email in RequestNewPasswordHandler (maybe doesnt exist): " + err.Error())
+				helper.WriteToConsole("could not get user by Email in RequestNewPasswordHandler: " + err.Error())
 				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 					"instructions to set a new password")
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 
-			helper.WriteToConsole("user: " + u.Displayname)
+			helper.WriteToConsole("user: " + u.Displayname + " requested new password")
 			// email an user versenden
 			// zur reset seite weiterleiten
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
@@ -112,7 +109,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templates.ExecuteTemplate(w, "´password_request.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "´password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -123,14 +120,14 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	//}
 
-	if err := templates.ExecuteTemplate(w, "password_request.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 
-	if err := templates.ExecuteTemplate(w, "register.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
