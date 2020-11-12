@@ -1,14 +1,18 @@
 # Installation
 
-### Installing the build server
+Installing the build server is quite easy. 
 
-coming soon
+* Start your MySQL server, import the schema dump from *docs/schema.sql* and setup a MYSQL
+user. 
+* Place the binary at an appropriate location, e.g. upload to any server.
+* Create a configuration file (you can copy the *config/app.dist.yaml* as a starting point), 
+set the configuration values according to your needs, mainly the MySQL DSN.
+The default location is *config/app.yaml* relative to the executable.
 
-### Installing Go
+### Startup
 
-coming soon
+Start the server with the following command:
 
-### Installing DotNet
+``./tiny-build-server -p 8271 -c config/app.yaml``
 
-coming soon
-
+The default port is 8271. If you want to use default values, you can omit the parameters.
