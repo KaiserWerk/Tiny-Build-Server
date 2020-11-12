@@ -1,9 +1,9 @@
 package buildsteps
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/stvp/slug"
 	"os"
 	"os/exec"
@@ -56,7 +56,7 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 	artifact := bd.ArtifactDir + "/" + binaryName
 
 	buildCommand := fmt.Sprintf(
-		`build -o %s -mod=vendor -a -v -work -x -ldflags "-s -w -X main.versionDate=%s" %s`,
+		`build -o %s -a -v -work -x -ldflags "-s -w -X main.versionDate=%s" %s`,
 		artifact,
 		time.Now().Format(time.RFC3339),
 		bd.CloneDir,
@@ -93,4 +93,3 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 
 	return artifact, nil
 }
-
