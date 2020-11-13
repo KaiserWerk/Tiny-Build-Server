@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"html/template"
 	"net/http"
 	"strings"
@@ -46,16 +47,24 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 }
 
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
-
-
 	cont, err := internal.FSString(true, "/templates/email/" + messageType + ".html")
 	if err != nil {
 		WriteToConsole("could not get FSString email template: " + err.Error())
 		return "", err
 	}
 	t, err := template.New(messageType).Parse(cont)
+	if err != nil {
+		WriteToConsole("could not parse email template")
+		return "", err
+	}
 
-	return content, nil
+	b := bytes.NewBufferString("")
+	err = t.Execute(b, data)
+	if err != nil {
+		WriteToConsole("could not execute email template")
+	}
+
+	return b.String(), nil
 }
 
 func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {

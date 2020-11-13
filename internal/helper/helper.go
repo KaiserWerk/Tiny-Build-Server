@@ -221,7 +221,7 @@ You found the chicken. Hooray!`
 		case "reload config":
 			WriteToConsole("reloading configuration...")
 			time.Sleep(time.Second)
-			// @TODO
+			// TODO
 
 			WriteToConsole("done")
 		case "invalidate sessions":
@@ -247,11 +247,9 @@ func SendEmailSMTP(messageType string, data interface{}, to []string) (bool, err
 		return false, err
 	}
 
-
-
 	emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
 
-	emailBody, err := ParseEmailTemplate(template, data)
+	emailBody, err := ParseEmailTemplate(messageType, data)
 	if err != nil {
 		return false, errors.New("unable to parse email template")
 	}
