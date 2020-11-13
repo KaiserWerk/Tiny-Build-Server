@@ -17,17 +17,15 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 ### Custom Build
 
 * You need Golang version 1.15+ installed
-* you need [mjibson/esc](https://github.com/mjibson/esc) to created embedded resources from 
+* You need [mjibson/esc](https://github.com/mjibson/esc) to create embedded resources from 
 templates and static assets.
 * Clone the release branch of the repository
-* created the embedded resources with the command found in *docs/command.txt*
+* Create the embedded resources with the command found in *docs/command.txt*
 * Build the binary (refer to or use the ``build.ps1``)
 
 ### Documentation
 
-* [Part I: Installation](docs/installation.md)
-* [Part II: Create a build definition](docs/create-a-build-definition.md)
-* [Part III: Create a webhook](docs/create-a-webhook.md)
+* [Installation](docs/installation.md)
+* [Create a build definition](docs/create-a-build-definition.md)
+* [Create a webhook](docs/create-a-webhook.md)
 
-
-  
