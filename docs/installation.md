@@ -2,12 +2,13 @@
 
 Installing the build server is quite easy. 
 
-* Start your MySQL server, import the schema dump from *docs/schema.sql* and setup a MYSQL
+* Start your MySQL server, import the schema dump from *docs/schema.sql* and setup a MySQL
 user. 
 * Place the binary at an appropriate location, e.g. upload to any server.
 * Create a configuration file (you can copy the *config/app.dist.yaml* as a starting point), 
 set the configuration values according to your needs, mainly the MySQL DSN.
-The default location is *config/app.yaml* relative to the executable.
+The default location is *config/app.yaml* relative to the executable. For more info,
+refer to *config/app.dist.yaml*.
 
 ### Startup
 

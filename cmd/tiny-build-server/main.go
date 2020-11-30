@@ -9,7 +9,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
 	"github.com/gorilla/mux"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -74,7 +73,7 @@ func main() {
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       10 * time.Second,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
 	}
 
 	if config.Tls.Enabled {
@@ -82,9 +81,9 @@ func main() {
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
 
-	done := make(chan bool)
+	//done := make(chan bool)
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	go helper.ReadConsoleInput(quit)
 
@@ -98,9 +97,10 @@ func main() {
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			log.Fatalf("Could not gracefully shut down the server: %v\n", err)
+			helper.WriteToConsole("Could not gracefully shut down the server: " + err.Error())
+			quit <- os.Interrupt
 		}
-		close(done)
+		//close(done)
 	}()
 
 	if config.Tls.Enabled {
@@ -109,15 +109,17 @@ func main() {
 			quit <- os.Interrupt
 		} else {
 			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
-				log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
+				helper.WriteToConsole("Could not listen with TLS on " + listenAddr + ": " + err.Error())
+				quit <- os.Interrupt
 			}
 		}
 	} else {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
+			helper.WriteToConsole("Could not listen on " + listenAddr + ": " + err.Error())
+			quit <- os.Interrupt
 		}
 	}
-	<-done
+	//<-done
 	helper.WriteToConsole("Server shutdown complete. Have a nice day!")
 }
 

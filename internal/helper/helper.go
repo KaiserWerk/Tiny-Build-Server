@@ -240,18 +240,21 @@ You found the chicken. Hooray!`
 	}
 }
 
-func SendEmailSMTP(messageType string, data interface{}, to []string) (bool, error) {
+func SendEmail(messageType string, data interface{}, to []string) error {
+	if len(to) == 0 {
+		return fmt.Errorf("could not send email; no recipients supplied")
+	}
 	settings, err := GetAllSettings()
 	if err != nil {
 		WriteToConsole("could not get all settings: " + err.Error())
-		return false, err
+		return err
 	}
 
 	emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
 
 	emailBody, err := ParseEmailTemplate(messageType, data)
 	if err != nil {
-		return false, errors.New("unable to parse email template")
+		return fmt.Errorf("unable to parse email template: %s", err.Error())
 	}
 
 	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
@@ -260,7 +263,7 @@ func SendEmailSMTP(messageType string, data interface{}, to []string) (bool, err
 	addr := fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_post"])
 
 	if err := smtp.SendMail(addr, emailAuth, settings["smtp_username"], to, msg); err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }

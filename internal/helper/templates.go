@@ -47,7 +47,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 }
 
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
-	cont, err := internal.FSString(true, "/templates/email/" + messageType + ".html")
+	cont, err := internal.FSString(true, "/templates/email/"+messageType+".html")
 	if err != nil {
 		WriteToConsole("could not get FSString email template: " + err.Error())
 		return "", err

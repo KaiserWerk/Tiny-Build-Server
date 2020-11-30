@@ -91,6 +91,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			u, err := helper.GetUserByEmail(email)
 			if err != nil {
 				helper.WriteToConsole("could not get user by Email in RequestNewPasswordHandler: " + err.Error())
+				// fake success message
 				sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 					"instructions to set a new password")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -99,17 +100,22 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			helper.WriteToConsole("user: " + u.Displayname + " requested new password")
 			// email an user versenden
+			// data struct zur einfügen als data context
+			err = helper.SendEmail("password_reset", nil, []string{u.Email})
+			if err != nil {
+				helper.WriteToConsole("could not send email: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 			// zur reset seite weiterleiten
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 				"instructions to set a new password")
 			http.Redirect(w, r, "/password/reset", http.StatusSeeOther)
 			return
 		}
-
-		return
 	}
 
-	if err := helper.ExecuteTemplate(w, "´password_request.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
