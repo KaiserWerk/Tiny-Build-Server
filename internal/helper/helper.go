@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/gomail.v2"
 	"net/http"
-	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
@@ -240,7 +240,7 @@ You found the chicken. Hooray!`
 	}
 }
 
-func SendEmail(messageType string, data interface{}, to []string) error {
+func SendEmail(messageType EmailMessageType, data interface{}, subject string, to []string) error {
 	if len(to) == 0 {
 		return fmt.Errorf("could not send email; no recipients supplied")
 	}
@@ -250,20 +250,41 @@ func SendEmail(messageType string, data interface{}, to []string) error {
 		return err
 	}
 
-	emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
-
-	emailBody, err := ParseEmailTemplate(messageType, data)
+	emailBody, err := ParseEmailTemplate(string(messageType), data)
 	if err != nil {
 		return fmt.Errorf("unable to parse email template: %s", err.Error())
 	}
 
-	mime := "MIME-version: 1.0;\nContent-Type: text/plain; charset=\"UTF-8\";\n\n"
-	subject := "Subject: " + "Test Email" + "!\n"
-	msg := []byte(subject + mime + "\n" + emailBody)
-	addr := fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_post"])
+	m := gomail.NewMessage()
+	m.SetHeader("From", settings["smtp_username"])
+	m.SetHeader("To", to...)
+	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", emailBody)
+	//m.Attach("/home/Alex/lolcat.jpg")
 
-	if err := smtp.SendMail(addr, emailAuth, settings["smtp_username"], to, msg); err != nil {
+	port, _ := strconv.Atoi(settings["smtp_port"])
+	d := gomail.NewDialer(settings["smtp_host"], port, settings["smtp_username"], settings["smtp_password"])
+
+	// Send the email to Bob, Cora and Dan.
+	if err := d.DialAndSend(m); err != nil {
 		return err
 	}
+
+	//emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
+	//
+	//emailBody, err := ParseEmailTemplate(string(messageType), data)
+	//if err != nil {
+	//	return fmt.Errorf("unable to parse email template: %s", err.Error())
+	//}
+	//
+	//mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	//subject := "Subject: " + "Test Email" + "!\n"
+	//msg := []byte(subject + mime + "\n" + emailBody)
+	//addr := fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_port"])
+	//
+	//if err := smtp.SendMail(addr, emailAuth, settings["smtp_username"], to, msg); err != nil {
+	//	return err
+	//}
 	return nil
 }
