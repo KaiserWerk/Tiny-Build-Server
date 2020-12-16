@@ -98,10 +98,26 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			helper.WriteToConsole("user: " + u.Displayname + " requested new password")
-			// email an user versenden
-			// data struct zur einfügen als data context
-			err = helper.SendEmail("password_reset", nil, []string{u.Email})
+			helper.WriteToConsole("user " + u.Displayname + " requested new password")
+
+			// eintrag in user_action Tabelle !!!
+			registrationToken := helper.GenerateToken(60)
+
+			db := helper.GetDbConnection()
+			_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
+				u.Id, "password_reset", registrationToken, time.Now().Add(1 * time.Hour))
+			if err != nil {
+				helper.WriteToConsole("could not insert user pw reset action: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			data := struct {
+				RegToken string
+			}{
+				RegToken: registrationToken,
+			}
+			err = helper.SendEmail(helper.PasswordReset, data, helper.EmailSubjects[helper.PasswordReset], []string{u.Email})
 			if err != nil {
 				helper.WriteToConsole("could not send email: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -109,7 +125,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			// zur reset seite weiterleiten
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
-				"instructions to set a new password")
+				"instructions to set a new password.")
 			http.Redirect(w, r, "/password/reset", http.StatusSeeOther)
 			return
 		}
@@ -122,9 +138,11 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
-	//r.Method == "POST" {
+	if r.Method == http.MethodPost {
 
-	//}
+	} else /*GET*/ {
+
+	}
 
 	if err := helper.ExecuteTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
