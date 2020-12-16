@@ -100,7 +100,7 @@ func CheckPayloadRequest(r *http.Request) (entity.BuildDefinition, error) {
 	// check relevant headers and payload values
 	switch bd.RepoHoster {
 	case "bitbucket":
-		headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+		headers := []string{"X-Event-RegToken", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
 		headerValues := make([]string, len(headers))
 		for i := range headers {
 			headerValues[i], err = GetHeaderIfSet(r, headers[i])
