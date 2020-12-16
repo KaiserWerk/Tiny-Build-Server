@@ -1,10 +1,13 @@
 package helper
 
+type EmailMessageType string
+
 const (
-	AccountCreated        = "account_created"
-	AccountLocked         = "account_locked"
-	ConfirmRegistration   = "confirm_registration"
-	PasswordReset         = "password_reset"
-	RegistrationConfirmed = "registration_confirmed"
-	ResetPassword         = "reset_password"
+	AccountCreated        EmailMessageType = "account_created"
+	AccountLocked         EmailMessageType = "account_locked"
+	ConfirmRegistration   EmailMessageType = "confirm_registration"
+	PasswordReset         EmailMessageType = "password_reset"
+	RegistrationConfirmed EmailMessageType = "registration_confirmed"
+	ResetPassword         EmailMessageType = "reset_password"
 )
+
