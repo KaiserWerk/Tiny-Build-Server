@@ -20,7 +20,7 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 * You need [mjibson/esc](https://github.com/mjibson/esc) to create embedded resources from 
 templates and static assets.
 * Clone the release branch of the repository
-* Create the embedded resources with the command found in *docs/command.txt*
+* Create the embedded resources with the command found in *docs/embed-command.txt*
 * Build the binary (refer to or use the ``build.ps1``)
 
 ### Documentation
@@ -28,4 +28,5 @@ templates and static assets.
 * [Installation](docs/installation.md)
 * [Create a build definition](docs/create-a-build-definition.md)
 * [Create a webhook](docs/create-a-webhook.md)
+* [Admin Settings](docs/admin-settings.md)
 
