@@ -283,11 +283,17 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		form := r.FormValue("form")
 
 		if form == "general_settings" {
-			baseDatapath := r.FormValue("basedatapath")
-			err = helper.SetSetting("basedatapath", baseDatapath)
+			baseDatapath := r.FormValue("base_datapath")
+			err = helper.SetSetting("base_datapath", baseDatapath)
 			if err != nil {
 				errors++
 				helper.WriteToConsole("could not set baseDatapath")
+			}
+			baseUrl := r.FormValue("base_url")
+			err = helper.SetSetting("base_url", baseUrl)
+			if err != nil {
+				errors++
+				helper.WriteToConsole("could not set baseUrl")
 			}
 		} else if form == "security" {
 			securityDisableRegistration := r.FormValue("security_disable_registration")

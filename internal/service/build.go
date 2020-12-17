@@ -105,7 +105,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		return
 	}
 
-	baseDataPath, ok := settings["basedatapath"]
+	baseDataPath, ok := settings["base_datapath"]
 	if !ok {
 		messageCh <- "could not fetch base data path"
 		saveBuildReport(definition, sb.String())
