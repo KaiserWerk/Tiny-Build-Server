@@ -1,9 +1,9 @@
 -- phpMyAdmin SQL Dump
--- version 4.8.3
+-- version 4.9.5
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 12. Sep 2020 um 01:01
+-- Erstellungszeit: 17. Dez 2020 um 11:03
 -- Server-Version: 5.7.24
 -- PHP-Version: 7.2.14
 
@@ -25,37 +25,30 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `build_action`
---
-
-CREATE TABLE `build_action` (
-  `id` int(11) NOT NULL,
-  `caption` varchar(50) NOT NULL,
-  `description` text,
-  `command` varchar(150) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
 -- Tabellenstruktur für Tabelle `build_definition`
 --
 
 CREATE TABLE `build_definition` (
   `id` int(10) UNSIGNED NOT NULL,
-  `build_target_id` int(10) UNSIGNED NOT NULL,
+  `build_target_id` int(11) NOT NULL,
+  `build_target_os_arch` varchar(100) NOT NULL DEFAULT '',
+  `build_target_arm` int(11) NOT NULL DEFAULT '0',
   `altered_by` int(10) UNSIGNED NOT NULL,
   `caption` varchar(75) NOT NULL DEFAULT '',
-  `enabled` tinyint(1) UNSIGNED DEFAULT '1',
-  `deployment_enabled` tinyint(1) UNSIGNED DEFAULT '1',
+  `enabled` tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
+  `deployment_enabled` tinyint(1) UNSIGNED NOT NULL DEFAULT '1',
   `repo_hoster` varchar(15) NOT NULL,
   `repo_hoster_url` varchar(200) NOT NULL,
   `repo_fullname` varchar(150) NOT NULL,
-  `repo_username` varchar(100) NOT NULL,
-  `repo_secret` varchar(150) NOT NULL,
+  `repo_username` varchar(100) NOT NULL DEFAULT '',
+  `repo_secret` varchar(150) NOT NULL DEFAULT '',
   `repo_branch` varchar(150) NOT NULL,
-  `altered_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `meta_migration_id` int(10) UNSIGNED NOT NULL DEFAULT '0'
+  `altered_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `apply_migrations` tinyint(1) NOT NULL DEFAULT '0',
+  `database_dsn` varchar(255) NOT NULL DEFAULT '',
+  `meta_migration_id` int(10) UNSIGNED NOT NULL DEFAULT '0',
+  `run_tests` tinyint(1) NOT NULL DEFAULT '0',
+  `run_benchmark_tests` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -67,10 +60,26 @@ CREATE TABLE `build_definition` (
 CREATE TABLE `build_execution` (
   `id` int(10) UNSIGNED NOT NULL,
   `build_definition_id` int(11) NOT NULL,
+  `initiated_by` int(11) NOT NULL DEFAULT '-1',
+  `manual_run` tinyint(1) NOT NULL DEFAULT '0',
   `action_log` mediumtext NOT NULL,
   `result` varchar(40) NOT NULL,
+  `artifact_path` varchar(255) NOT NULL DEFAULT '',
   `execution_time` decimal(10,2) NOT NULL,
   `executed_at` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `build_request`
+--
+
+CREATE TABLE `build_request` (
+  `id` int(11) NOT NULL,
+  `build_definition_id` int(11) DEFAULT NULL,
+  `headers` text NOT NULL,
+  `payload` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -80,24 +89,10 @@ CREATE TABLE `build_execution` (
 --
 
 CREATE TABLE `build_step` (
-  `id` int(11) UNSIGNED NOT NULL,
-  `build_target_id` int(10) UNSIGNED NOT NULL,
-  `caption` varchar(100) NOT NULL,
-  `command` text NOT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `build_step_value`
---
-
-CREATE TABLE `build_step_value` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `build_step_id` int(10) UNSIGNED NOT NULL,
-  `placeholder` varchar(100) NOT NULL,
-  `value` text NOT NULL
+  `id` int(11) NOT NULL,
+  `build_target_id` int(11) NOT NULL,
+  `internal_id` varchar(30) NOT NULL,
+  `caption` varchar(150) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -108,20 +103,21 @@ CREATE TABLE `build_step_value` (
 
 CREATE TABLE `build_target` (
   `id` int(11) NOT NULL,
-  `description` varchar(50) NOT NULL
+  `caption` varchar(150) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `definition_step_taxonomy`
+-- Tabellenstruktur für Tabelle `build_variable`
 --
 
-CREATE TABLE `definition_step_taxonomy` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `build_definition_id` int(10) UNSIGNED NOT NULL,
-  `build_step_id` int(10) UNSIGNED NOT NULL,
-  `enabled` tinyint(1) NOT NULL DEFAULT '1'
+CREATE TABLE `build_variable` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `description` varchar(150) NOT NULL,
+  `content` text NOT NULL,
+  `user_specific` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -181,32 +177,12 @@ CREATE TABLE `user_action` (
   `user_id` int(10) UNSIGNED NOT NULL,
   `purpose` varchar(30) NOT NULL,
   `token` varchar(150) NOT NULL,
-  `validity` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_variable`
---
-
-CREATE TABLE `user_variable` (
-  `id` int(11) UNSIGNED NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `description` varchar(150) NOT NULL,
-  `content` text NOT NULL,
-  `user_specific` tinyint(1) NOT NULL DEFAULT '0'
+  `validity` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Indizes der exportierten Tabellen
 --
-
---
--- Indizes für die Tabelle `build_action`
---
-ALTER TABLE `build_action`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indizes für die Tabelle `build_definition`
@@ -221,15 +197,15 @@ ALTER TABLE `build_execution`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `build_step`
+-- Indizes für die Tabelle `build_request`
 --
-ALTER TABLE `build_step`
+ALTER TABLE `build_request`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `build_step_value`
+-- Indizes für die Tabelle `build_step`
 --
-ALTER TABLE `build_step_value`
+ALTER TABLE `build_step`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -239,9 +215,9 @@ ALTER TABLE `build_target`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `definition_step_taxonomy`
+-- Indizes für die Tabelle `build_variable`
 --
-ALTER TABLE `definition_step_taxonomy`
+ALTER TABLE `build_variable`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -261,7 +237,9 @@ ALTER TABLE `setting`
 -- Indizes für die Tabelle `user`
 --
 ALTER TABLE `user`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `displayname` (`displayname`),
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indizes für die Tabelle `user_action`
@@ -270,20 +248,8 @@ ALTER TABLE `user_action`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indizes für die Tabelle `user_variable`
---
-ALTER TABLE `user_variable`
-  ADD PRIMARY KEY (`id`);
-
---
 -- AUTO_INCREMENT für exportierte Tabellen
 --
-
---
--- AUTO_INCREMENT für Tabelle `build_action`
---
-ALTER TABLE `build_action`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `build_definition`
@@ -298,16 +264,16 @@ ALTER TABLE `build_execution`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `build_request`
+--
+ALTER TABLE `build_request`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `build_step`
 --
 ALTER TABLE `build_step`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `build_step_value`
---
-ALTER TABLE `build_step_value`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `build_target`
@@ -316,10 +282,10 @@ ALTER TABLE `build_target`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT für Tabelle `definition_step_taxonomy`
+-- AUTO_INCREMENT für Tabelle `build_variable`
 --
-ALTER TABLE `definition_step_taxonomy`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE `build_variable`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT für Tabelle `deployment_definition`
@@ -344,12 +310,6 @@ ALTER TABLE `user`
 --
 ALTER TABLE `user_action`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_variable`
---
-ALTER TABLE `user_variable`
-  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
