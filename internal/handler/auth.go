@@ -112,10 +112,21 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			settings, err := helper.GetAllSettings()
+			if err != nil {
+				helper.WriteToConsole("could not get all settings: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
 			data := struct {
-				RegToken string
+				BaseUrl string
+				Email string
+				Token string
 			}{
-				RegToken: registrationToken,
+				BaseUrl: settings["base_url"],
+				Email: u.Email,
+				Token: registrationToken,
 			}
 			err = helper.SendEmail(helper.PasswordReset, data, helper.EmailSubjects[helper.PasswordReset], []string{u.Email})
 			if err != nil {
@@ -123,7 +134,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			// zur reset seite weiterleiten
+
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+
 				"instructions to set a new password.")
 			http.Redirect(w, r, "/password/reset", http.StatusSeeOther)
@@ -144,7 +155,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	if err := helper.ExecuteTemplate(w, "password_request.html", nil); err != nil {
+	if err := helper.ExecuteTemplate(w, "password_reset.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
