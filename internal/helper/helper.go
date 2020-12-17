@@ -70,6 +70,7 @@ func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 }
 
 func CheckPayloadRequest(r *http.Request) (entity.BuildDefinition, error) {
+	// TODO: check client-supplied secret key?
 	// get id
 	idStr := r.URL.Query().Get("id")
 	if idStr == "" {
