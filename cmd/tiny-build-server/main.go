@@ -29,7 +29,7 @@ var (
 func main() {
 	helper.WriteToConsole("Tiny Build Server")
 	helper.WriteToConsole("  Version: " + version)
-	helper.WriteToConsole("  From: " + versionDate)
+	helper.WriteToConsole("  Build date: " + versionDate)
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
 	flag.Parse()
@@ -50,9 +50,7 @@ func main() {
 	router.Use(middleware.Limit)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		if err := helper.ExecuteTemplate(w, "404.html", r.URL.Path); err != nil {
-			w.WriteHeader(404)
-		}
+		_ = helper.ExecuteTemplate(w, "404.html", r.URL.Path)
 	})
 
 	setupRoutes(router)
@@ -98,9 +96,7 @@ func main() {
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
 			helper.WriteToConsole("Could not gracefully shut down the server: " + err.Error())
-			quit <- os.Interrupt
 		}
-		//close(done)
 	}()
 
 	if config.Tls.Enabled {
