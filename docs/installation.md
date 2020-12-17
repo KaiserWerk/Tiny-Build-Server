@@ -14,6 +14,6 @@ refer to *config/app.dist.yaml*.
 
 Start the server with the following command:
 
-``./tiny-build-server -p 8271 -c config/app.yaml``
+``./tiny-build-server -port 8271 -config config/app.yaml``
 
 The default port is 8271. If you want to use default values, you can omit the parameters.
