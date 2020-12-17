@@ -18,14 +18,15 @@
                 <div class="card-body">
                     <form class="form-horizontal" method="post">
                         <input type="hidden" name="form" value="general_settings">
-
-                        {{/*                        <div class="form-group">*/}}
-                        {{/*                            <p>Hint: You only need to set these values if the command line build executables are <b>NOT</b> globally available.</p>*/}}
-                        {{/*                        </div>*/}}
                         <div class="form-group">
-                            <label class="control-label" for="_basedatapath">Golang:</label><br>
-                            <input type="text" class="form-control" name="basedatapath" id="_basedatapath"
-                                   placeholder="Absolute path to base data directory" value="{{ index .AdminSettings "basedatapath" }}">
+                            <label class="control-label" for="_base_datapath">Base data path:</label><br>
+                            <input type="text" class="form-control" name="base_datapath" id="_base_datapath"
+                                   placeholder="Absolute path to base data directory" value="{{ index .AdminSettings "base_datapath" }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_base_url">Base URL:</label><br>
+                            <input type="text" class="form-control" name="base_url" id="_base_url"
+                                   placeholder="http(s)://address:port" value="{{ index .AdminSettings "base_url" }}">
                         </div>
 
                         <br>
