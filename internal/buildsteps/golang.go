@@ -22,7 +22,7 @@ func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = bd.CloneDir
 
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New("could not run unit tests: " + err.Error())
 	}
@@ -35,7 +35,7 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "-bench=.")
 	cmd.Dir = bd.CloneDir
 
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errors.New("could not run benchmark tests: " + err.Error())
 	}
@@ -84,7 +84,7 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 
 	cmd := exec.Command("go", strings.Split(buildCommand, " ")...)
 	messageCh <- "build command to be executed: '" + cmd.String() + "'"
-	result, err := cmd.Output()
+	result, err := cmd.CombinedOutput()
 	if err != nil {
 		messageCh <- "build was not successful: " + err.Error()
 		return "", err

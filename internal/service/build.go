@@ -82,7 +82,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 	repositoryUrl := getRepositoryUrl(definition, withCredentials)
 	cmd := exec.Command("git", "clone", "--single-branch", "--branch", definition.RepoBranch, repositoryUrl, clonePath)
 	messageCh <- cmd.String()
-	cmdOutput, err := cmd.Output()
+	cmdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		messageCh <- "could not get command output: " + err.Error()
 		saveBuildReport(definition, sb.String())
