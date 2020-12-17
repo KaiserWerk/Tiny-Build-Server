@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"database/sql"
+	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"net/http"
 	"strconv"
@@ -100,7 +103,6 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			helper.WriteToConsole("user " + u.Displayname + " requested new password")
 
-			// eintrag in user_action Tabelle !!!
 			registrationToken := helper.GenerateToken(60)
 
 			db := helper.GetDbConnection()
@@ -149,13 +151,89 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
+	sessMgr := helper.GetSessionManager()
+	email := r.URL.Query().Get("email")
+	token := r.URL.Query().Get("token")
+
 	if r.Method == http.MethodPost {
+		email := r.FormValue("email")
+		token := r.FormValue("token")
+		user, err := helper.GetUserByEmail(email)
+		if err != nil {
+			helper.WriteToConsole("could not fetch user by email: " + err.Error())
+			sessMgr.AddMessage("error", "A user with the supplied email address does not exist.")
+			http.Redirect(w, r, "/password/reset?token=" + token, http.StatusSeeOther)
+			return
+		}
 
-	} else /*GET*/ {
+		db := helper.GetDbConnection()
 
+		var action entity.UserAction
+		row := db.QueryRow("SELECT id, user_id, purpose, token, validity FROM user_action WHERE token = ?", token)
+		err = row.Scan(&action.Id, &action.UserId, &action.Purpose, &action.Token, &action.Validity)
+		if err != nil {
+			helper.WriteToConsole("could not scan user action in ResetPasswordHandler: " + err.Error())
+			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+
+		if action.Validity.Before(time.Now()) {
+			helper.WriteToConsole("validity of token ran out")
+			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+
+		if action.Purpose != "password_reset" {
+			helper.WriteToConsole("token was for other purpose: " + action.Purpose)
+			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+
+		pw1 := r.FormValue("password1")
+		pw2 := r.FormValue("password2")
+		if pw1 != pw2 {
+			helper.WriteToConsole("passwords don't match")
+			sessMgr.AddMessage("error", "Your entered passwords don't match.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+		// TODO: check length/strength of password?
+
+		hash, err := helper.HashString(pw1)
+		if err != nil {
+			helper.WriteToConsole("could not hash password: " + err.Error())
+			sessMgr.AddMessage("error", "An error occurred. Please try again.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+		_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, user.Id)
+		if err != nil {
+			helper.WriteToConsole("could not update to new password: " + err.Error())
+			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
+			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
+			return
+		}
+		_, err = db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?", sql.NullTime{}, user.Id)
+		if err != nil {
+			helper.WriteToConsole("could not update user actions: " + err.Error())
+		}
+
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
 	}
 
-	if err := helper.ExecuteTemplate(w, "password_reset.html", nil); err != nil {
+	data := struct {
+		Email string
+		Token string
+	}{
+		Email: email,
+		Token: token,
+	}
+
+	if err := helper.ExecuteTemplate(w, "password_reset.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
