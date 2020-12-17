@@ -11,13 +11,14 @@ import (
 )
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: consider enabled 2fa
 	sessMgr := helper.GetSessionManager()
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
 		u, err := helper.GetUserByEmail(email)
 		if err != nil {
-			helper.WriteToConsole("could not get user by Email in LoginHandler: " + err.Error())
+			helper.WriteToConsole("login: could not get user by Email in LoginHandler: " + err.Error())
 			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -28,7 +29,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
-				helper.WriteToConsole("could not create session: " + err.Error())
+				helper.WriteToConsole("login: could not create session: " + err.Error())
 				sessMgr.AddMessage("error", "Could not create session!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
@@ -36,19 +37,19 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			sess.SetVar("user_id", strconv.Itoa(u.Id))
 			err = sessMgr.SetCookie(w, sess.Id)
 			if err != nil {
-				helper.WriteToConsole("could not set cookie: " + err.Error())
+				helper.WriteToConsole("login: could not set cookie: " + err.Error())
 				sessMgr.AddMessage("error", "Session cookie could not be set!")
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 		} else {
-			helper.WriteToConsole("login not successful")
+			helper.WriteToConsole("login: not successful, password hash doesn't match")
 			sessMgr.AddMessage("error", "Invalid credentials!")
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
-		helper.WriteToConsole("redirecting to dashboard")
+		helper.WriteToConsole("login: redirecting to dashboard")
 		sessMgr.AddMessage("success", "You are now logged in.")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -87,6 +88,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: consider disabled pw reset
 	sessMgr := helper.GetSessionManager()
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
@@ -150,7 +152,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-
+	// TODO: consider disabled pw reset
 	sessMgr := helper.GetSessionManager()
 	email := r.URL.Query().Get("email")
 	token := r.URL.Query().Get("token")
@@ -239,6 +241,35 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: consider disabled registration
+	sessMgr := helper.GetSessionManager()
+
+	if r.Method == http.MethodPost {
+		displayName := r.FormValue("display_name")
+		email := r.FormValue("email")
+		pw1 := r.FormValue("password1")
+		pw2 := r.FormValue("password2")
+
+		if pw1 != pw2 {
+			helper.WriteToConsole("registration: passwords don't match")
+			sessMgr.AddMessage("error", "The entered passwords do not match!")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
+		// TODO check password strength
+		_, err := helper.GetUserByEmail(email)
+		if err != nil {
+			helper.WriteToConsole("registration: user already exists")
+			sessMgr.AddMessage("error", "This email address is already in use!")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
+
+		db := helper.GetDbConnection()
+		_, err = db.Exec("INSERT INTO user (displayname, email, password, locked) VALUES (?, ?, ?, 1)",
+			displayName, email, pw1)
+
+	}
 
 	if err := helper.ExecuteTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
