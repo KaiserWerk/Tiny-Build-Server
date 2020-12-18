@@ -11,12 +11,15 @@
 
 </head>
 <body class="container">
-<div class="row">
-    <div class="col-md-8 px-2">
-        <h2>Registration confirmed</h2>
-        <p>Your account has been confirmed successfully. You can now log in using your email address and start
-            building!</p>
+    <div class="row">
+        <div class="col-md-8 px-2">
+            <h2>Confirm your account registration</h2>
+            <p>Your account has been created successfully, but you need to confirm your email address.
+                Please click the following link in order to confirm your email address:</p>
+            <p><a href="{{ .BaseUrl }}/register/confirm?token={{ .Token }}">{{ .BaseUrl }}/register/confirm?token={{ .Token }}</a></p>
+            <p>Alternatively, visit <a href="{{ .BaseUrl }}/register/confirm">{{ .BaseUrl }}/register/confirm</a> and enter the
+               registration token <b>{{ .Token }} manually. The token is valid for 1 hour.</b></p>
+        </div>
     </div>
-</div>
 </body>
 </html>
