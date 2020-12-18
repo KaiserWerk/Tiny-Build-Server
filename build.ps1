@@ -7,7 +7,7 @@ $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
 $env:GOOS = 'windows'; $env:GOARCH = 'amd64';             go build -o "$($target)-win64.exe" -ldflags "-s -w -X 'main.version=$($version)' -X 'main.versionDate=$($date)'" $sourcecode
 # Linux, 64-bit
 $env:GOOS = 'linux';   $env:GOARCH = 'amd64';             go build -o "$($target)-linux64"   -ldflags "-s -w -X 'main.version=$($version)' -X 'main.versionDate=$($date)'" $sourcecode
-# Raspberry PI
+# Raspberry Pi
 $env:GOOS = 'linux';   $env:GOARCH = 'arm'; $env:GOARM=5; go build -o "$($target)-raspi32"   -ldflags "-s -w -X 'main.version=$($version)' -X 'main.versionDate=$($date)'" $sourcecode
-# Mac OSX
+# macOS
 $env:GOOS = 'darwin';  $env:GOARCH = 'amd64';             go build -o "$($target)-macos64"   -ldflags "-s -w -X 'main.version=$($version)' -X 'main.versionDate=$($date)'" $sourcecode
