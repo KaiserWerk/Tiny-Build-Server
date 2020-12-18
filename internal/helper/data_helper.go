@@ -3,6 +3,7 @@ package helper
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -300,4 +301,14 @@ func GetBuildStepsForTarget(id int) ([]entity.BuildStep, error) {
 	}
 
 	return bsList, nil
+}
+
+func RowExists(query string, args ...interface{}) bool {
+	var exists bool
+	query = fmt.Sprintf("SELECT exists (%s)", query)
+	err := db.QueryRow(query, args...).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return false
+	}
+	return exists
 }
