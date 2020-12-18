@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Erstellungszeit: 17. Dez 2020 um 11:03
+-- Erstellungszeit: 18. Dez 2020 um 21:46
 -- Server-Version: 5.7.24
 -- PHP-Version: 7.2.14
 
@@ -30,7 +30,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `build_definition` (
   `id` int(10) UNSIGNED NOT NULL,
-  `build_target_id` int(11) NOT NULL,
+  `build_target` varchar(25) NOT NULL,
   `build_target_os_arch` varchar(100) NOT NULL DEFAULT '',
   `build_target_arm` int(11) NOT NULL DEFAULT '0',
   `altered_by` int(10) UNSIGNED NOT NULL,
