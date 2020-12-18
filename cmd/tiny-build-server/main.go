@@ -47,7 +47,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	router.Use(middleware.Limit)
+	router.Use(middleware.Limit, middleware.SetHeaders)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_ = helper.ExecuteTemplate(w, "404.html", r.URL.Path)
@@ -132,6 +132,7 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/password/request", handler.RequestNewPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/password/reset", handler.ResetPasswordHandler).Methods("GET", "POST")
 	router.HandleFunc("/register", handler.RegistrationHandler).Methods("GET", "POST")
+	router.HandleFunc("/register/confirm", handler.RegistrationConfirmHandler).Methods("GET", "POST")
 
 	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods("GET")
 	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods("GET", "POST")
