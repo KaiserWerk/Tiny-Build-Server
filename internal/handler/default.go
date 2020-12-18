@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -48,10 +47,9 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
-	//helper.WriteToConsole("asset handler hit")
 	vars := mux.Vars(r)
 	file := vars["file"]
-
+	
 	var path string
 	switch true {
 	case strings.Contains(r.URL.Path, "assets/"):
@@ -64,7 +62,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := internal.FSByte(true, "/public/"+path+"/"+file)
 	if err != nil {
-		fmt.Println("could not locate asset", file)
+		helper.WriteToConsole("could not locate asset " + file)
 		w.WriteHeader(404)
 		return
 	}
@@ -91,6 +89,8 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = "image/gif"
 	case "png":
 		contentType = "image/png"
+	case "svg":
+		contentType = "image/svg+xml"
 	default:
 		contentType = "text/plain"
 	}
