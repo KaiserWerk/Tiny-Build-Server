@@ -5,7 +5,7 @@ import (
 )
 
 
-func SetHeaders(next http.Handler) http.Handler {
+func Headers(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=0, no-cache, no-store, must-revalidate")
 		w.Header().Set("Pragma", "no-cache")

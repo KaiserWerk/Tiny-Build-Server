@@ -47,7 +47,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	router.Use(middleware.Limit, middleware.SetHeaders)
+	router.Use(middleware.Limit, middleware.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_ = helper.ExecuteTemplate(w, "404.html", r.URL.Path)
