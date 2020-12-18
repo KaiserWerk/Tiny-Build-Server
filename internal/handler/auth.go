@@ -105,7 +105,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			helper.WriteToConsole("user " + u.Displayname + " requested new password")
 
-			registrationToken := helper.GenerateToken(60)
+			registrationToken := helper.GenerateToken(30)
 
 			db := helper.GetDbConnection()
 			_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
@@ -132,7 +132,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				Email: u.Email,
 				Token: registrationToken,
 			}
-			err = helper.SendEmail(helper.PasswordReset, data, helper.EmailSubjects[helper.PasswordReset], []string{u.Email})
+			err = helper.SendEmail(helper.RequestNewPasswordEmail, data, helper.EmailSubjects[helper.RequestNewPasswordEmail], []string{u.Email})
 			if err != nil {
 				helper.WriteToConsole("could not send email: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -258,7 +258,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// TODO check password strength
 		_, err := helper.GetUserByEmail(email)
-		if err != nil {
+		if err == nil {
 			helper.WriteToConsole("registration: user already exists")
 			sessMgr.AddMessage("error", "This email address is already in use!")
 			http.Redirect(w, r, "/register", http.StatusSeeOther)
@@ -266,12 +266,138 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		db := helper.GetDbConnection()
-		_, err = db.Exec("INSERT INTO user (displayname, email, password, locked) VALUES (?, ?, ?, 1)",
-			displayName, email, pw1)
+		hash, err := helper.HashString(pw1)
+		if err != nil {
+			helper.WriteToConsole("registration: password could not be hashed: " + err.Error())
+			sessMgr.AddMessage("error", "The new account could not be created; please try again!")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
 
+		exists := helper.RowExists("SELECT id FROM user WHERE displayname = ?", displayName)
+		if exists {
+			helper.WriteToConsole("this displayname is already in use")
+			sessMgr.AddMessage("error", "This display name is already in use, please select a different one.")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
+
+		res, err := db.Exec("INSERT INTO user (displayname, email, password, locked) VALUES (?, ?, ?, 1)",
+			displayName, email, hash)
+		if err != nil {
+			helper.WriteToConsole("registration: user could not be inserted: " + err.Error())
+			sessMgr.AddMessage("error", "The new account could not be created; please try again!")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
+		lia, err := res.LastInsertId()
+		if err != nil {
+			helper.WriteToConsole("registration: could not obtain last insert id: " + err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		token := helper.GenerateToken(30)
+		_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
+			lia, "confirm_registration", token, time.Now().Add(24 * time.Hour))
+		if err != nil {
+			helper.WriteToConsole("registration: could not insert user action: " + err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		settings, err := helper.GetAllSettings()
+		if err != nil {
+			helper.WriteToConsole("registration: could not fetch settings: " + err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		data := struct {
+			BaseUrl string
+			Token string
+		}{
+			BaseUrl: settings["base_url"],
+			Token:   token,
+		}
+		err = helper.SendEmail(helper.ConfirmRegistrationEmail, data, helper.EmailSubjects[helper.ConfirmRegistrationEmail], []string{email})
+		if err != nil {
+			helper.WriteToConsole("registration: could not send email: " + err.Error())
+			sessMgr.AddMessage("warning", "Your new account was created but the confirmation email could not be sent out!")
+			http.Redirect(w, r, "/register", http.StatusSeeOther)
+			return
+		}
+
+		sessMgr.AddMessage("success", "Your new account was created and a confirmation email is on its way to you!")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
 	}
 
 	if err := helper.ExecuteTemplate(w, "register.html", nil); err != nil {
+		w.WriteHeader(404)
+	}
+}
+
+func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
+
+	var token string
+
+	if r.Method == http.MethodPost {
+		token = r.FormValue("token")
+	} else {
+		token = r.URL.Query().Get("token")
+	}
+
+	if token != "" {
+		sessMgr := helper.GetSessionManager()
+		db := helper.GetDbConnection()
+		row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)
+		ua := entity.UserAction{Token: token}
+		err := row.Scan(&ua.UserId, &ua.Purpose, &ua.Validity)
+		if err != nil {
+			helper.WriteToConsole("confirm registration: could not scan: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occured.")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+
+		if ua.Purpose != "confirm_registration" {
+			helper.WriteToConsole("confirm registration: wrong purpose")
+			sessMgr.AddMessage("error", "This token is for a different purpose!")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+
+		if ua.Validity.Before(time.Now()) {
+			helper.WriteToConsole("confirm registration: token validity run out")
+			sessMgr.AddMessage("error", "This token is not valid anymore.")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+
+		_, err = db.Exec("UPDATE user SET locked = 0 WHERE id = ?", ua.UserId)
+		if err != nil {
+			helper.WriteToConsole("confirm registration: could not set locked flag in db: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occured.")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+
+		_, err = db.Exec("UPDATE user_action SET validity = ? WHERE token = ?", sql.NullTime{}, ua.Token)
+		if err != nil {
+			helper.WriteToConsole("confirm registration: could not null token validity in db: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occured.")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+
+		helper.WriteToConsole("confirm registration: successful")
+		sessMgr.AddMessage("success", "Your account was successfully confirmed! You can now log in.")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	if err := helper.ExecuteTemplate(w, "confirm_registration.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
