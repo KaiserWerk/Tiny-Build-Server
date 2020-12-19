@@ -1,0 +1,86 @@
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Your settings</h1>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            {{ getFlashbag }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-user"></i>
+                    Change my data
+                </div>
+                <div class="card-body">
+                    <form class="form-horizontal" method="post">
+                        <input type="hidden" name="form" value="change_data">
+                        <div class="form-group">
+                            <label class="control-label" for="_user_displayname">New display name (currently <b>{{ .CurrentUser.Displayname }}</b>):</label><br>
+                            <input type="text" class="form-control" name="displayname" id="_user_displayname"
+                                   placeholder="Your new display name (leave empty for no change)">
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_user_email">New email address (currently <b>{{ .CurrentUser.Email }}</b>):</label><br>
+                            <input type="email" class="form-control" name="email" id="_user_email"
+                                   placeholder="Your new email address (leave empty for no change)">
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_user_password">Confirm with password:</label><br>
+                            <input type="password" class="form-control" name="password" id="_user_password"
+                                   placeholder="Your current password" required>
+                        </div>
+
+                        <br>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save new data</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-user"></i>
+                    Change password
+                </div>
+                <div class="card-body">
+                    <form class="form-horizontal" method="post">
+                        <input type="hidden" name="form" value="change_password">
+                        <div class="form-group">
+                            <label class="control-label" for="_user_newpassword1">New password:</label><br>
+                            <input type="password" class="form-control" name="newpassword1" id="_user_newpassword1"
+                                   placeholder="Your new password" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_user_newpassword2">New password (repeat):</label><br>
+                            <input type="password" class="form-control" name="newpassword2" id="_user_newpassword2"
+                                   placeholder="Repeat your new password" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_user_oldpassword">Confirm with password:</label><br>
+                            <input type="password" class="form-control" name="password" id="_user_oldpassword"
+                                   placeholder="Your current password" required>
+                        </div>
+
+                        <br>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Set new password</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{template "footer_default" .}}
