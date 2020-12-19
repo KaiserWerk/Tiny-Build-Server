@@ -134,6 +134,8 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/register", handler.RegistrationHandler).Methods("GET", "POST")
 	router.HandleFunc("/register/confirm", handler.RegistrationConfirmHandler).Methods("GET", "POST")
 
+	router.HandleFunc("/user/settings", handler.UserSettingsHandler).Methods("GET", "POST")
+
 	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods("GET")
 	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods("GET", "POST")
