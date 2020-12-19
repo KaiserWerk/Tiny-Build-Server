@@ -219,7 +219,7 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
 		"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
 		"FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bdt.Id, &bdt.BuildTargetId, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
+	err = row.Scan(&bdt.Id, &bdt.BuildTarget, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
 		&bdt.RepoHoster, &bdt.RepoHosterUrl, &bdt.RepoFullname, &bdt.RepoUsername, &bdt.RepoSecret, &bdt.RepoBranch,
 		&bdt.AlteredAt, &bdt.ApplyMigrations, &bdt.DatabaseDSN, &bdt.MetaMigrationId, &bdt.RunTests,
 		&bdt.RunBenchmarkTests,
@@ -233,14 +233,14 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	selectedTab := r.URL.Query().Get("tab")
 
 	var runtimes []string
-	switch bdt.BuildTargetId {
-	case 1:
+	switch bdt.BuildTarget {
+	case "golang":
 		runtimes = helper.GolangRuntimes
-	case 2:
+	case "dotnet":
 		runtimes = helper.DotnetRuntimes
-	case 3:
+	case "php":
 		// php does not have runtimes
-	case 4:
+	case "rust":
 		// rust + cross-compile? would be nice
 	}
 
@@ -269,7 +269,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser, err := helper.GetUserFromSession(session)
 	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
+		helper.WriteToConsole("show build definition handler: could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -277,12 +277,13 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r) // id
 	db := helper.GetDbConnection()
 	var bd entity.BuildDefinition
-	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
+	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
 		"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
-		&bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt, &bd.MetaMigrationId)
+	err = row.Scan(&bd.Id, &bd.BuildTarget, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
+		&bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername,
+		&bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
 	if err != nil {
-		helper.WriteToConsole("could not scan buildDefinition: " + err.Error())
+		helper.WriteToConsole("show build definition handler: could not scan buildDefinition: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -292,7 +293,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE "+
 		"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
 	if err != nil {
-		helper.WriteToConsole("could not fetch most recent build executions: " + err.Error())
+		helper.WriteToConsole("show build definition handler: could not fetch most recent build executions: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -300,7 +301,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
 		if err != nil {
-			helper.WriteToConsole("could not scan build execution: " + err.Error())
+			helper.WriteToConsole("show build definition handler: could not scan build execution: " + err.Error())
 			continue
 		}
 		beList = append(beList, be)
@@ -383,7 +384,7 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
 		"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&buildDefinitionTemp.Id, &buildDefinitionTemp.BuildTargetId, &buildDefinitionTemp.AlteredBy,
+	err = row.Scan(&buildDefinitionTemp.Id, &buildDefinitionTemp.BuildTarget, &buildDefinitionTemp.AlteredBy,
 		&buildDefinitionTemp.Caption, &buildDefinitionTemp.Enabled, &buildDefinitionTemp.DeploymentEnabled,
 		&buildDefinitionTemp.RepoHoster, &buildDefinitionTemp.RepoHosterUrl, &buildDefinitionTemp.RepoFullname,
 		&buildDefinitionTemp.RepoUsername, &buildDefinitionTemp.RepoSecret, &buildDefinitionTemp.RepoBranch,

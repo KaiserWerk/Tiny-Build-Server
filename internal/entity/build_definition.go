@@ -4,7 +4,7 @@ import "time"
 
 type BuildDefinition struct {
 	Id                int
-	BuildTargetId     int
+	BuildTarget       string
 	BuildTargetOsArch string
 	BuildTargetArm    int
 	AlteredBy         int

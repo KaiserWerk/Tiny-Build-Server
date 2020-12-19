@@ -180,7 +180,7 @@ func GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
 	var bdList []entity.BuildDefinition
 
 	db := GetDbConnection()
-	query := "SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, repo_hoster, repo_hoster_url, " +
+	query := "SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, repo_hoster_url, " +
 		"repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition ORDER BY altered_at DESC"
 	if limit > 0 {
 		query += " LIMIT " + strconv.Itoa(limit)
@@ -191,8 +191,9 @@ func GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&bd.Id, &bd.BuildTargetId, &bd.AlteredBy, &bd.Caption, &bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl,
-			&bd.RepoFullname, &bd.RepoUsername, &bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
+		err = rows.Scan(&bd.Id, &bd.BuildTarget, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
+			&bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername,
+			&bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
 		if err != nil {
 			return bdList, err
 		}

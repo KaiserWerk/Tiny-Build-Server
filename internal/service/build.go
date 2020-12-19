@@ -112,8 +112,8 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		return
 	}
 
-	switch definition.BuildTargetId {
-	case 1: // golang
+	switch definition.BuildTarget {
+	case "golang": // golang
 		def := buildsteps.GolangBuildDefinition{
 			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
 			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
@@ -130,7 +130,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 			// deploy artifact to any host
 			//err = deployArtifact(definition, artifact)
 		}
-	case 2: // dotnet
+	case "dotnet": // dotnet
 		def := buildsteps.DotnetBuildDefinition{
 			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
 			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
@@ -142,7 +142,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 			saveBuildReport(definition, sb.String())
 			return
 		}
-	case 3: // php
+	case "php": // php
 		def := buildsteps.PhpBuildDefinition{
 			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
 			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
@@ -154,7 +154,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 			saveBuildReport(definition, sb.String())
 			return
 		}
-	case 4: // rust
+	case "rust": // rust
 		def := buildsteps.RustBuildDefinition{
 			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
 			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, definition.RepoHoster, slug.Clean(definition.RepoFullname))),
