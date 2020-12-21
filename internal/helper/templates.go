@@ -15,6 +15,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 		"getBuildDefCaption": GetBuildDefCaption,
 		"getUsernameById":    GetUsernameById,
 		"getFlashbag":        GetFlashbag(GetSessionManager()),
+		"formatDate":	      FormatDate,
 	}
 	layoutContent, err := internal.FSString(true, "/templates/_layout.html") // with leading slash?
 	if err != nil {
