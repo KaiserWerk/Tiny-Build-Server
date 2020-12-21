@@ -272,20 +272,9 @@ func SendEmail(messageType EmailMessageType, data interface{}, subject string, t
 		return err
 	}
 
-	//emailAuth := smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"])
-	//
-	//emailBody, err := ParseEmailTemplate(string(messageType), data)
-	//if err != nil {
-	//	return fmt.Errorf("unable to parse email template: %s", err.Error())
-	//}
-	//
-	//mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	//subject := "Subject: " + "Test Email" + "!\n"
-	//msg := []byte(subject + mime + "\n" + emailBody)
-	//addr := fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_port"])
-	//
-	//if err := smtp.SendMail(addr, emailAuth, settings["smtp_username"], to, msg); err != nil {
-	//	return err
-	//}
 	return nil
+}
+
+func FormatDate(t time.Time) string {
+	return t.Format("2006-01-02 15:04")
 }
