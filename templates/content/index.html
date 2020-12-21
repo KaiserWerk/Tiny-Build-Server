@@ -23,7 +23,7 @@
                             <tbody>
                             {{range .LatestBuilds}}
                                 {{$class := "badge-default"}}
-                                {{$label := "DEFAULT"}}
+                                {{$label := "UNKNOWN"}}
                                 {{if eq .Result "success"}}
                                     {{$class = "badge-success"}}
                                     {{$label = "SUCCESS"}}
@@ -34,7 +34,7 @@
                             <tr>
                                 <td><a href="/builddefinition/{{ .BuildDefinitionId }}/show">{{ getBuildDefCaption .BuildDefinitionId }}</a></td>
                                 <td>{{ .ExecutionTime }}s</td>
-                                <td>{{ .ExecutedAt }}</td>
+                                <td>{{ .ExecutedAt | formatDate }}</td>
                                 <td><span class="badge {{ $class }}">{{ $label }}</span></td>
                                 <td><a class="btn btn-sm btn-info" href="/buildexecution/{{ .Id }}/show">Show</a></td>
                             </tr>
@@ -67,7 +67,7 @@
                                 <tr>
                                     <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
                                     <td>{{ getUsernameById .AlteredBy }}</td>
-                                    <td>{{ .AlteredAt }}</td>
+                                    <td>{{ .AlteredAt | formatDate }}</td>
                                 </tr>
                             {{else}}
                                 <tr>
