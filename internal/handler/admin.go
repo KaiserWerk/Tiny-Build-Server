@@ -17,7 +17,7 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser, err := helper.GetUserFromSession(session)
 	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
+		helper.WriteToConsole("could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
