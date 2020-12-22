@@ -2,6 +2,8 @@
 
 # Tiny Build Server
 
+**IMPORTANT: This is work in progress!**
+
 This project aims to be a functioning, minimal build server for Golang and .NET projects (possibly PHP and Rust, too).
 
 It can be used in conjunction with *BitBucket*, *GitHub*, *GitLab* and *Gitea* and it runs on 
