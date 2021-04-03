@@ -3,8 +3,14 @@ package handler
 import (
 	"database/sql"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,11 +18,13 @@ import (
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider enabled 2fa
-	sessMgr := helper.GetSessionManager()
+	sessMgr := global.GetSessionManager()
+
 	if r.Method == http.MethodPost {
+		ds := databaseService.New()
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
-		u, err := helper.GetUserByEmail(email)
+		u, err := ds.GetUserByEmail(email)
 		if err != nil {
 			helper.WriteToConsole("login: could not get user by Email in LoginHandler: " + err.Error())
 			sessMgr.AddMessage("error", "Invalid credentials!")
@@ -24,7 +32,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if helper.DoesHashMatch(password, u.Password) {
+		if security.DoesHashMatch(password, u.Password) {
 			//helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
@@ -55,13 +63,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := helper.ExecuteTemplate(w, "login.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "login.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	sessMgr := helper.GetSessionManager()
+	sessMgr := global.GetSessionManager()
 	helper.WriteToConsole("getting cookie value")
 	sessId, err := sessMgr.GetCookieValue(r)
 	if err != nil {
@@ -89,11 +97,13 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled pw reset
-	sessMgr := helper.GetSessionManager()
+	sessMgr := global.GetSessionManager()
+
 	if r.Method == http.MethodPost {
+		ds := databaseService.New()
 		email := r.FormValue("login_email")
 		if email != "" {
-			u, err := helper.GetUserByEmail(email)
+			u, err := ds.GetUserByEmail(email)
 			if err != nil {
 				helper.WriteToConsole("could not get user by Email in RequestNewPasswordHandler: " + err.Error())
 				// fake success message
@@ -102,21 +112,20 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
-
+			db := global.GetDbConnection()
 			helper.WriteToConsole("user " + u.Displayname + " requested new password")
 
-			registrationToken := helper.GenerateToken(30)
+			registrationToken := security.GenerateToken(30)
 
-			db := helper.GetDbConnection()
 			_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
-				u.Id, "password_reset", registrationToken, time.Now().Add(1 * time.Hour))
+				u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
 			if err != nil {
 				helper.WriteToConsole("could not insert user pw reset action: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			settings, err := helper.GetAllSettings()
+			settings, err := ds.GetAllSettings()
 			if err != nil {
 				helper.WriteToConsole("could not get all settings: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -125,14 +134,28 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			data := struct {
 				BaseUrl string
-				Email string
-				Token string
+				Email   string
+				Token   string
 			}{
 				BaseUrl: settings["base_url"],
-				Email: u.Email,
-				Token: registrationToken,
+				Email:   u.Email,
+				Token:   registrationToken,
 			}
-			err = helper.SendEmail(helper.RequestNewPasswordEmail, data, helper.EmailSubjects[helper.RequestNewPasswordEmail], []string{u.Email})
+
+			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.RequestNewPasswordEmail), data)
+			if err != nil {
+				helper.WriteToConsole("unable to parse email template: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			err = helper.SendEmail(
+				fixtures.RequestNewPasswordEmail,
+				settings,
+				emailBody,
+				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
+				[]string{u.Email},
+			)
 			if err != nil {
 				helper.WriteToConsole("could not send email: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -146,30 +169,30 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := helper.ExecuteTemplate(w, "password_request.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled pw reset
-	sessMgr := helper.GetSessionManager()
+	sessMgr := global.GetSessionManager()
 	email := r.URL.Query().Get("email")
 	token := r.URL.Query().Get("token")
 
 	if r.Method == http.MethodPost {
+		ds := databaseService.New()
 		email := r.FormValue("email")
 		token := r.FormValue("token")
-		user, err := helper.GetUserByEmail(email)
+		user, err := ds.GetUserByEmail(email)
 		if err != nil {
 			helper.WriteToConsole("could not fetch user by email: " + err.Error())
 			sessMgr.AddMessage("error", "A user with the supplied email address does not exist.")
-			http.Redirect(w, r, "/password/reset?token=" + token, http.StatusSeeOther)
+			http.Redirect(w, r, "/password/reset?token="+token, http.StatusSeeOther)
 			return
 		}
 
-		db := helper.GetDbConnection()
-
+		// TODO: move to method in databaseservice
 		var action entity.UserAction
 		row := db.QueryRow("SELECT id, user_id, purpose, token, validity FROM user_action WHERE token = ?", token)
 		err = row.Scan(&action.Id, &action.UserId, &action.Purpose, &action.Token, &action.Validity)
@@ -204,7 +227,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// TODO: check length/strength of password?
 
-		hash, err := helper.HashString(pw1)
+		hash, err := security.HashString(pw1)
 		if err != nil {
 			helper.WriteToConsole("could not hash password: " + err.Error())
 			sessMgr.AddMessage("error", "An error occurred. Please try again.")
@@ -235,16 +258,17 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		Token: token,
 	}
 
-	if err := helper.ExecuteTemplate(w, "password_reset.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "password_reset.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled registration
-	sessMgr := helper.GetSessionManager()
+	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
+		ds := databaseService.New()
 		displayName := r.FormValue("display_name")
 		email := r.FormValue("email")
 		pw1 := r.FormValue("password1")
@@ -257,7 +281,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// TODO check password strength
-		_, err := helper.GetUserByEmail(email)
+		_, err := ds.GetUserByEmail(email)
 		if err == nil {
 			helper.WriteToConsole("registration: user already exists")
 			sessMgr.AddMessage("error", "This email address is already in use!")
@@ -265,8 +289,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		db := helper.GetDbConnection()
-		hash, err := helper.HashString(pw1)
+		hash, err := security.HashString(pw1)
 		if err != nil {
 			helper.WriteToConsole("registration: password could not be hashed: " + err.Error())
 			sessMgr.AddMessage("error", "The new account could not be created; please try again!")
@@ -274,7 +297,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		exists := helper.RowExists("SELECT id FROM user WHERE displayname = ?", displayName)
+		exists := ds.RowExists("SELECT id FROM user WHERE displayname = ?", displayName)
 		if exists {
 			helper.WriteToConsole("this displayname is already in use")
 			sessMgr.AddMessage("error", "This display name is already in use, please select a different one.")
@@ -297,16 +320,16 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		token := helper.GenerateToken(30)
+		token := security.GenerateToken(30)
 		_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
-			lia, "confirm_registration", token, time.Now().Add(24 * time.Hour))
+			lia, "confirm_registration", token, time.Now().Add(24*time.Hour))
 		if err != nil {
 			helper.WriteToConsole("registration: could not insert user action: " + err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		settings, err := helper.GetAllSettings()
+		settings, err := ds.GetAllSettings()
 		if err != nil {
 			helper.WriteToConsole("registration: could not fetch settings: " + err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -315,12 +338,26 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 
 		data := struct {
 			BaseUrl string
-			Token string
+			Token   string
 		}{
 			BaseUrl: settings["base_url"],
 			Token:   token,
 		}
-		err = helper.SendEmail(helper.ConfirmRegistrationEmail, data, helper.EmailSubjects[helper.ConfirmRegistrationEmail], []string{email})
+
+		emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.ConfirmRegistrationEmail), data)
+		if err != nil {
+			helper.WriteToConsole("unable to parse email template: " + err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = helper.SendEmail(
+			fixtures.ConfirmRegistrationEmail,
+			settings,
+			emailBody,
+			fixtures.EmailSubjects[fixtures.ConfirmRegistrationEmail],
+			[]string{email},
+		)
 		if err != nil {
 			helper.WriteToConsole("registration: could not send email: " + err.Error())
 			sessMgr.AddMessage("warning", "Your new account was created but the confirmation email could not be sent out!")
@@ -333,7 +370,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := helper.ExecuteTemplate(w, "register.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -349,8 +386,8 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if token != "" {
-		sessMgr := helper.GetSessionManager()
-		db := helper.GetDbConnection()
+		sessMgr := global.GetSessionManager()
+		ds := databaseService.New()
 		row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)
 		ua := entity.UserAction{Token: token}
 		err := row.Scan(&ua.UserId, &ua.Purpose, &ua.Validity)
@@ -397,7 +434,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := helper.ExecuteTemplate(w, "confirm_registration.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "confirm_registration.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }

@@ -1,2 +1,0 @@
-# execute this command in the project root
-esc -pkg internal -o internal/embed.go templates/ public/

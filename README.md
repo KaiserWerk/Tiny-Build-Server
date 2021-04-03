@@ -16,6 +16,13 @@ a build for another OS/ARCH, refer to section __Custom Build__ below.
 
 Free to use for any non-commercial purpose; refer to LICENSE.md
 
+### Prerequisites
+
+* Git (for cloning projects)
+* Go >= 1.15 (for Golang projects)
+* cargo (for Rust projects)
+* dotnet (for .NET projects)
+
 ### Custom Build
 
 * You need Golang installed (developed on version 1.15) 

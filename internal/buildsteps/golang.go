@@ -7,15 +7,14 @@ import (
 	"github.com/stvp/slug"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type GolangBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string
-	entity.BuildDefinition
+	MetaData entity.BuildDefinition
+	Content entity.BuildDefinitionContent
 }
 
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
@@ -46,50 +45,102 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 
 func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir string) (string, error) {
 	var err error
-	slug.Replacement = '-'
-	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.RepoFullname, "/")[1]))
-	if strings.Contains(bd.BuildTargetOsArch, "win") {
-		binaryName += ".exe"
-	}
-	messageCh <- "binary name set to " + binaryName
+	slug.Replacement = '-' // TODO: move elsewhere
+	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.Content.Repository.Name, "/")[1]))
 
-	artifact := bd.ArtifactDir + "/" + binaryName
+	// TODO: remove clone directory?
 
-	buildCommand := fmt.Sprintf(
-		`build -o %s -a -v -work -x -ldflags "-s -w -X main.versionDate=%s" %s`,
-		artifact,
-		time.Now().Format(time.RFC3339),
-		bd.CloneDir,
-	)
-
-	// for go, the separator is a forward slash
-	buildTargetElements := strings.Split(bd.BuildTargetOsArch, "/")
-	err = os.Setenv("GOOS", buildTargetElements[0])
-	if err != nil {
-		messageCh <- "could not set environment variable GOOS: " + err.Error()
-		return "", err
-	}
-	err = os.Setenv("GOARCH", buildTargetElements[1])
-	if err != nil {
-		messageCh <- "could not set environment variable GOARCH: " + err.Error()
-		return "", err
-	}
-	if bd.BuildTargetArm > 0 {
-		err = os.Setenv("GOARM", strconv.Itoa(bd.BuildTargetArm))
-		if err != nil {
-			messageCh <- "could not set environment variable GOARM: " + err.Error()
-			return "", err
+	// pre build steps
+	for _, preBuildStep := range bd.Content.PreBuild {
+		// set an environment variable
+		if strings.Contains(preBuildStep, "setenv") && strings.Contains(preBuildStep, "=") {
+			setenv := strings.Replace(preBuildStep, "setenv ", "", 1)
+			parts := strings.Split(setenv, "=")
+			if len(parts) != 2 {
+				continue
+			}
+			err = os.Setenv(parts[0], parts[1])
+			if err != nil {
+				messageCh <- fmt.Sprintf("preBuildStep failed: could not set envvar %s to value %s", parts[0], parts[1])
+				continue
+			}
+			messageCh <- fmt.Sprintf("preBuildStep executed: setting envvar '%s' to value '%s'", parts[0], parts[1])
+		} else {
+			parts := strings.Split(preBuildStep, " ")
+			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.Dir = bd.CloneDir
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- fmt.Sprintf("preBuildStep failed: %s", err.Error())
+				continue
+			}
+			messageCh <- fmt.Sprintf("preBuildStep executed: %s", string(output))
 		}
 	}
 
-	cmd := exec.Command("go", strings.Split(buildCommand, " ")...)
-	messageCh <- "build command to be executed: '" + cmd.String() + "'"
-	result, err := cmd.CombinedOutput()
-	if err != nil {
-		messageCh <- "build was not successful: " + err.Error()
-		return "", err
+	// if it's windows, append .exe to the binary file
+	if strings.Contains(strings.ToLower(os.Getenv("GOOS")), "win") {
+		binaryName += ".exe"
 	}
-	messageCh <- "build successful: " + string(result)
+	messageCh <- "binary name set to " + binaryName
+	artifact := bd.ArtifactDir + "/" + binaryName
+
+	// actual build steps
+	for _, buildStep := range bd.Content.Build {
+		if buildStep == "go build" {
+			buildCommand := fmt.Sprintf(
+				`go build -o %s -a -v -work -x -ldflags "-s -w -X" %s`,
+				artifact,
+				bd.CloneDir,
+			)
+			parts := strings.Split(buildCommand, " ")
+			cmd := exec.Command(parts[0], parts[1:]...)
+			messageCh <- fmt.Sprintf("build command to be executed: '%s'", cmd.String())
+			result, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- "build failed: " + err.Error()
+				return "", err
+			}
+			messageCh <- "build successful: " + string(result)
+		} else {
+			parts := strings.Split(buildStep, " ")
+			cmd := exec.Command(parts[0], parts[1:]...)
+			result, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- "build with custom command failed: " + err.Error()
+				return "", err
+			}
+			messageCh <- "build with custom command successful: " + string(result)
+		}
+	}
+
+	// post build steps
+	for _, postBuildStep := range bd.Content.PostBuild {
+		// set an environment variable
+		if strings.Contains(postBuildStep, "setenv") && strings.Contains(postBuildStep, "=") {
+			setenv := strings.Replace(postBuildStep, "setenv ", "", 1)
+			parts := strings.Split(setenv, "=")
+			if len(parts) != 2 {
+				continue
+			}
+			err = os.Setenv(parts[0], parts[1])
+			if err != nil {
+				messageCh <- fmt.Sprintf("postBuildStep failed: could not set envvar %s to value %s", parts[0], parts[1])
+				continue
+			}
+			messageCh <- fmt.Sprintf("postBuildStep executed: setting envvar '%s' to value '%s'", parts[0], parts[1])
+		} else {
+			parts := strings.Split(postBuildStep, " ")
+			cmd := exec.Command(parts[0], parts[1:]...)
+			cmd.Dir = bd.CloneDir
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- fmt.Sprintf("postBuildStep failed: %s", err.Error())
+				continue
+			}
+			messageCh <- fmt.Sprintf("postBuildStep executed: %s", string(output))
+		}
+	}
 
 	return artifact, nil
 }

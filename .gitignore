@@ -2,4 +2,4 @@
 vendor/
 build/
 config/app.yaml
-internal/embed.go
+/internal/embed.go

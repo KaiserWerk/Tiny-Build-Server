@@ -1,7 +1,7 @@
 
 $sourcecode = "cmd/tiny-build-server/main.go"
 $target = "build/tiny-build-server"
-$version = "0.0.1"
+$version = "0.0.0-dev"
 $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
 # Windows, 64-bit
 $env:GOOS = 'windows'; $env:GOARCH = 'amd64';             go build -o "$($target)-win64.exe" -ldflags "-s -w -X 'main.version=$($version)' -X 'main.versionDate=$($date)'" $sourcecode

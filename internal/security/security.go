@@ -1,9 +1,10 @@
-package helper
+package security
 
 import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/sessionstore"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -28,7 +29,7 @@ func DoesHashMatch(password string, hash string) bool {
 }
 
 func CheckLogin(r *http.Request) (sessionstore.Session, error) {
-	sessMgr := GetSessionManager()
+	sessMgr := global.GetSessionManager()
 	sessId, err := sessMgr.GetCookieValue(r)
 	if err != nil {
 		return sessionstore.Session{}, errors.New("could not get cookie: " + err.Error())

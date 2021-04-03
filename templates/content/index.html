@@ -32,7 +32,7 @@
                                     {{$label = "FAILED"}}
                                 {{end}}
                             <tr>
-                                <td><a href="/builddefinition/{{ .BuildDefinitionId }}/show">{{ getBuildDefCaption .BuildDefinitionId }}</a></td>
+                                <td><a href="/builddefinition/{{ .BuildDefinitionId }}/show">{{ .Caption }}</a></td>
                                 <td>{{ .ExecutionTime }}s</td>
                                 <td>{{ .ExecutedAt | formatDate }}</td>
                                 <td><span class="badge {{ $class }}">{{ $label }}</span></td>

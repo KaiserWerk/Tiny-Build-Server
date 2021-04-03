@@ -2,31 +2,34 @@ package handler
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 )
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		helper.WriteToConsole("dashboard: redirect to login: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	latestBuilds, err := helper.GetNewestBuildExecutions(5)
+	latestBuilds, err := templateservice.GetNewestBuildExecutions(5)
 	if err != nil {
 		helper.WriteToConsole("could not fetch latest build executions: " + err.Error())
 	}
-	latestBuildDefs, err := helper.GetNewestBuildDefinitions(5)
+	latestBuildDefs, err := templateservice.GetNewestBuildDefinitions(5)
 	if err != nil {
 		helper.WriteToConsole("could not fetch latest build definitions: " + err.Error())
 	}
@@ -41,7 +44,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := helper.ExecuteTemplate(w, "index.html", indexData); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "index.html", indexData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -49,7 +52,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	file := vars["file"]
-	
+
 	var path string
 	switch true {
 	case strings.Contains(r.URL.Path, "assets/"):

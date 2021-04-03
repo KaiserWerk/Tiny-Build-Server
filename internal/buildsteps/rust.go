@@ -5,5 +5,6 @@ import "github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 type RustBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string
-	entity.BuildDefinition
+	MetaData entity.BuildDefinition
+	Content entity.BuildDefinitionContent
 }

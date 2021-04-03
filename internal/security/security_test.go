@@ -1,6 +1,8 @@
-package helper
+package security
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGenerateToken(t *testing.T) {
 	token := GenerateToken(40)

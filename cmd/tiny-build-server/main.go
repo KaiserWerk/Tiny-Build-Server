@@ -1,13 +1,17 @@
+//go:generate esc -o internal/embed.go -pkg internal docs public templates
 package main
 
 import (
 	"context"
 	"crypto/tls"
+	_ "embed"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
 	"os"
@@ -17,13 +21,13 @@ import (
 )
 
 const (
-	version = "0.0.1"
+	version     = "0.0.0-dev"
+	versionDate = "0000-00-00 00:00:00 +00:00"
 )
 
 var (
-	versionDate = "0000-00-00 00:00:00 +00:00" // inject at compile time
-	listenPort  string
-	configFile  string
+	listenPort string
+	configFile string
 )
 
 func main() {
@@ -35,10 +39,10 @@ func main() {
 	flag.Parse()
 
 	if configFile != "" {
-		helper.SetConfigurationFile(configFile)
+		global.SetConfigurationFile(configFile)
 	}
 
-	config := helper.GetConfiguration()
+	config := global.GetConfiguration()
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
@@ -50,7 +54,7 @@ func main() {
 	router.Use(middleware.Limit, middleware.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		_ = helper.ExecuteTemplate(w, "404.html", r.URL.Path)
+		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
 	})
 
 	setupRoutes(router)
@@ -83,12 +87,12 @@ func main() {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
 
-	go helper.ReadConsoleInput(quit)
+	//go helper.ReadConsoleInput(quit)
 
 	go func() {
 		<-quit
 		helper.WriteToConsole("Server is shutting down...")
-		helper.Cleanup()
+		global.Cleanup()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

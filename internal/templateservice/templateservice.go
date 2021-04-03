@@ -1,4 +1,11 @@
-package helper
+package templateservice
+
+import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+)
 
 import (
 	"bytes"
@@ -6,41 +13,39 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/sessionstore"
 )
 
 func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error {
 	var funcMap = template.FuncMap{
-		"getBuildDefCaption": GetBuildDefCaption,
 		"getUsernameById":    GetUsernameById,
-		"getFlashbag":        GetFlashbag(GetSessionManager()),
-		"formatDate":	      FormatDate,
+		"getFlashbag":        GetFlashbag(global.GetSessionManager()),
+		"formatDate":         helper.FormatDate,
 	}
 	layoutContent, err := internal.FSString(true, "/templates/_layout.html") // with leading slash?
 	if err != nil {
-		WriteToConsole("could not get layout template: " + err.Error())
+		helper.WriteToConsole("could not get layout template: " + err.Error())
 		return err
 	}
 
-	layout := template.Must(template.New("_layout.html").Parse(layoutContent)).Funcs(funcMap)
+	layout := template.Must(template.New("_layout.html").Parse(string(layoutContent))).Funcs(funcMap)
 
 	content, err := internal.FSString(true, "/templates/content/"+file) // with leading slash?
 	if err != nil {
-		WriteToConsole("could not find template " + file + ": " + err.Error())
+		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
 	}
 
 	tmpl := template.Must(layout.Clone())
 	_, err = tmpl.Parse(string(content))
 	if err != nil {
-		WriteToConsole("could not parse template into base layout: " + err.Error())
+		helper.WriteToConsole("could not parse template into base layout: " + err.Error())
 		return err
 	}
 
 	err = tmpl.Execute(w, data)
 	if err != nil {
-		WriteToConsole("could not execute template " + file + ": " + err.Error())
+		helper.WriteToConsole("could not execute template " + file + ": " + err.Error())
 		return err
 	}
 
@@ -50,19 +55,19 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 	cont, err := internal.FSString(true, "/templates/email/"+messageType+".html")
 	if err != nil {
-		WriteToConsole("could not get FSString email template: " + err.Error())
+		helper.WriteToConsole("could not get FSString email template: " + err.Error())
 		return "", err
 	}
-	t, err := template.New(messageType).Parse(cont)
+	t, err := template.New(messageType).Parse(string(cont))
 	if err != nil {
-		WriteToConsole("could not parse email template")
+		helper.WriteToConsole("could not parse email template")
 		return "", err
 	}
 
 	b := bytes.NewBufferString("")
 	err = t.Execute(b, data)
 	if err != nil {
-		WriteToConsole("could not execute email template")
+		helper.WriteToConsole("could not execute email template")
 	}
 
 	return b.String(), nil
@@ -71,7 +76,7 @@ func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
 		if mgr == nil {
-			WriteToConsole("sessionManager is nil in getFlashbag")
+			helper.WriteToConsole("sessionManager is nil in getFlashbag")
 			return template.HTML("")
 		}
 		var sb strings.Builder
@@ -97,4 +102,17 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 
 		return template.HTML(sb.String())
 	}
+}
+
+
+func GetUsernameById(id int) string {
+	ds := databaseService.New()
+	defer ds.Quit()
+
+	u, err := ds.GetUserById(id)
+	if err != nil {
+		return "--"
+	}
+
+	return u.Displayname
 }

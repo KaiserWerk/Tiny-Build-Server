@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -9,12 +13,12 @@ import (
 )
 
 func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -28,25 +32,25 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser: currentUser,
 	}
 
-	if err := helper.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
 	vars := mux.Vars(r)
 
 	var be entity.BuildExecution
@@ -81,7 +85,7 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition: bd,
 	}
 
-	if err = helper.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {
+	if err = templateservice.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }

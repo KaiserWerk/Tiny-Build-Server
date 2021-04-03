@@ -1,20 +1,24 @@
 package handler
 
 import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 )
 
 func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -22,8 +26,9 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodPost {
-		sessMgr := helper.GetSessionManager()
-		db := helper.GetDbConnection()
+
+		sessMgr := global.GetSessionManager()
+		db := global.GetDbConnection()
 
 		// check if password is correct
 		password := r.FormValue("password")
@@ -37,7 +42,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hash, err := helper.HashString(password)
+		hash, err := security.HashString(password)
 		if err != nil {
 			helper.WriteToConsole("change user settings: could not hash password")
 			sessMgr.AddMessage("error", "An unexpected error occurred!")
@@ -45,7 +50,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if helper.DoesHashMatch(queriedHash, hash) {
+		if security.DoesHashMatch(queriedHash, hash) {
 			helper.WriteToConsole("change user settings: entered password incorrect")
 			sessMgr.AddMessage("error", "You entered an incorrect password!")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -57,7 +62,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		if form == "change_data" {
 			displayname := r.FormValue("displayname")
 			if displayname != "" && displayname != currentUser.Displayname {
-				if exists := helper.RowExists("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.Id); exists {
+				if exists := dataService.RowExists(db, "SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.Id); exists {
 					helper.WriteToConsole("change user settings: displayname " + displayname + " is already in use")
 					sessMgr.AddMessage("error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -75,7 +80,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 			email := r.FormValue("email")
 			if email != "" && email != currentUser.Email {
-				if exists := helper.RowExists("SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.Id); exists {
+				if exists := dataService.RowExists(db, "SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.Id); exists {
 					helper.WriteToConsole("change user settings: email " + email + " is already in use")
 					sessMgr.AddMessage("error", "This email is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -121,7 +126,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			hash, err := helper.HashString(newPassword1)
+			hash, err := security.HashString(newPassword1)
 			if err != nil {
 				helper.WriteToConsole("change user settings: could not hash new password")
 				sessMgr.AddMessage("error", "An unknown error occurred.")
@@ -149,7 +154,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser: currentUser,
 	}
 
-	if err = helper.ExecuteTemplate(w, "user_settings.html", data); err != nil {
+	if err = templateservice.ExecuteTemplate(w, "user_settings.html", data); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

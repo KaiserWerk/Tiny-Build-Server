@@ -2,8 +2,13 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -11,19 +16,19 @@ import (
 )
 
 func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
 	type preparedBuildDefinition struct {
 		Id                int
 		Caption           string
@@ -67,27 +72,28 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinitions: bdList,
 	}
 
-	if err := helper.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
 
 	if r.Method == http.MethodPost {
+
 		targetId := r.FormValue("target_id")
 		caption := r.FormValue("caption")
 		var enabled bool
@@ -153,67 +159,37 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var selectedTarget int
-	temp := r.URL.Query().Get("target")
-	if temp != "" {
-		selectedTarget, _ = strconv.Atoi(temp)
-	}
-
-	btList, err := helper.GetBuildTargets()
-	if err != nil {
-		helper.WriteToConsole("could not fetch buildTargets in buildDefinitionAddHandler")
-		w.WriteHeader(500)
-		return
-	}
-
-	var runtimes []string
-	switch selectedTarget {
-	case 1:
-		runtimes = helper.GolangRuntimes
-	case 2:
-		runtimes = helper.DotnetRuntimes
-	case 3:
-		// php does not have runtimes
-	case 4:
-		// rust + cross-compile? would be nice
-	}
-
 	data := struct {
 		CurrentUser       entity.User
-		SelectedTarget    int
-		BuildTargets      []entity.BuildTarget
-		AvailableRuntimes []string
 	}{
 		CurrentUser:       currentUser,
-		SelectedTarget:    selectedTarget,
-		BuildTargets:      btList,
-		AvailableRuntimes: runtimes,
 	}
 
-	if err := helper.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
 	vars := mux.Vars(r)
 	if r.Method == http.MethodPost {
 
 	}
 
+	// TODO: Rework into method
 	var bdt entity.BuildDefinition
 	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, "+
 		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
@@ -232,42 +208,29 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	selectedTab := r.URL.Query().Get("tab")
 
-	var runtimes []string
-	switch bdt.BuildTarget {
-	case "golang":
-		runtimes = helper.GolangRuntimes
-	case "dotnet":
-		runtimes = helper.DotnetRuntimes
-	case "php":
-		// php does not have runtimes
-	case "rust":
-		// rust + cross-compile? would be nice
-	}
 
 	data := struct {
 		CurrentUser             entity.User
 		SelectedBuildDefinition entity.BuildDefinition
 		SelectedTab             string
-		AvailableRuntimes       []string
 	}{
 		CurrentUser:             currentUser,
 		SelectedBuildDefinition: bdt,
 		SelectedTab:             selectedTab,
-		AvailableRuntimes:       runtimes,
 	}
 
-	if err := helper.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("show build definition handler: could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -275,7 +238,9 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r) // id
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
+
+	// TODO: rework into method
 	var bd entity.BuildDefinition
 	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
 		"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
@@ -354,25 +319,25 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		AvgRuntime:        fmt.Sprintf("%.2f", avg),
 	}
 
-	if err := helper.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
 
 func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := helper.CheckLogin(r)
+	session, err := security.CheckLogin(r)
 	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := helper.GetUserFromSession(session)
+	currentUser, err := dataService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := helper.GetDbConnection()
+	db := global.GetDbConnection()
 	vars := mux.Vars(r)
 
 	confirm := r.URL.Query().Get("confirm")
@@ -403,7 +368,7 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition: buildDefinitionTemp,
 	}
 
-	if err := helper.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
