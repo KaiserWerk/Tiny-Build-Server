@@ -1,10 +1,9 @@
-//go:generate esc -o internal/embed.go -pkg internal docs public templates
+////go:generate esc -o internal/embed.go -pkg internal docs public templates
 package main
 
 import (
 	"context"
 	"crypto/tls"
-	_ "embed"
 	"flag"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
