@@ -3,8 +3,8 @@ package handler
 import (
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
@@ -183,23 +183,29 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := global.GetDbConnection()
+	ds := databaseService.New()
 	vars := mux.Vars(r)
 	if r.Method == http.MethodPost {
 
 	}
 
 	// TODO: Rework into method
-	var bdt entity.BuildDefinition
-	row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, "+
-		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
-		"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
-		"FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bdt.Id, &bdt.BuildTarget, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
-		&bdt.RepoHoster, &bdt.RepoHosterUrl, &bdt.RepoFullname, &bdt.RepoUsername, &bdt.RepoSecret, &bdt.RepoBranch,
-		&bdt.AlteredAt, &bdt.ApplyMigrations, &bdt.DatabaseDSN, &bdt.MetaMigrationId, &bdt.RunTests,
-		&bdt.RunBenchmarkTests,
-	)
+	//var bdt entity.BuildDefinition
+	//row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, "+
+	//	"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
+	//	"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
+	//	"FROM build_definition WHERE id = ?", vars["id"])
+	//err = row.Scan(&bdt.Id, &bdt.BuildTarget, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
+	//	&bdt.RepoHoster, &bdt.RepoHosterUrl, &bdt.RepoFullname, &bdt.RepoUsername, &bdt.RepoSecret, &bdt.RepoBranch,
+	//	&bdt.AlteredAt, &bdt.ApplyMigrations, &bdt.DatabaseDSN, &bdt.MetaMigrationId, &bdt.RunTests,
+	//	&bdt.RunBenchmarkTests,
+	//)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionEditHandler: could not parse build definition id, setting to -1")
+		id = -1
+	}
+	bdt, err := ds.GetBuildDefinitionById(id)
 	if err != nil {
 		helper.WriteToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
 		w.WriteHeader(500)
@@ -207,7 +213,6 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	selectedTab := r.URL.Query().Get("tab")
-
 
 	data := struct {
 		CurrentUser             entity.User
@@ -238,17 +243,23 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r) // id
-	db := global.GetDbConnection()
+	ds := databaseService.New()
 
 	// TODO: rework into method
-	var bd entity.BuildDefinition
-	row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
-		"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&bd.Id, &bd.BuildTarget, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
-		&bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername,
-		&bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
+	//var bd entity.BuildDefinition
+	//row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
+	//	"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
+	//err = row.Scan(&bd.Id, &bd.BuildTarget, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
+	//	&bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername,
+	//	&bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("show build definition handler: could not scan buildDefinition: " + err.Error())
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not parse build definition id, setting to -1")
+		id = -1
+	}
+	bd, err := ds.GetBuildDefinitionById(id)
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not scan buildDefinition: " + err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -3,10 +3,9 @@ package databaseService
 import (
 	"database/sql"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"time"
 )
 
-func (ds databaseService) InsertUserAction(userId int, purpose, token string, validity time.Time) error {
+func (ds databaseService) InsertUserAction(userId int, purpose, token string, validity sql.NullTime) error {
 
 	// 1. set all timely invalid actions to a null token
 	result := ds.db.Exec("UPDATE user_action SET token = NULL WHERE user_id = ? AND validity < NOW()", userId)
@@ -51,5 +50,19 @@ func (ds databaseService) InvalidatePasswordResets(userId int) error {
 }
 
 func (ds databaseService) AddUserAction(action entity.UserAction) error {
-	
+	result := ds.db.Create(&action)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (ds databaseService) UpdateUserAction(userAction entity.UserAction) error {
+	result := ds.db.Save(&userAction)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

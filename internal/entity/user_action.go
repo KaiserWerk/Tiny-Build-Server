@@ -1,11 +1,13 @@
 package entity
 
-import "time"
+import (
+	"database/sql"
+)
 
 type UserAction struct {
 	Id       int
 	UserId   int
 	Purpose  string
 	Token    string
-	Validity time.Time
+	Validity sql.NullTime
 }

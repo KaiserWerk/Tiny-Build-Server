@@ -118,7 +118,8 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			//_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
 			//	u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
-			err = ds.InsertUserAction(u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
+			t := time.Now().Add(1*time.Hour)
+			err = ds.InsertUserAction(u.Id, "password_reset", registrationToken, sql.NullTime{Valid: true, Time: t})
 			if err != nil {
 				helper.WriteToConsole("could not insert user pw reset action: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -203,7 +204,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if action.Validity.Before(time.Now()) {
+		if !action.Validity.Valid || action.Validity.Time.Before(time.Now()) {
 			helper.WriteToConsole("validity of token ran out")
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
@@ -325,8 +326,11 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 
 		token := security.GenerateToken(30)
-		_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
-			lastInsertId, "confirm_registration", token, time.Now().Add(24*time.Hour))
+		t := time.Now().Add(24*time.Hour)
+		err = ds.AddUserAction(entity.UserAction{UserId: lastInsertId, Purpose: "confirm_registration",
+			Token: token, Validity: sql.NullTime{Valid: true, Time: t}})
+		//_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
+		//	lastInsertId, "confirm_registration", token, time.Now().Add(24*time.Hour))
 		if err != nil {
 			helper.WriteToConsole("registration: could not insert user action: " + err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -392,9 +396,10 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
-		row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)
-		ua := entity.UserAction{Token: token}
-		err := row.Scan(&ua.UserId, &ua.Purpose, &ua.Validity)
+		ua, err := ds.GetUserActionByToken(token)
+		//row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)
+		//ua := entity.UserAction{Token: token}
+		//err := row.Scan(&ua.UserId, &ua.Purpose, &ua.Validity)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not scan: " + err.Error())
 			sessMgr.AddMessage("error", "An unknown error occured.")
@@ -409,22 +414,32 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if ua.Validity.Before(time.Now()) {
+		if !ua.Validity.Valid || ua.Validity.Time.Before(time.Now()) {
 			helper.WriteToConsole("confirm registration: token validity run out")
 			sessMgr.AddMessage("error", "This token is not valid anymore.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
 
-		_, err = db.Exec("UPDATE user SET locked = 0 WHERE id = ?", ua.UserId)
+		user, err := ds.GetUserById(ua.UserId)
+		if err != nil {
+			helper.WriteToConsole("confirm registration: could not get user from db: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occured.")
+			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
+			return
+		}
+		user.Locked = false
+		//_, err = db.Exec("UPDATE user SET locked = 0 WHERE id = ?", ua.UserId)
+		err = ds.UpdateUser(user)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not set locked flag in db: " + err.Error())
 			sessMgr.AddMessage("error", "An unknown error occured.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
-
-		_, err = db.Exec("UPDATE user_action SET validity = ? WHERE token = ?", sql.NullTime{}, ua.Token)
+		ua.Validity = sql.NullTime{}
+		err = ds.UpdateUserAction(ua)
+		//_, err = db.Exec("UPDATE user_action SET validity = ? WHERE token = ?", sql.NullTime{}, ua.Token)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not null token validity in db: " + err.Error())
 			sessMgr.AddMessage("error", "An unknown error occured.")

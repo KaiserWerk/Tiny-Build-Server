@@ -44,31 +44,6 @@ func (ds databaseService) Quit() {
 	ds.Quit()
 }
 
-func (ds databaseService) GetBuildDefinitionById(id int) (entity.BuildDefinition, error) {
-	var buildDefinition entity.BuildDefinition
-	result := ds.db.First(&buildDefinition, id)
-	if result.Error != nil {
-		return entity.BuildDefinition{}, result.Error
-	}
-	return buildDefinition, nil
-}
-
-func (ds databaseService) GetBuildDefCaption(id int) (string, error) {
-	var bd entity.BuildDefinition
-	result := ds.db.First(&bd, id)
-	if result.Error != nil {
-		return "", result.Error
-	}
-	return bd.Caption, nil
-}
-
-
-
-
-
-
-
-
 func (ds databaseService) RowExists(query string, args ...interface{}) bool {
 	exists := true
 
