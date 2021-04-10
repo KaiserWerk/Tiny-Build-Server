@@ -31,3 +31,21 @@ func (ds databaseService) GetUserById(id int) (entity.User, error) {
 
 	return u, nil
 }
+
+func (ds databaseService) AddUser(user entity.User) (int, error) {
+	result := ds.db.Create(&user)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return user.Id, nil
+}
+
+func (ds databaseService) UpdateUser(user entity.User) error {
+	result := ds.db.Save(&user)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}

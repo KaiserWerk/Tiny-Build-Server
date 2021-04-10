@@ -111,13 +111,14 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
-			db := global.GetDbConnection()
+
 			helper.WriteToConsole("user " + u.Displayname + " requested new password")
 
 			registrationToken := security.GenerateToken(30)
 
-			_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
-				u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
+			//_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
+			//	u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
+			err = ds.InsertUserAction(u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
 			if err != nil {
 				helper.WriteToConsole("could not insert user pw reset action: " + err.Error())
 				w.WriteHeader(http.StatusInternalServerError)
@@ -192,9 +193,9 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// TODO: move to method in databaseservice
-		var action entity.UserAction
-		row := db.QueryRow("SELECT id, user_id, purpose, token, validity FROM user_action WHERE token = ?", token)
-		err = row.Scan(&action.Id, &action.UserId, &action.Purpose, &action.Token, &action.Validity)
+		//row := db.QueryRow("SELECT id, user_id, purpose, token, validity FROM user_action WHERE token = ?", token)
+		//err = row.Scan(&action.Id, &action.UserId, &action.Purpose, &action.Token, &action.Validity)
+		action, err := ds.GetUserActionByToken(token)
 		if err != nil {
 			helper.WriteToConsole("could not scan user action in ResetPasswordHandler: " + err.Error())
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
@@ -233,14 +234,17 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
-		_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, user.Id)
+		//_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, user.Id)
+		user.Password = hash
+		err = ds.UpdateUser(user)
 		if err != nil {
 			helper.WriteToConsole("could not update to new password: " + err.Error())
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
-		_, err = db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?", sql.NullTime{}, user.Id)
+		//_, err = db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?", sql.NullTime{}, user.Id)
+		err = ds.InvalidatePasswordResets(user.Id)
 		if err != nil {
 			helper.WriteToConsole("could not update user actions: " + err.Error())
 		}
@@ -304,24 +308,25 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res, err := db.Exec("INSERT INTO user (displayname, email, password, locked) VALUES (?, ?, ?, 1)",
-			displayName, email, hash)
+		//res, err := db.Exec("INSERT INTO user (displayname, email, password, locked) VALUES (?, ?, ?, 1)",
+		//	displayName, email, hash)
+		lastInsertId, err := ds.AddUser(entity.User{Displayname: displayName, Email: email, Password: hash, Locked: true})
 		if err != nil {
 			helper.WriteToConsole("registration: user could not be inserted: " + err.Error())
 			sessMgr.AddMessage("error", "The new account could not be created; please try again!")
 			http.Redirect(w, r, "/register", http.StatusSeeOther)
 			return
 		}
-		lia, err := res.LastInsertId()
-		if err != nil {
-			helper.WriteToConsole("registration: could not obtain last insert id: " + err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+
+		//if err != nil {
+		//	helper.WriteToConsole("registration: could not obtain last insert id: " + err.Error())
+		//	w.WriteHeader(http.StatusInternalServerError)
+		//	return
+		//}
 
 		token := security.GenerateToken(30)
 		_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
-			lia, "confirm_registration", token, time.Now().Add(24*time.Hour))
+			lastInsertId, "confirm_registration", token, time.Now().Add(24*time.Hour))
 		if err != nil {
 			helper.WriteToConsole("registration: could not insert user action: " + err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
