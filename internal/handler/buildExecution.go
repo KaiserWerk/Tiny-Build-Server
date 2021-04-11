@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
+	"strconv"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -18,7 +19,7 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -43,21 +44,29 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := global.GetDbConnection()
-	vars := mux.Vars(r)
+	ds := databaseService.New()
+	defer ds.Quit()
 
-	var be entity.BuildExecution
-	row := db.QueryRow("SELECT id, build_definition_id, initiated_by, manual_run, action_log,"+
-		" result, artifact_path, execution_time, executed_at FROM build_execution WHERE id = ?", vars["id"])
-	err = row.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.ActionLog,
-		&be.Result, &be.ArtifactPath, &be.ExecutionTime, &be.ExecutedAt)
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		helper.WriteToConsole("BuildExecutionShowHandler: could not parse entry ID: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+	//var be entity.BuildExecution
+	//row := db.QueryRow("SELECT id, build_definition_id, initiated_by, manual_run, action_log,"+
+	//	" result, artifact_path, execution_time, executed_at FROM build_execution WHERE id = ?", vars["id"])
+	//err = row.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.ActionLog,
+	//	&be.Result, &be.ArtifactPath, &be.ExecutionTime, &be.ExecutedAt)
+	buildExecution, err := ds.GetBuildExecutionById(id)
 	if err != nil {
 		helper.WriteToConsole("could not scan buildExecution in buildExecutionShowHandler")
 		w.WriteHeader(500)
@@ -66,9 +75,10 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	//be.ActionLog = strings.ReplaceAll(be.ActionLog, "\n", "<br>")
 
-	var bd entity.BuildDefinition
-	row = db.QueryRow("SELECT id, caption FROM build_definition WHERE id = ?", be.BuildDefinitionId)
-	err = row.Scan(&bd.Id, &bd.Caption)
+	//var bd entity.BuildDefinition
+	//row = db.QueryRow("SELECT id, caption FROM build_definition WHERE id = ?", buildExecution.BuildDefinitionId)
+	//err = row.Scan(&bd.Id, &bd.Caption)
+	buildDefinition, err := ds.GetBuildDefinitionById(buildExecution.BuildDefinitionId)
 	if err != nil {
 		helper.WriteToConsole("could not scan buildDefinition in buildExecutionShowHandler")
 		w.WriteHeader(500)
@@ -81,8 +91,8 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		BuildDefinition entity.BuildDefinition
 	}{
 		CurrentUser:     currentUser,
-		BuildExecution:  be,
-		BuildDefinition: bd,
+		BuildExecution:  buildExecution,
+		BuildDefinition: buildDefinition,
 	}
 
 	if err = templateservice.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {

@@ -3,7 +3,7 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -20,7 +20,7 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -75,7 +75,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -166,7 +166,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -270,7 +270,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -283,6 +283,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	sessMgr := global.GetSessionManager()
 	ds := databaseService.New()
+	defer ds.Quit()
 
 	if r.Method == http.MethodPost {
 

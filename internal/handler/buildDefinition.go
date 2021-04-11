@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -21,7 +21,7 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -83,7 +83,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -176,7 +176,7 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -184,6 +184,8 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ds := databaseService.New()
+	defer ds.Quit()
+
 	vars := mux.Vars(r)
 	if r.Method == http.MethodPost {
 
@@ -235,7 +237,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("show build definition handler: could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -244,6 +246,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r) // id
 	ds := databaseService.New()
+	defer ds.Quit()
 
 	// TODO: rework into method
 	//var bd entity.BuildDefinition
@@ -264,25 +267,27 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var be entity.BuildExecution
-	var beList = make([]entity.BuildExecution, 0)
-	rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE "+
-		"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
-	if err != nil {
-		helper.WriteToConsole("show build definition handler: could not fetch most recent build executions: " + err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	//var be entity.BuildExecution
+	//var beList = make([]entity.BuildExecution, 0)
+	//rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE "+
+	//	"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
+	//if err != nil {
+	//	helper.WriteToConsole("show build definition handler: could not fetch most recent build executions: " + err.Error())
+	//	w.WriteHeader(http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//for rows.Next() {
+	//	err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
+	//	if err != nil {
+	//		helper.WriteToConsole("show build definition handler: could not scan build execution: " + err.Error())
+	//		continue
+	//	}
+	//	beList = append(beList, be)
+	//	be = entity.BuildExecution{}
+	//}
 
-	for rows.Next() {
-		err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
-		if err != nil {
-			helper.WriteToConsole("show build definition handler: could not scan build execution: " + err.Error())
-			continue
-		}
-		beList = append(beList, be)
-		be = entity.BuildExecution{}
-	}
+	beList, err := ds.FindBuildExecutions("build_definition_id = ?", bd.Id)
 
 	failedBuildCount := 0
 	successBuildCount := 0
@@ -341,42 +346,51 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	db := global.GetDbConnection()
+	ds := databaseService.New()
+	defer ds.Quit()
+
 	vars := mux.Vars(r)
 
 	confirm := r.URL.Query().Get("confirm")
 	if confirm == "yes" {
-		// TODO implement "yes" action for build definition removal
+		// TODO: implement "yes" action for build definition removal
 	}
 
-	var buildDefinitionTemp entity.BuildDefinition
-	row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
-		"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
-		"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
-	err = row.Scan(&buildDefinitionTemp.Id, &buildDefinitionTemp.BuildTarget, &buildDefinitionTemp.AlteredBy,
-		&buildDefinitionTemp.Caption, &buildDefinitionTemp.Enabled, &buildDefinitionTemp.DeploymentEnabled,
-		&buildDefinitionTemp.RepoHoster, &buildDefinitionTemp.RepoHosterUrl, &buildDefinitionTemp.RepoFullname,
-		&buildDefinitionTemp.RepoUsername, &buildDefinitionTemp.RepoSecret, &buildDefinitionTemp.RepoBranch,
-		&buildDefinitionTemp.AlteredAt, &buildDefinitionTemp.MetaMigrationId)
+	//var buildDefinition entity.BuildDefinition
+	//row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
+	//	"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
+	//	"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
+	//err = row.Scan(&buildDefinition.Id, &buildDefinition.BuildTarget, &buildDefinition.AlteredBy,
+	//	&buildDefinition.Caption, &buildDefinition.Enabled, &buildDefinition.DeploymentEnabled,
+	//	&buildDefinition.RepoHoster, &buildDefinition.RepoHosterUrl, &buildDefinition.RepoFullname,
+	//	&buildDefinition.RepoUsername, &buildDefinition.RepoSecret, &buildDefinition.RepoBranch,
+	//	&buildDefinition.AlteredAt, &buildDefinition.MetaMigrationId)
+	//if err != nil {
+	//	helper.WriteToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
+	//	w.WriteHeader(500)
+	//	return
+	//}
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
+		helper.WriteToConsole("BuildDefinitionRemoveHandler: could not parse entry ID: " + err.Error())
 		w.WriteHeader(500)
 		return
 	}
+	buildDefinition, err := ds.GetBuildDefinitionById(id)
 
 	data := struct {
 		CurrentUser     entity.User
 		BuildDefinition entity.BuildDefinition
 	}{
 		CurrentUser:     currentUser,
-		BuildDefinition: buildDefinitionTemp,
+		BuildDefinition: buildDefinition,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {

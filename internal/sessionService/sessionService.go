@@ -1,4 +1,4 @@
-package dataService
+package sessionService
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
@@ -16,9 +16,9 @@ func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 
 	userId, _ := strconv.Atoi(userIdStr)
 
-	dbService := databaseService.New()
-	defer dbService.Quit()
-	user, err := dbService.GetUserById(userId)
+	ds := databaseService.New()
+	defer ds.Quit()
+	user, err := ds.GetUserById(userId)
 	return user, err
 }
 

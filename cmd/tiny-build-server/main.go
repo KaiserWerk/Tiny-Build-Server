@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -43,6 +44,9 @@ func main() {
 
 	config := global.GetConfiguration()
 
+	ds := databaseService.New()
+	ds.Quit()
+
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
 	if config.Tls.Enabled {
@@ -56,7 +60,7 @@ func main() {
 		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
 	})
 
-	setupRoutes(router)
+	//setupRoutes(router)
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,

@@ -83,7 +83,7 @@ func SendEmail(messageType fixtures.EmailMessageType, settings map[string]string
 	if len(to) == 0 {
 		return fmt.Errorf("could not send email; no recipients supplied")
 	}
-	//settings, err := dataService.GetAllSettings(global.GetDbConnection())
+	//settings, err := sessionService.GetAllSettings(global.GetDbConnection())
 	//if err != nil {
 	//	WriteToConsole("could not get all settings: " + err.Error())
 	//	return err
@@ -102,7 +102,10 @@ func SendEmail(messageType fixtures.EmailMessageType, settings map[string]string
 	m.SetBody("text/html", body)
 	//m.Attach("/home/Alex/lolcat.jpg")
 
-	port, _ := strconv.Atoi(settings["smtp_port"])
+	port, err := strconv.Atoi(settings["smtp_port"])
+	if err != nil {
+		return err
+	}
 	d := gomail.NewDialer(settings["smtp_host"], port, settings["smtp_username"], settings["smtp_password"])
 	if err := d.DialAndSend(m); err != nil {
 		return err

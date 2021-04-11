@@ -2,10 +2,11 @@ package handler
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -19,17 +20,20 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	latestBuilds, err := templateservice.GetNewestBuildExecutions(5)
+	ds := databaseService.New()
+	defer ds.Quit()
+
+	latestBuilds, err := ds.GetNewestBuildExecutions(5)
 	if err != nil {
 		helper.WriteToConsole("could not fetch latest build executions: " + err.Error())
 	}
-	latestBuildDefs, err := templateservice.GetNewestBuildDefinitions(5)
+	latestBuildDefs, err := ds.GetNewestBuildDefinitions(5)
 	if err != nil {
 		helper.WriteToConsole("could not fetch latest build definitions: " + err.Error())
 	}

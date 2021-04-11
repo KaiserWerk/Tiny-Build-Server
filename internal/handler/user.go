@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dataService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -18,7 +19,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := dataService.GetUserFromSession(session)
+	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -28,19 +29,20 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 
 		sessMgr := global.GetSessionManager()
-		db := global.GetDbConnection()
+		ds := databaseService.New()
+		defer ds.Quit()
 
 		// check if password is correct
 		password := r.FormValue("password")
-		row := db.QueryRow("SELECT password FROM user WHERE id = ?", currentUser.Id)
-		var queriedHash string
-		err = row.Scan(&queriedHash)
-		if err != nil {
-			helper.WriteToConsole("change user settings: error querying user")
-			sessMgr.AddMessage("error", "An unexpected error occurred!")
-			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
-			return
-		}
+		//row := db.QueryRow("SELECT password FROM user WHERE id = ?", currentUser.Id)
+		//var queriedHash string
+		//err = row.Scan(&queriedHash)
+		//if err != nil {
+		//	helper.WriteToConsole("change user settings: error querying user")
+		//	sessMgr.AddMessage("error", "An unexpected error occurred!")
+		//	http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
+		//	return
+		//}
 
 		hash, err := security.HashString(password)
 		if err != nil {
@@ -50,7 +52,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if security.DoesHashMatch(queriedHash, hash) {
+		if security.DoesHashMatch(currentUser.Password, hash) {
 			helper.WriteToConsole("change user settings: entered password incorrect")
 			sessMgr.AddMessage("error", "You entered an incorrect password!")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -62,14 +64,16 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		if form == "change_data" {
 			displayname := r.FormValue("displayname")
 			if displayname != "" && displayname != currentUser.Displayname {
-				if exists := dataService.RowExists(db, "SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.Id); exists {
+				if ds.RowExists("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.Id) {
 					helper.WriteToConsole("change user settings: displayname " + displayname + " is already in use")
 					sessMgr.AddMessage("error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
 
-				_, err = db.Exec("UPDATE user SET displayname = ? where id = ?", displayname, currentUser.Id)
+				currentUser.Displayname = displayname
+				err = ds.UpdateUser(currentUser)
+				//_, err = db.Exec("UPDATE user SET displayname = ? where id = ?", displayname, currentUser.Id)
 				if err != nil {
 					helper.WriteToConsole("change user settings: displayname " + displayname + " is already in use")
 					sessMgr.AddMessage("error", "This display name is already in use!")
@@ -80,14 +84,16 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 			email := r.FormValue("email")
 			if email != "" && email != currentUser.Email {
-				if exists := dataService.RowExists(db, "SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.Id); exists {
+				if ds.RowExists("SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.Id) {
 					helper.WriteToConsole("change user settings: email " + email + " is already in use")
 					sessMgr.AddMessage("error", "This email is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
 
-				_, err = db.Exec("UPDATE user SET email = ? where id = ?", email, currentUser.Id)
+				currentUser.Email = email
+				err = ds.UpdateUser(currentUser)
+				//_, err = db.Exec("UPDATE user SET email = ? where id = ?", email, currentUser.Id)
 				if err != nil {
 					helper.WriteToConsole("change user settings: email " + displayname + " is already in use")
 					sessMgr.AddMessage("error", "Could not update data!")
@@ -134,7 +140,9 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, currentUser.Id)
+			currentUser.Password = hash
+			err = ds.UpdateUser(currentUser)
+			//_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, currentUser.Id)
 			if err != nil {
 				helper.WriteToConsole("change user settings: could not set new password")
 				sessMgr.AddMessage("error", "An unknown error occurred.")

@@ -17,10 +17,12 @@ import (
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider enabled 2fa
-	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
+		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
+		defer ds.Quit()
+
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
 		u, err := ds.GetUserByEmail(email)
@@ -100,6 +102,8 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
+		defer ds.Quit()
+
 		email := r.FormValue("login_email")
 		if email != "" {
 			u, err := ds.GetUserByEmail(email)
@@ -183,6 +187,8 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
+		defer ds.Quit()
+
 		email := r.FormValue("email")
 		token := r.FormValue("token")
 		user, err := ds.GetUserByEmail(email)
@@ -273,6 +279,8 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
+		defer ds.Quit()
+
 		displayName := r.FormValue("display_name")
 		email := r.FormValue("email")
 		pw1 := r.FormValue("password1")
@@ -396,6 +404,8 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
+		defer ds.Quit()
+
 		ua, err := ds.GetUserActionByToken(token)
 		//row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)
 		//ua := entity.UserAction{Token: token}

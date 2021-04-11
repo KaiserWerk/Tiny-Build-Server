@@ -40,3 +40,11 @@ func (ds databaseService) GetBuildDefCaption(id int) (string, error) {
 	}
 	return bd.Caption, nil
 }
+
+func (ds databaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error {
+	result := ds.db.Delete(&bd)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

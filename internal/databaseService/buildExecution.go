@@ -10,6 +10,7 @@ func (ds databaseService) GetNewestBuildExecutions(limit int) ([]entity.BuildExe
 
 	var result *gorm.DB
 
+	// TODO: ORDERING!
 	if limit > 0 {
 		result = ds.db.Limit(limit).Find(&beList)
 	} else {
@@ -21,4 +22,24 @@ func (ds databaseService) GetNewestBuildExecutions(limit int) ([]entity.BuildExe
 	}
 
 	return beList, nil
+}
+
+func (ds databaseService) GetBuildExecutionById(id int) (entity.BuildExecution, error) {
+	var be entity.BuildExecution
+	result := ds.db.First(&be, id)
+	if result.Error != nil {
+		return entity.BuildExecution{}, result.Error
+	}
+	
+	return be, nil
+}
+
+func (ds databaseService) FindBuildExecutions(query interface{}, args ...interface{}) ([]entity.BuildExecution, error) {
+	executions := make([]entity.BuildExecution, 0)
+	result := ds.db.Where(query, args).Find(&executions)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return executions, nil
 }

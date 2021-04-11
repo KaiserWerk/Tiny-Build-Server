@@ -13,6 +13,8 @@ type databaseService struct {
 	db *gorm.DB
 }
 
+
+
 func New() *databaseService {
 	config := global.GetConfiguration()
 
@@ -34,7 +36,7 @@ func New() *databaseService {
 		&entity.UserAction{},
 		&entity.UserVariable{})
 	if err != nil {
-		panic(err.Error())
+		panic("AutoMigrate panic: " + err.Error())
 	}
 
 	return &databaseService{db: db}
