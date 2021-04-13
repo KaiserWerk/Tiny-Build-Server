@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 )
@@ -30,7 +30,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		// check if password is correct
 		password := r.FormValue("password")

@@ -13,4 +13,5 @@ type BuildDefinition struct {
 	EditedAt  sql.NullTime
 	CreatedBy int
 	CreatedAt time.Time
+	BuildExecutions []BuildExecution `gorm:"foreignKey:build_definition_id"`
 }

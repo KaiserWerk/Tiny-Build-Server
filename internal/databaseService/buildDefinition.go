@@ -23,6 +23,16 @@ func (ds databaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDe
 	return bdList, nil
 }
 
+func (ds databaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
+	bds := make([]entity.BuildDefinition, 0)
+	result := ds.db.Find(&bds)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return bds, nil
+}
+
 func (ds databaseService) GetBuildDefinitionById(id int) (entity.BuildDefinition, error) {
 	var buildDefinition entity.BuildDefinition
 	result := ds.db.First(&buildDefinition, id)

@@ -25,10 +25,14 @@ func New() *databaseService {
 
 	db, err := gorm.Open(driver, &gorm.Config{})
 	if err != nil {
-		panic(err.Error())
+		panic("gorm connection error: " + err.Error())
 	}
 
-	err = db.AutoMigrate(
+	return &databaseService{db: db}
+}
+
+func (ds databaseService) AutoMigrate() error {
+	err := ds.db.AutoMigrate(
 		&entity.AdminSetting{},
 		&entity.BuildDefinition{},
 		&entity.BuildExecution{},
@@ -36,10 +40,10 @@ func New() *databaseService {
 		&entity.UserAction{},
 		&entity.UserVariable{})
 	if err != nil {
-		panic("AutoMigrate panic: " + err.Error())
+		return err
 	}
 
-	return &databaseService{db: db}
+	return nil
 }
 
 func (ds databaseService) Quit() {

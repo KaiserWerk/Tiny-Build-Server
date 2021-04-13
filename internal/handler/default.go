@@ -27,7 +27,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	latestBuilds, err := ds.GetNewestBuildExecutions(5)
 	if err != nil {

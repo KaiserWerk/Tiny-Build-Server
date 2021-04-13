@@ -21,7 +21,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
@@ -102,7 +102,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		email := r.FormValue("login_email")
 		if email != "" {
@@ -155,7 +155,6 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			err = helper.SendEmail(
-				fixtures.RequestNewPasswordEmail,
 				settings,
 				emailBody,
 				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
@@ -187,7 +186,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		email := r.FormValue("email")
 		token := r.FormValue("token")
@@ -279,7 +278,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		displayName := r.FormValue("display_name")
 		email := r.FormValue("email")
@@ -368,7 +367,6 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = helper.SendEmail(
-			fixtures.ConfirmRegistrationEmail,
 			settings,
 			emailBody,
 			fixtures.EmailSubjects[fixtures.ConfirmRegistrationEmail],
@@ -404,7 +402,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		sessMgr := global.GetSessionManager()
 		ds := databaseService.New()
-		defer ds.Quit()
+		//defer ds.Quit()
 
 		ua, err := ds.GetUserActionByToken(token)
 		//row := db.QueryRow("SELECT user_id, purpose, validity FROM user_action WHERE token = ?", token)

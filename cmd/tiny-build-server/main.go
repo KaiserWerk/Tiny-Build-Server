@@ -45,7 +45,11 @@ func main() {
 	config := global.GetConfiguration()
 
 	ds := databaseService.New()
-	ds.Quit()
+	err := ds.AutoMigrate()
+	if err != nil {
+		panic("AutoMigrate panic: " + err.Error())
+	}
+	//ds.Quit()
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
@@ -60,7 +64,7 @@ func main() {
 		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
 	})
 
-	//setupRoutes(router)
+	setupRoutes(router)
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
@@ -86,7 +90,6 @@ func main() {
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
 
-	//done := make(chan bool)
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
 
@@ -111,6 +114,7 @@ func main() {
 			helper.WriteToConsole("TLS is enabled, but the certificate file or key file does not exist!")
 			quit <- os.Interrupt
 		} else {
+			//
 			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
 				helper.WriteToConsole("Could not listen with TLS on " + listenAddr + ": " + err.Error())
 				quit <- os.Interrupt
@@ -122,17 +126,17 @@ func main() {
 			quit <- os.Interrupt
 		}
 	}
-	//<-done
+
 	helper.WriteToConsole("Server shutdown complete. Have a nice day!")
 }
 
 func setupRoutes(router *mux.Router) {
-	// asset file handlers
+	//asset file handlers
 	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
 
-	// site handlers
+	//site handlers
 	router.HandleFunc("/", handler.IndexHandler).Methods("GET")
 	router.HandleFunc("/login", handler.LoginHandler).Methods("GET", "POST")
 	router.HandleFunc("/logout", handler.LogoutHandler).Methods("GET", "POST")
@@ -155,15 +159,15 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET")                                 // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/list", handler.DeploymentDefinitionListHandler).Methods("GET")            // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/add", handler.DeploymentDefinitionAddHandler).Methods("GET")              // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/edit", handler.DeploymentDefinitionEditHandler).Methods("GET")     // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/remove", handler.DeploymentDefinitionRemoveHandler).Methods("GET") // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/copy", nil).Methods("GET", "POST")                                 // TODO: implement handler
+	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/list", handler.DeploymentDefinitionListHandler).Methods("GET")            // TODO: implement handler
+	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/add", handler.DeploymentDefinitionAddHandler).Methods("GET")              // TODO: implement handler
+	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/edit", handler.DeploymentDefinitionEditHandler).Methods("GET")     // TODO: implement handler
+	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/remove", handler.DeploymentDefinitionRemoveHandler).Methods("GET") // TODO: implement handler
 
 	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods("GET")
 	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods("GET")
 
-	// API handlers
+	// API handler
 	router.HandleFunc("/api/v1/receive", handler.PayloadReceiveHandler).Methods(http.MethodPost)
-	// TODO: JSON -> datasweet/jsonmap?
 }

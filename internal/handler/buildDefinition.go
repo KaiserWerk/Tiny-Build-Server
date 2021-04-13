@@ -2,12 +2,12 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -28,48 +28,38 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := global.GetDbConnection()
-	type preparedBuildDefinition struct {
-		Id                int
-		Caption           string
-		Target            string
-		TargetOsArch      string
-		Executions        int
-		RepoHost          string
-		RepoName          string
-		Enabled           bool
-		DeploymentEnabled bool
-	}
+	//var bdList []preparedBuildDefinition
+	//var bd preparedBuildDefinition
+	//rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target, bd.build_target_os_arch, COUNT(be.id), " +
+	//	"bd.repo_hoster, bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd LEFT JOIN " +
+	//	"build_execution be ON be.build_definition_id = bd.id GROUP BY bd.id ORDER BY bd.caption")
+	//if err != nil {
+	//	helper.WriteToConsole("could not query build definitions in buildDefinitionListHandler: " + err.Error())
+	//	w.WriteHeader(500)
+	//	return
+	//}
+	//
+	//for rows.Next() {
+	//	err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.TargetOsArch, &bd.Executions, &bd.RepoHost,
+	//		&bd.RepoName, &bd.Enabled, &bd.DeploymentEnabled)
+	//	if err != nil {
+	//		helper.WriteToConsole("could not scan buildDefinition in buildDefinitionListHandler: " + err.Error())
+	//		w.WriteHeader(500)
+	//		return
+	//	}
+	//	bdList = append(bdList, bd)
+	//	bd = preparedBuildDefinition{}
+	//}
 
-	var bdList []preparedBuildDefinition
-	var bd preparedBuildDefinition
-	rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target, bd.build_target_os_arch, COUNT(be.id), " +
-		"bd.repo_hoster, bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd LEFT JOIN " +
-		"build_execution be ON be.build_definition_id = bd.id GROUP BY bd.id ORDER BY bd.caption")
-	if err != nil {
-		helper.WriteToConsole("could not query build definitions in buildDefinitionListHandler: " + err.Error())
-		w.WriteHeader(500)
-		return
-	}
-
-	for rows.Next() {
-		err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.TargetOsArch, &bd.Executions, &bd.RepoHost,
-			&bd.RepoName, &bd.Enabled, &bd.DeploymentEnabled)
-		if err != nil {
-			helper.WriteToConsole("could not scan buildDefinition in buildDefinitionListHandler: " + err.Error())
-			w.WriteHeader(500)
-			return
-		}
-		bdList = append(bdList, bd)
-		bd = preparedBuildDefinition{}
-	}
+	ds := databaseService.New()
+	buildDefinitions, err := ds.GetAllBuildDefinitions()
 
 	data := struct {
 		CurrentUser      entity.User
-		BuildDefinitions []preparedBuildDefinition
+		BuildDefinitions []entity.BuildDefinition
 	}{
 		CurrentUser:      currentUser,
-		BuildDefinitions: bdList,
+		BuildDefinitions: buildDefinitions,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
@@ -184,7 +174,7 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	vars := mux.Vars(r)
 	if r.Method == http.MethodPost {
@@ -246,7 +236,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r) // id
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	// TODO: rework into method
 	//var bd entity.BuildDefinition
@@ -354,7 +344,7 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	vars := mux.Vars(r)
 

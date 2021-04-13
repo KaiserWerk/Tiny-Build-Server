@@ -107,7 +107,7 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 
 func GetUsernameById(id int) string {
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	u, err := ds.GetUserById(id)
 	if err != nil {

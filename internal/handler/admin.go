@@ -283,7 +283,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	sessMgr := global.GetSessionManager()
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	if r.Method == http.MethodPost {
 

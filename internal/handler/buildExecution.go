@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 	"strconv"
@@ -52,7 +52,7 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ds := databaseService.New()
-	defer ds.Quit()
+	//defer ds.Quit()
 
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
