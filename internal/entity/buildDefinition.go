@@ -6,12 +6,12 @@ import (
 )
 
 type BuildDefinition struct {
-	Id        int
-	Caption   string
-	Content   string
-	EditedBy  int
-	EditedAt  sql.NullTime
-	CreatedBy int
-	CreatedAt time.Time
+	Id              int
+	Caption         string
+	Content         string
+	EditedBy        int
+	EditedAt        sql.NullTime
+	CreatedBy       int
+	CreatedAt       time.Time
 	BuildExecutions []BuildExecution `gorm:"foreignKey:build_definition_id"`
 }

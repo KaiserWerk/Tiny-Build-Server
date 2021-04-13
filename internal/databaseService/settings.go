@@ -21,7 +21,7 @@ func (ds databaseService) GetAllSettings() (map[string]string, error) {
 
 func (ds databaseService) SetSetting(name, value string) error {
 
-	result := ds.db.Model(&entity.AdminSetting{}).Where(name + " = ?", name).Update("value", value)
+	result := ds.db.Model(&entity.AdminSetting{}).Where(name+" = ?", name).Update("value", value)
 	if result.Error != nil {
 		return result.Error
 	}

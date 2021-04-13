@@ -1,4 +1,3 @@
-////go:generate esc -o internal/embed.go -pkg internal docs public templates
 package main
 
 import (
@@ -135,6 +134,7 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
+	router.HandleFunc("/plugins/{file}", handler.StaticAssetHandler)
 
 	//site handlers
 	router.HandleFunc("/", handler.IndexHandler).Methods("GET")
@@ -158,8 +158,8 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods("GET", "POST")
 	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods("GET")
 	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET")                                 // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/copy", nil).Methods("GET", "POST")                                 // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
+	router.HandleFunc("/builddefinition/{id}/copy", nil).Methods("GET", "POST")                              // TODO: implement handler
 	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/list", handler.DeploymentDefinitionListHandler).Methods("GET")            // TODO: implement handler
 	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/add", handler.DeploymentDefinitionAddHandler).Methods("GET")              // TODO: implement handler
 	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/edit", handler.DeploymentDefinitionEditHandler).Methods("GET")     // TODO: implement handler

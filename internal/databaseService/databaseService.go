@@ -13,8 +13,6 @@ type databaseService struct {
 	db *gorm.DB
 }
 
-
-
 func New() *databaseService {
 	config := global.GetConfiguration()
 
@@ -60,5 +58,3 @@ func (ds databaseService) RowExists(query string, args ...interface{}) bool {
 
 	return exists
 }
-
-

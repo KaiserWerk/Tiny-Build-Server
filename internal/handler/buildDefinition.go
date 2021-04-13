@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -149,10 +150,19 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	skeleton, err := internal.FSString(true, "/templates/misc/build_definition_skeleton.yml")
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionAddHandler: could not get definition skeleton")
+		//http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
+		return
+	}
+
 	data := struct {
-		CurrentUser       entity.User
+		CurrentUser entity.User
+		Skeleton    string
 	}{
-		CurrentUser:       currentUser,
+		CurrentUser: currentUser,
+		Skeleton:    skeleton,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {

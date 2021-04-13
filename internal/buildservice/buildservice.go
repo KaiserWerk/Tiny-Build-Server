@@ -128,10 +128,10 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		fallthrough
 	case "golang":
 		def := buildsteps.GolangBuildDefinition{
-			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			MetaData: definition,
-			Content: cont,
+			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			MetaData:    definition,
+			Content:     cont,
 		}
 		_, err = handleGolangProject(def, messageCh, projectPath)
 		if err != nil {
@@ -146,10 +146,10 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		}
 	case "dotnet":
 		def := buildsteps.DotnetBuildDefinition{
-			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			MetaData: definition,
-			Content: cont,
+			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			MetaData:    definition,
+			Content:     cont,
 		}
 		err = handleDotnetProject(def, messageCh, projectPath)
 		if err != nil {
@@ -159,10 +159,10 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		}
 	case "php":
 		def := buildsteps.PhpBuildDefinition{
-			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			MetaData: definition,
-			Content: cont,
+			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			MetaData:    definition,
+			Content:     cont,
 		}
 		err = handlePhpProject(def, messageCh, projectPath)
 		if err != nil {
@@ -172,10 +172,10 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		}
 	case "rust":
 		def := buildsteps.RustBuildDefinition{
-			CloneDir:        strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			ArtifactDir:     strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
-			MetaData: definition,
-			Content: cont,
+			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, cont.Repository.Hoster, slug.Clean(cont.Repository.Name))),
+			MetaData:    definition,
+			Content:     cont,
 		}
 		err = handleRustProject(def, messageCh, projectPath)
 		if err != nil {
@@ -245,7 +245,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 		dep = entity.DeploymentDefinition{}
 	}
 
-	if len(definition.Content.Deployments) > 0 {
+	if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
 		err = deployArtifact(definition.Content, messageCh, artifact)
 	}
 
@@ -268,7 +268,8 @@ func handleRustProject(definition buildsteps.RustBuildDefinition, messageCh chan
 }
 
 func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
-	for _, deployment := range cont.Deployments {
+	// TODO email deployments!
+	for _, deployment := range cont.Deployments.RemoteDeployments {
 		// first, the pre deployment actions
 		sshConfig := &ssh.ClientConfig{
 			HostKeyCallback: ssh.InsecureIgnoreHostKey(),

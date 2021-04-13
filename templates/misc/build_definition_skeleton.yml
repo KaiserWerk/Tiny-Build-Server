@@ -1,0 +1,32 @@
+project_type:
+repository:
+  hoster:
+  hoster_url:
+  name:
+  access_user:
+  access_secret:
+  branch:
+setup:
+  -
+test:
+  -
+pre_build:
+  -
+build:
+  -
+post_build:
+  -
+deployments:
+  - email_deployments:
+      - enabled: false
+        address:
+  - remote_deployments:
+    - enabled: false
+      host:
+      port:
+      connection_type: sftp
+      username:
+      password:
+      working_directory:
+      pre_deployment_steps:
+      post_deployment_steps:

@@ -21,4 +21,3 @@ func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 	user, err := ds.GetUserById(userId)
 	return user, err
 }
-

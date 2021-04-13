@@ -15,14 +15,21 @@ type BuildDefinitionContent struct {
 	PreBuild    []string `yaml:"pre_build"`
 	Build       []string `yaml:"build"`
 	PostBuild   []string `yaml:"post_build"`
-	Deployments []struct {
-		Host                string   `yaml:"host"`
-		Port                int      `yaml:"port"`
-		ConnectionType      string   `yaml:"connection_type"`
-		Username            string   `yaml:"username"`
-		Password            string   `yaml:"password"`
-		WorkingDirectory    string   `yaml:"working_directory"`
-		PreDeploymentSteps  []string `yaml:"pre_deployment_steps"`
-		PostDeploymentSteps []string `yaml:"post_deployment_steps"`
+	Deployments struct {
+		EmailDeployments []struct {
+			Enabled bool   `yaml:"enabled"`
+			Address string `yaml:"address"`
+		} `yaml:"email_deployments,omitempty"`
+		RemoteDeployments []struct {
+			Enabled             bool     `yaml:"enabled"`
+			Host                string   `yaml:"host"`
+			Port                int      `yaml:"port"`
+			ConnectionType      string   `yaml:"connection_type"`
+			Username            string   `yaml:"username"`
+			Password            string   `yaml:"password"`
+			WorkingDirectory    string   `yaml:"working_directory"`
+			PreDeploymentSteps  []string `yaml:"pre_deployment_steps"`
+			PostDeploymentSteps []string `yaml:"post_deployment_steps"`
+		} `yaml:"remote_deployments,omitempty"`
 	} `yaml:"deployments"`
 }

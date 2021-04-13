@@ -122,7 +122,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 
 			//_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",
 			//	u.Id, "password_reset", registrationToken, time.Now().Add(1*time.Hour))
-			t := time.Now().Add(1*time.Hour)
+			t := time.Now().Add(1 * time.Hour)
 			err = ds.InsertUserAction(u.Id, "password_reset", registrationToken, sql.NullTime{Valid: true, Time: t})
 			if err != nil {
 				helper.WriteToConsole("could not insert user pw reset action: " + err.Error())
@@ -333,7 +333,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 
 		token := security.GenerateToken(30)
-		t := time.Now().Add(24*time.Hour)
+		t := time.Now().Add(24 * time.Hour)
 		err = ds.AddUserAction(entity.UserAction{UserId: lastInsertId, Purpose: "confirm_registration",
 			Token: token, Validity: sql.NullTime{Valid: true, Time: t}})
 		//_, err = db.Exec("INSERT INTO user_action (user_id, purpose, token, validity) VALUES (?, ?, ?, ?)",

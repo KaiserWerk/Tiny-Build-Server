@@ -13,8 +13,8 @@ import (
 type GolangBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string
-	MetaData entity.BuildDefinition
-	Content entity.BuildDefinitionContent
+	MetaData    entity.BuildDefinition
+	Content     entity.BuildDefinitionContent
 }
 
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {

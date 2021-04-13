@@ -5,8 +5,8 @@ import "github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 type DotnetBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string
-	MetaData entity.BuildDefinition
-	Content entity.BuildDefinitionContent
+	MetaData    entity.BuildDefinition
+	Content     entity.BuildDefinitionContent
 }
 
 func (bd DotnetBuildDefinition) Initialize() {

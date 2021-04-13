@@ -18,9 +18,9 @@ import (
 
 func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error {
 	var funcMap = template.FuncMap{
-		"getUsernameById":    GetUsernameById,
-		"getFlashbag":        GetFlashbag(global.GetSessionManager()),
-		"formatDate":         helper.FormatDate,
+		"getUsernameById": GetUsernameById,
+		"getFlashbag":     GetFlashbag(global.GetSessionManager()),
+		"formatDate":      helper.FormatDate,
 	}
 	layoutContent, err := internal.FSString(true, "/templates/_layout.html") // with leading slash?
 	if err != nil {
@@ -103,7 +103,6 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 		return template.HTML(sb.String())
 	}
 }
-
 
 func GetUsernameById(id int) string {
 	ds := databaseService.New()

@@ -30,7 +30,7 @@ func (ds databaseService) GetBuildExecutionById(id int) (entity.BuildExecution, 
 	if result.Error != nil {
 		return entity.BuildExecution{}, result.Error
 	}
-	
+
 	return be, nil
 }
 
