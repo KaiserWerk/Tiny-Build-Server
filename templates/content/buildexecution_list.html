@@ -1,1 +1,48 @@
-not yet
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Build Executions</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-columns"></i>
+                    Build Executions
+                </div>
+                <div class="card-body">
+
+                    <table class="table table-bordered table-condensed">
+                        <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Build Definition</th>
+                            <th>Manual run</th>
+                            <th>Result</th>
+                            <th>Execution time</th>
+                            <th>Executed at</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{ range .BuildExecutions }}
+                        <tr>
+                            <td><a href="/buildexecution/{{ .Id }}/show">#{{ .Id }}</a></td>
+                            <td>{{ getBuildDefCaption .BuildDefinitionId }}</td>
+                            <td>{{ if gt .ManuallyRunBy 0 }}{{ getUsernameById .ManuallyRunBy }}{{ end }}</td>
+                            <td>{{ .Result }}</td>
+                            <td>{{ .ExecutionTime }} s</td>
+                            <td>{{ .ExecutedAt | formatDate }}</td>
+                        </tr>
+                        {{ else }}
+                        <tr>
+                            <td colspan="6" class="text-center">No Build Executions found.</td>
+                        </tr>
+                        {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}

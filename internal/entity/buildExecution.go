@@ -5,7 +5,7 @@ import "time"
 type BuildExecution struct {
 	Id                int
 	BuildDefinitionId int
-	ManuallyRunBy     bool
+	ManuallyRunBy     int
 	ActionLog         string
 	Result            string
 	ArtifactPath      string

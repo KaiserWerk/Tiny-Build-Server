@@ -26,11 +26,16 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//db := helper.GetDbConnection()
+	ds := databaseService.New()
+
+	buildExecutions, err := ds.GetNewestBuildExecutions(0)
+
 	data := struct {
 		CurrentUser entity.User
+		BuildExecutions []entity.BuildExecution
 	}{
 		CurrentUser: currentUser,
+		BuildExecutions: buildExecutions,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {

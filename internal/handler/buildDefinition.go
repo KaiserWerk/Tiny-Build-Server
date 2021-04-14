@@ -40,7 +40,7 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser:      currentUser,
 		BuildDefinitions: buildDefinitions,
 	}
-	fmt.Println(currentUser)
+
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}

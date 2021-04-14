@@ -15,6 +15,7 @@
                 <div class="card-header">
                     <i class="fa fa-user"></i>
                     List of User accounts
+                    <a href="/admin/user/add" class="btn btn-sm btn-info float-right">Add new</a>
                 </div>
                 <div class="card-body">
 
@@ -35,8 +36,8 @@
                                 <td>{{ .Id }}</td>
                                 <td>{{ .Displayname }}</td>
                                 <td>{{ .Email }}</td>
-                                <td>{{ if eq .Locked true }}<span class="badge-pill badge-primary">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
-                                <td>{{ if eq .Admin true }}<span class="badge-pill badge-primary">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
+                                <td>{{ if eq .Locked true }}<span class="badge-pill badge-info">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
+                                <td>{{ if eq .Admin true }}<span class="badge-pill badge-info">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
                                 <td>
                                     <a class="btn btn-sm btn-primary" href="/admin/user/{{ .Id }}/edit">Edit</a>
                                     {{ if ne .Id $currentUser.Id }}
