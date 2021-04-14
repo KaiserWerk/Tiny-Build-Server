@@ -10,7 +10,6 @@
     <title>{{block "default_title" .}}Index{{end}} - Tiny Build Server</title>
     <link href="/css/styles.css" rel="stylesheet"/>
     <link href="/css/datatables.bootstrap4.min.css" rel="stylesheet" />
-    <link href="/plugins/codemirror/lib/codemirror.css" rel="stylesheet" />
     <script src="/js/fontawesome-5.13.0.min.js"></script>
 </head>
 <body class="sb-nav-fixed">
@@ -129,13 +128,13 @@
 <script src="/js/jquery-3.5.1.min.js"></script>
 <script src="/js/bootstrap-4.5.0.bundle.min.js"></script>
 <script src="/js/scripts.js"></script>
-<script src="/plugins/codemirror/src/codemirror.js"></script>
-<script src="/plugins/codemirror/mode/yaml/yaml.js"></script>
 <script>
-    $( document ).ready(function() {
-        var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("content"));
-    });
-
+    // $(document).ready(function() {
+    //     var myCodeMirror = CodeMirror.fromTextArea(document.getElementById("content"), {
+    //         lineNumbers: true,
+    //         mode:  "yaml"
+    //     });
+    // });
 </script>
 <!--{{/*<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>*/}}-->
 <!--{{/*<script src="assets/demo/chart-area-demo.js"></script>*/}}-->

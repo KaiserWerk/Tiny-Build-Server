@@ -134,7 +134,6 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
 	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
-	router.HandleFunc("/plugins/{file}", handler.StaticAssetHandler)
 
 	//site handlers
 	router.HandleFunc("/", handler.IndexHandler).Methods("GET")

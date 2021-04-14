@@ -57,21 +57,18 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	file := vars["file"]
 
-	//var path string
-	//switch true {
-	//case strings.Contains(r.URL.Path, "assets/"):
-	//	path = "assets"
-	//case strings.Contains(r.URL.Path, "js/"):
-	//	path = "js"
-	//case strings.Contains(r.URL.Path, "css/"):
-	//	path = "css"
-	//case strings.Contains(r.URL.Path, "css/"):
-	//	path = "css"
-	//}
+	var path string
+	switch true {
+	case strings.Contains(r.URL.Path, "assets/"):
+		path = "assets"
+	case strings.Contains(r.URL.Path, "js/"):
+		path = "js"
+	case strings.Contains(r.URL.Path, "css/"):
+		path = "css"
+	}
 
 
-	//data, err := internal.FSByte(true, "/public/" + path + "/" + file)
-	data, err := internal.FSByte(true, "/public/" + file)
+	data, err := internal.FSByte(true, "/public/" + path + "/" + file)
 	if err != nil {
 		helper.WriteToConsole("could not locate asset " + file)
 		w.WriteHeader(404)

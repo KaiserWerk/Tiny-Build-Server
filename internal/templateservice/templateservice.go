@@ -30,7 +30,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 
 	layout := template.Must(template.New("_layout.html").Parse(string(layoutContent))).Funcs(funcMap)
 
-	content, err := internal.FSString(true, "/templates/content/"+file) // with leading slash?
+	content, err := internal.FSString(true, "/templates/content/" + file) // with leading slash?
 	if err != nil {
 		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
