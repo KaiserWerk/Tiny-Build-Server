@@ -23,17 +23,9 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 * cargo through [rustup](https://www.rust-lang.org/) (for Rust projects)
 * [dotnet](https://dotnet.microsoft.com/download) (for .NET projects)
 
-### Custom Build
-
-* You need Golang installed (developed on version 1.16) 
-* You need [mjibson/esc](https://github.com/mjibson/esc) to create embedded resources from 
-templates and static assets.
-* Clone the release branch of the repository
-* Create the embedded resources with the command found in ``docs/embed-command.txt``
-* Build the binary (refer to **or** use the ``build.ps1``)
-
 ### Documentation
 
+* [Custom build](docs/custom-build.md)
 * [Installation](docs/installation.md)
 * [Create a build definition](docs/create-a-build-definition.md)
 * [Create a webhook](docs/create-a-webhook.md)
