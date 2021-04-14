@@ -1,0 +1,32 @@
+{{ template "header_default" . }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-2">Edit User account</h1>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            {{ getFlashbag }}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 offset-2">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Remove User &quot;{{ .UserToRemove.Displayname }}&quot;
+                </div>
+                <div class="card-body">
+                    <p>Do you really want to remove the User &quot;<b>{{ .UserToRemove.Displayname }}</b>&quot;?
+                        This can <b>not</b> be undone.</p>
+                    <form method="post" novalidate>
+                        <button class="btn btn-primary mr-2" type="submit">Confirm removal</button>
+                        <a class="btn btn-secondary" href="/admin/user/list">Back to overview</a>
+                    </form>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}

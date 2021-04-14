@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
@@ -24,33 +25,10 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
+		helper.WriteToConsole("BuildDefinitionListHandler: could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
-	//var bdList []preparedBuildDefinition
-	//var bd preparedBuildDefinition
-	//rows, err := db.Query("SELECT bd.id, bd.caption, bd.build_target, bd.build_target_os_arch, COUNT(be.id), " +
-	//	"bd.repo_hoster, bd.repo_fullname, bd.enabled, bd.deployment_enabled FROM build_definition bd LEFT JOIN " +
-	//	"build_execution be ON be.build_definition_id = bd.id GROUP BY bd.id ORDER BY bd.caption")
-	//if err != nil {
-	//	helper.WriteToConsole("could not query build definitions in buildDefinitionListHandler: " + err.Error())
-	//	w.WriteHeader(500)
-	//	return
-	//}
-	//
-	//for rows.Next() {
-	//	err = rows.Scan(&bd.Id, &bd.Caption, &bd.Target, &bd.TargetOsArch, &bd.Executions, &bd.RepoHost,
-	//		&bd.RepoName, &bd.Enabled, &bd.DeploymentEnabled)
-	//	if err != nil {
-	//		helper.WriteToConsole("could not scan buildDefinition in buildDefinitionListHandler: " + err.Error())
-	//		w.WriteHeader(500)
-	//		return
-	//	}
-	//	bdList = append(bdList, bd)
-	//	bd = preparedBuildDefinition{}
-	//}
 
 	ds := databaseService.New()
 	buildDefinitions, err := ds.GetAllBuildDefinitions()
@@ -62,7 +40,7 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		CurrentUser:      currentUser,
 		BuildDefinitions: buildDefinitions,
 	}
-
+	fmt.Println(currentUser)
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
@@ -81,68 +59,31 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := global.GetDbConnection()
+	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
 
-		targetId := r.FormValue("target_id")
 		caption := r.FormValue("caption")
-		var enabled bool
-		if r.FormValue("enabled") == "1" {
-			enabled = true
-		}
+		content := r.FormValue("content")
 
-		repoHoster := r.FormValue("repo_hoster")
-		repoHosterUrl := r.FormValue("repo_hoster_url")
-		repoFullname := r.FormValue("repo_fullname")
-		repoUsername := r.FormValue("repo_username")
-		repoSecret := r.FormValue("repo_secret")
-		repoBranch := r.FormValue("repo_branch")
-
-		var applyMigrations bool
-		if r.FormValue("apply_migrations") == "1" {
-			applyMigrations = true
-		}
-		databaseDsn := r.FormValue("database_dsn")
-		var runTests bool
-		if r.FormValue("run_tests") == "1" {
-			runTests = true
-		}
-		var runBenchmarkTests bool
-		if r.FormValue("run_benchmark_tests") == "1" {
-			runBenchmarkTests = true
-		}
-
-		action := r.FormValue("action")
-
-		result, err := db.Exec("INSERT INTO build_definition (build_target_id, altered_by, caption, enabled, "+
-			"deployment_enabled, repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, "+
-			"repo_branch, altered_at, apply_migrations, database_dsn, run_tests, run_benchmark_tests) "+
-			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-			targetId, currentUser.Id, caption, enabled, 0, repoHoster, repoHosterUrl, repoFullname, repoUsername,
-			repoSecret, repoBranch, time.Now(), applyMigrations, databaseDsn, runTests, runBenchmarkTests)
-		if err != nil {
-			helper.WriteToConsole("could not insert build definition in buildDefinitionAddHandler: " + err.Error())
-			w.WriteHeader(500)
-			return
-		}
-		liid, err := result.LastInsertId()
-		if err != nil {
-			helper.WriteToConsole("could not get lastInsertId in buildDefinitionAddHandler: " + err.Error())
-			w.WriteHeader(500)
+		if caption == "" || content == "" {
+			helper.WriteToConsole("BuildDefinitionAddHandler: missing required fields")
+			sessMgr.AddMessage("info", "Fields caption and content cannot be empty")
+			http.Redirect(w, r, "/builddefinition/add", http.StatusSeeOther)
 			return
 		}
 
-		//err = r.ParseForm() // Required if you don't call r.FormValue()
-		//if err != nil {
-		//	helper.WriteToConsole("could not parse form in buildDefinitionAddHandler: " + err.Error())
-		//	w.WriteHeader(500)
-		//	return
-		//}
+		bd := entity.BuildDefinition{
+			Caption:         caption,
+			Content:         content,
+			CreatedBy:       currentUser.Id,
+		}
 
-		if action == "save_depl" {
-			helper.WriteToConsole("redirect to edit deployments")
-			http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
+		ds := databaseService.New()
+		_, err := ds.AddBuildDefinition(bd)
+		if err != nil {
+			helper.WriteToConsole("BuildDefinitionAddHandler: could not insert build definition " + err.Error())
+			w.WriteHeader(500)
 			return
 		}
 
@@ -153,7 +94,6 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	skeleton, err := internal.FSString(true, "/templates/misc/build_definition_skeleton.yml")
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionAddHandler: could not get definition skeleton")
-		//http.Redirect(w, r, "/builddefinition/"+strconv.Itoa(int(liid))+"/edit?tab=deployments", http.StatusSeeOther)
 		return
 	}
 
@@ -182,48 +122,64 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-
+	sessMgr := global.GetSessionManager()
 	ds := databaseService.New()
 	//defer ds.Quit()
 
 	vars := mux.Vars(r)
-	if r.Method == http.MethodPost {
-
-	}
-
-	// TODO: Rework into method
-	//var bdt entity.BuildDefinition
-	//row := db.QueryRow("SELECT id, build_target, altered_by, caption, enabled, deployment_enabled, "+
-	//	"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
-	//	"apply_migrations, database_dsn, meta_migration_id, run_tests, run_benchmark_tests "+
-	//	"FROM build_definition WHERE id = ?", vars["id"])
-	//err = row.Scan(&bdt.Id, &bdt.BuildTarget, &bdt.AlteredBy, &bdt.Caption, &bdt.Enabled, &bdt.DeploymentEnabled,
-	//	&bdt.RepoHoster, &bdt.RepoHosterUrl, &bdt.RepoFullname, &bdt.RepoUsername, &bdt.RepoSecret, &bdt.RepoBranch,
-	//	&bdt.AlteredAt, &bdt.ApplyMigrations, &bdt.DatabaseDSN, &bdt.MetaMigrationId, &bdt.RunTests,
-	//	&bdt.RunBenchmarkTests,
-	//)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionEditHandler: could not parse build definition id, setting to -1")
+		helper.WriteToConsole("BuildDefinitionEditHandler: could not parse build definition id")
 		id = -1
 	}
+
+	if r.Method == http.MethodPost {
+		caption := r.FormValue("caption")
+		content := r.FormValue("content")
+
+		if caption == "" || content == "" {
+			helper.WriteToConsole("BuildDefinitionEditHandler: required fields missing")
+			sessMgr.AddMessage("warning", "Please fill in required fields.")
+			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
+			return
+		}
+
+		bd := entity.BuildDefinition{
+			Id:              id,
+			Caption:         caption,
+			Content:         content,
+			EditedBy:        currentUser.Id,
+			EditedAt:        sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+		}
+
+		err = ds.UpdateBuildDefinition(bd)
+		if err != nil {
+			helper.WriteToConsole("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
+			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
+			return
+		}
+
+		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
+		return
+	}
+
 	bdt, err := ds.GetBuildDefinitionById(id)
 	if err != nil {
-		helper.WriteToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
+		helper.WriteToConsole("BuildDefinitionEditHandler: could not get buildDefinition: " + err.Error())
 		w.WriteHeader(500)
 		return
 	}
 
-	selectedTab := r.URL.Query().Get("tab")
-
 	data := struct {
-		CurrentUser             entity.User
-		SelectedBuildDefinition entity.BuildDefinition
-		SelectedTab             string
+		CurrentUser     entity.User
+		BuildDefinition entity.BuildDefinition
 	}{
-		CurrentUser:             currentUser,
-		SelectedBuildDefinition: bdt,
-		SelectedTab:             selectedTab,
+		CurrentUser:     currentUser,
+		BuildDefinition: bdt,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {

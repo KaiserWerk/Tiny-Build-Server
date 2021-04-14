@@ -1,8 +1,5 @@
 {{template "header_default" .}}
-{{ $enabledClass := "" }}
-{{ $enabledLabel := "" }}
-{{ $deploymentEnabledClass := "" }}
-{{ $deploymentEnabledLabel := "" }}
+
 {{ $execClass := "" }}
 {{ $execLabel := "" }}
 <div class="container-fluid">
@@ -25,44 +22,7 @@
                             <div class="row">
                                 <div class="col-xl-8">
                                     <h5>Details</h5>
-                                    <table class="table table-borderless table-condensed">
-                                        <tbody>
-                                        <tr>
-                                            {{ if eq .BuildDefinition.Enabled true }}
-                                                {{ $enabledClass = "primary" }}
-                                                {{ $enabledLabel = "Yes" }}
-                                            {{ else }}
-                                                {{ $enabledClass = "secondary" }}
-                                                {{ $enabledLabel = "No" }}
-                                            {{ end }}
-                                            <td>Enabled:</td>
-                                            <td><span class="badge badge-{{ $enabledClass }}">{{ $enabledLabel }}</span></td>
-                                        </tr>
-                                        <tr>
-                                            {{ if eq .BuildDefinition.DeploymentEnabled true }}
-                                                {{ $deploymentEnabledClass = "primary" }}
-                                                {{ $deploymentEnabledLabel = "Yes" }}
-                                            {{ else }}
-                                                {{ $deploymentEnabledClass = "secondary" }}
-                                                {{ $deploymentEnabledLabel = "No" }}
-                                            {{ end }}
-                                            <td>Deployment Enabled:</td>
-                                            <td><span class="badge badge-{{ $deploymentEnabledClass }}">{{ $deploymentEnabledLabel }}</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Repository Name:</td>
-                                            <td>{{ .BuildDefinition.RepoFullname }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Repository Host:</td>
-                                            <td>{{ .BuildDefinition.RepoHoster }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Meta - Migration ID (SQL):</td>
-                                            <td>{{ .BuildDefinition.MetaMigrationId }}</td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
+
                                 </div>
                             </div>
                             <div class="row">

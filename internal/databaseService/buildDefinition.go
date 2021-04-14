@@ -58,3 +58,20 @@ func (ds databaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error
 	}
 	return nil
 }
+
+func (ds databaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, error) {
+	result := ds.db.Create(&bd)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return bd.Id, nil
+}
+
+func (ds databaseService) UpdateBuildDefinition(bd entity.BuildDefinition) error {
+	result := ds.db.Updates(&bd)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

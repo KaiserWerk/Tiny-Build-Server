@@ -1,6 +1,8 @@
 package databaseService
 
-import "github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+)
 
 func (ds databaseService) GetAllSettings() (map[string]string, error) {
 	settings := make(map[string]string)
@@ -14,17 +16,39 @@ func (ds databaseService) GetAllSettings() (map[string]string, error) {
 
 	for _, v := range s {
 		settings[v.Name] = v.Value
-	}
+	} // das geht schöner
 
 	return settings, nil
 }
 
 func (ds databaseService) SetSetting(name, value string) error {
-
-	result := ds.db.Model(&entity.AdminSetting{}).Where(name+" = ?", name).Update("value", value)
-	if result.Error != nil {
-		return result.Error
+	//result := ds.db.Model(&entity.AdminSetting{}).Where("name = ?", name).Update("value", value)
+	var setting entity.AdminSetting
+	found := ds.db.Find(&setting, "name = ?", name)
+	if found.Error != nil {
+		return found.Error
 	}
+
+	setting = entity.AdminSetting{
+		Name:  name,
+		Value: value,
+	}
+
+	if found.RowsAffected == 0 {
+		// not found, inserting
+		insertResult := ds.db.Create(&setting)
+		if insertResult.Error != nil {
+			return insertResult.Error
+		}
+	} else {
+		// found, updating
+		updateResult := ds.db.Model(&entity.AdminSetting{}).Where("name = ?", name).Update("value", value)
+		if updateResult.Error != nil {
+			return updateResult.Error
+		}
+	}
+
+
 
 	return nil
 }

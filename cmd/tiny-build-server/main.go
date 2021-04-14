@@ -149,6 +149,7 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods("GET")
 	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/user/{id}/remove", handler.AdminUserRemoveHandler).Methods("GET", "POST")
 	router.HandleFunc("/admin/settings", handler.AdminSettingsHandler).Methods("GET", "POST")
 
 	router.HandleFunc("/builddefinition/list", handler.BuildDefinitionListHandler).Methods("GET")

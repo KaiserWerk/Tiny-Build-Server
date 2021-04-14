@@ -8,9 +8,8 @@ import (
 func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	bd, err := buildservice.CheckPayloadRequest(r)
 	if err != nil {
-		http.Error(w, `{"status": "error", "message": "`+err.Error()+`"}`, 500)
+		http.Error(w, ``, http.StatusBadRequest)
 		return
 	}
-
 	go buildservice.StartBuildProcess(bd)
 }

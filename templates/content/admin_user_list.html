@@ -1,6 +1,7 @@
 {{ template "header_default" . }}
+{{ $currentUser := .CurrentUser }}
 <div class="container-fluid">
-    <h1 class="mt-4 mb-3 offset-2">Add a User account</h1>
+    <h1 class="mt-4 mb-3 offset-2">Manage User accounts</h1>
 
     <div class="row">
         <div class="col-xl-8 offset-2">
@@ -13,7 +14,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fa fa-user"></i>
-                    List of User account
+                    List of User accounts
                 </div>
                 <div class="card-body">
 
@@ -34,9 +35,14 @@
                                 <td>{{ .Id }}</td>
                                 <td>{{ .Displayname }}</td>
                                 <td>{{ .Email }}</td>
-                                <td>{{ if eq .Locked true }}Yes{{ else }}No{{ end }}</td>
-                                <td>{{ if eq .Admin true }}Yes{{ else }}No{{ end }}</td>
-                                <td><a class="btn btn-sm btn-primary" href="/admin/user/{{ .Id }}/edit">Edit</a> </td>
+                                <td>{{ if eq .Locked true }}<span class="badge-pill badge-primary">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
+                                <td>{{ if eq .Admin true }}<span class="badge-pill badge-primary">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
+                                <td>
+                                    <a class="btn btn-sm btn-primary" href="/admin/user/{{ .Id }}/edit">Edit</a>
+                                    {{ if ne .Id $currentUser.Id }}
+                                        <a class="btn btn-sm btn-danger" href="/admin/user/{{ .Id }}/remove">Remove</a>
+                                    {{ end }}
+                                </td>
                             </tr>
                         {{ end }}
                         </tbody>

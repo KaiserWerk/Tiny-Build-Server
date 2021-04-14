@@ -40,7 +40,7 @@
                             </tr>
                             {{else}}
                             <tr>
-                                <td colspan="4" style="text-align: center;">No recent builds!</td>
+                                <td colspan="5" style="text-align: center;">No recent builds!</td>
                             </tr>
                             {{end}}
                             </tbody>
@@ -66,8 +66,8 @@
                             {{range .LatestBuildDefs}}
                                 <tr>
                                     <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
-                                    <td>{{ getUsernameById .AlteredBy }}</td>
-                                    <td>{{ .AlteredAt | formatDate }}</td>
+                                    <td>{{ if eq .EditedAt.Valid true }}{{ getUsernameById .EditedBy }}{{ end }}</td>
+                                    <td>{{ if eq .EditedAt.Valid true }}{{ .EditedAt.Time | formatDate }}{{ end }}</td>
                                 </tr>
                             {{else}}
                                 <tr>

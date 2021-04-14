@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -12,6 +11,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,29 +31,13 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := global.GetDbConnection()
+	ds := databaseService.New()
 
-	rows, err := db.Query("SELECT id, displayname, email, locked, admin FROM user")
+	userList, err := ds.GetAllUsers()
 	if err != nil {
-		helper.WriteToConsole("could not query users in adminUserListHandler: " + err.Error())
+		helper.WriteToConsole("adminUserListHandler: could not query users: " + err.Error())
 		w.WriteHeader(500)
 		return
-	}
-
-	var (
-		userList []entity.User
-		u        entity.User
-	)
-	for rows.Next() {
-		err = rows.Scan(&u.Id, &u.Displayname, &u.Email, &u.Locked, &u.Admin)
-		if err != nil {
-			helper.WriteToConsole("could not scan user in adminUserListHandler: " + err.Error())
-			w.WriteHeader(500)
-			return
-		}
-
-		userList = append(userList, u)
-		u = entity.User{}
 	}
 
 	contextData := struct {
@@ -102,21 +86,20 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if displayname != "" && email != "" {
-			db := global.GetDbConnection()
-			var uid int
-			row := db.QueryRow("SELECT id FROM user WHERE displayname = ?", displayname)
-			err = row.Scan(&uid)
-			if err != nil && err != sql.ErrNoRows {
-				helper.WriteToConsole("display name already in use: " + err.Error())
+
+			ds := databaseService.New()
+
+			_, err := ds.FindUser("displayname = ?", displayname)
+			if err == nil {
+				helper.WriteToConsole("AdminUserAddHandler: displayname already in use: " + err.Error())
 				sessMgr.AddMessage("error", "This display name is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
 			}
 
-			row = db.QueryRow("SELECT id FROM user WHERE email = ?", email)
-			err = row.Scan(&uid)
-			if err != nil && err != sql.ErrNoRows {
-				helper.WriteToConsole("email already in use: " + err.Error())
+			_, err = ds.FindUser("email = ?", email)
+			if err == nil {
+				helper.WriteToConsole("AdminUserAddHandler: email already in use: " + err.Error())
 				sessMgr.AddMessage("error", "This email address is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
@@ -126,17 +109,31 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 			if password != "" {
 				passwordHash, err = security.HashString(password)
 				if err != nil {
-					helper.WriteToConsole("could not hash password: " + err.Error())
-					w.WriteHeader(500)
+					helper.WriteToConsole("AdminUserAddHandler: could not hash password: " + err.Error())
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+			} else {
+				password = security.GenerateToken(10)
+				passwordHash, err = security.HashString(password)
+				if err != nil {
+					helper.WriteToConsole("AdminUserAddHandler: could not hash generated password: " + err.Error())
+					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 			}
 
-			_, err = db.Exec("INSERT INTO user (displayname, email, password, locked, admin) VALUES (?, ?, ?, ?, ?)",
-				displayname, email, passwordHash, locked, admin)
+			userToAdd := entity.User{
+				Displayname: displayname,
+				Email:       email,
+				Password:    passwordHash,
+				Locked:      locked,
+				Admin:       admin,
+			}
+			_, err = ds.AddUser(userToAdd)
 			if err != nil {
-				helper.WriteToConsole("could not insert row: " + err.Error())
-				w.WriteHeader(500)
+				helper.WriteToConsole("AdminUserAddHandler: could not insert new user: " + err.Error())
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
@@ -179,7 +176,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	db := global.GetDbConnection()
+	ds := databaseService.New()
 	if r.Method == http.MethodPost {
 
 		displayname := r.FormValue("displayname")
@@ -193,44 +190,53 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 			admin = true
 		}
 
-		var u entity.User
-
-		row := db.QueryRow("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, vars["id"])
-		err = row.Scan(&u.Id)
-		if err != nil && err != sql.ErrNoRows {
-			helper.WriteToConsole("display name already in use: " + err.Error())
+		_, err = ds.FindUser("displayname = ? AND id != ?", displayname, vars["id"])
+		if err == nil {
+			helper.WriteToConsole("display name already in use")
 			sessMgr.AddMessage("error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
 		}
 
-		row = db.QueryRow("SELECT id FROM user WHERE email = ? AND id != ?", email, vars["id"])
-		err = row.Scan(&u.Id)
-		if err != nil && err != sql.ErrNoRows {
-			helper.WriteToConsole("display name already in use: " + err.Error())
+		_, err = ds.FindUser("email = ? AND id != ?", displayname, vars["id"])
+		if err == nil {
+			helper.WriteToConsole("display name already in use")
 			sessMgr.AddMessage("error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
 		}
 
-		var pwQueryPart string
-		if password != "" {
-			pwQueryPart = "password = ? "
+		userId, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			helper.WriteToConsole("invalid user id: " + err.Error())
+			sessMgr.AddMessage("error", "You supplied an invalid user id!")
+			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+			return
 		}
-		query := fmt.Sprintf("UPDATE user SET displayname = ?, email = ?, %slocked = ?, admin = ? WHERE id = ?", pwQueryPart)
-		helper.WriteToConsole("edit user: query to execute: " + query)
-		// update user
+
+		updateUser := entity.User{
+			Id:          userId,
+			Displayname: displayname,
+			Email:       email,
+			Locked:      locked,
+			Admin:       admin,
+		}
+
 		if password != "" {
-			hashedPassword, err := security.HashString(password)
+			passwordHash, err := security.HashString(password)
 			if err != nil {
-				helper.WriteToConsole("could not hash password: " + err.Error())
+				helper.WriteToConsole("AdminUserEditHandler: could not hash password: " + err.Error())
 				w.WriteHeader(500)
 				return
 			}
-			_, err = db.Exec(query, displayname, email, hashedPassword, locked, admin)
-		} else {
-			_, err = db.Exec(query, displayname, email, locked, admin)
+
+			updateUser.Password = passwordHash
 		}
+		err = ds.UpdateUser(updateUser)
+		//query := fmt.Sprintf("UPDATE user SET displayname = ?, email = ?, %slocked = ?, admin = ? WHERE id = ?", pwQueryPart)
+		//helper.WriteToConsole("edit user: query to execute: " + query)
+		// update user
+
 		if err != nil {
 			helper.WriteToConsole("could not update user: " + err.Error())
 			w.WriteHeader(500)
@@ -242,9 +248,14 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var editedUser entity.User
-	row := db.QueryRow("SELECT id, displayname, email, locked, admin FROM user WHERE id = ?", vars["id"])
-	err = row.Scan(&editedUser.Id, &editedUser.Displayname, &editedUser.Email, &editedUser.Locked, &editedUser.Admin)
+	userId, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		helper.WriteToConsole("invalid user id: " + err.Error())
+		sessMgr.AddMessage("error", "You supplied an invalid user id!")
+		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+		return
+	}
+	editedUser, err := ds.GetUserById(userId)
 	if err != nil {
 		helper.WriteToConsole("could not scan user in adminUserEditHandler: " + err.Error())
 		w.WriteHeader(500)
@@ -260,6 +271,68 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = templateservice.ExecuteTemplate(w, "admin_user_edit.html", contextData); err != nil {
+		w.WriteHeader(404)
+	}
+}
+
+func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	sessMgr := global.GetSessionManager()
+	session, err := security.CheckLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := sessionService.GetUserFromSession(session)
+	if err != nil {
+		helper.WriteToConsole("could not fetch user by ID")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !currentUser.Admin {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	vars := mux.Vars(r)
+	userId, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		helper.WriteToConsole("invalid user id: " + err.Error())
+		sessMgr.AddMessage("error", "You supplied an invalid user id!")
+		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+		return
+	}
+
+	ds := databaseService.New()
+	if r.Method == http.MethodPost {
+		err = ds.DeleteUser(userId)
+		if err != nil {
+			helper.WriteToConsole("error removing user: " + err.Error())
+			sessMgr.AddMessage("error", "An unknown error occurred, please try again.")
+			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+			return
+		}
+
+		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
+		return
+	}
+
+	user, err := ds.GetUserById(userId)
+	if err != nil {
+		helper.WriteToConsole("could not scan user in adminUserEditHandler: " + err.Error())
+		w.WriteHeader(500)
+		return
+	}
+
+	contextData := struct {
+		CurrentUser entity.User
+		UserToRemove  entity.User
+	}{
+		CurrentUser:  currentUser,
+		UserToRemove: user,
+	}
+
+	if err = templateservice.ExecuteTemplate(w, "admin_user_remove.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }

@@ -49,7 +49,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "index.html", indexData); err != nil {
-		w.WriteHeader(404)
+		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
 
@@ -67,8 +67,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-
-	data, err := internal.FSByte(true, "/public/" + path + "/" + file)
+	data, err := internal.FSByte(true, "/public/"+path+"/"+file)
 	if err != nil {
 		helper.WriteToConsole("could not locate asset " + file)
 		w.WriteHeader(404)

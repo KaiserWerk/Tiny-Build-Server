@@ -35,6 +35,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		if security.DoesHashMatch(password, u.Password) {
 			//helper.WriteToConsole("user " + u.Displayname + " authenticated successfully")
+
+			if u.Locked {
+				sessMgr.AddMessage("warning", "You account has been disabled.")
+				http.Redirect(w, r, "/login", http.StatusSeeOther)
+				return
+			}
+
 			//continue settings cookie/starting session
 			sess, err := sessMgr.CreateSession(time.Now().Add(30 * 24 * time.Hour))
 			if err != nil {
@@ -161,9 +168,9 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				[]string{u.Email},
 			)
 			if err != nil {
-				helper.WriteToConsole("could not send email: " + err.Error())
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+				helper.WriteToConsole("RequestNewPasswordHandler: could not send email: " + err.Error())
+				//w.WriteHeader(http.StatusInternalServerError)
+				//return
 			}
 
 			sessMgr.AddMessage("success", "If this user/email exists, an email has been sent out with "+

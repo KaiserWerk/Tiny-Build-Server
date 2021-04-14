@@ -8,7 +8,7 @@ import (
 func (ds databaseService) InsertUserAction(userId int, purpose, token string, validity sql.NullTime) error {
 
 	// 1. set all timely invalid actions to a null token
-	result := ds.db.Exec("UPDATE user_action SET token = NULL WHERE user_id = ? AND validity < NOW()", userId)
+	result := ds.db.Exec("UPDATE user_actions SET token = NULL WHERE user_id = ? AND validity < NOW()", userId)
 	if result.Error != nil {
 		return result.Error
 	}

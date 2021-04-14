@@ -1,8 +1,4 @@
 {{template "header_default" .}}
-{{ $enabledClass := "" }}
-{{ $enabledLabel := "" }}
-{{ $deploymentEnabledClass := "" }}
-{{ $deploymentEnabledLabel := "" }}
 <div class="container-fluid">
     <h1 class="mt-4 mb-3 offset-2">Build Definitions</h1>
     <div class="row">
@@ -12,7 +8,7 @@
                 <div class="card-header">
                     <i class="fa fa-columns"></i>
                     Build Definitions
-                    <a class="btn btn-sm btn-secondary" style="float: right;" href="/builddefinition/add">Add</a>
+                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/add">Add new</a>
                 </div>
                 <div class="card-body">
 
@@ -20,40 +16,21 @@
                         <thead>
                         <tr>
                             <th>Caption</th>
-                            <th>Target</th>
-                            <th>Executions</th>
-                            <th>Repository Host</th>
-                            <th>Repository Name</th>
-                            <th>Enabled / Deployment Enabled</th>
+                            <th>Edited by</th>
+                            <th>Edited at</th>
+                            <th>Created by</th>
+                            <th>Created at</th>
                             <th></th>
                         </tr>
                         </thead>
                         <tbody>
                         {{ range .BuildDefinitions }}
                             <tr>
-                                <td>{{ .Caption }}</td>
-                                <td>{{ .Target }}</td>
-                                <td>{{ .Executions }}</td>
-                                <td>{{ .RepoHost }}</td>
-                                <td>{{ .RepoName }}</td>
-                                {{ if eq .Enabled true }}
-                                    {{ $enabledClass = "primary" }}
-                                    {{ $enabledLabel = "YES" }}
-                                {{ else }}
-                                    {{ $enabledClass = "secondary" }}
-                                    {{ $enabledLabel = "NO" }}
-                                {{ end }}
-                                {{ if eq .DeploymentEnabled true }}
-                                    {{ $deploymentEnabledClass = "primary" }}
-                                    {{ $deploymentEnabledLabel = "YES" }}
-                                {{ else }}
-                                    {{ $deploymentEnabledClass = "secondary" }}
-                                    {{ $deploymentEnabledLabel = "NO" }}
-                                {{ end }}
-                                <td>
-                                    <span class="badge badge-{{ $enabledClass }}">{{ $enabledLabel }}</span> /
-                                    <span class="badge badge-{{ $deploymentEnabledClass }}">{{ $deploymentEnabledLabel }}</span>
-                                </td>
+                                <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
+                                <td>{{ if eq .EditedAt.Valid true }}{{ getUsernameById .EditedBy }}{{ end }}</td>
+                                <td>{{ if eq .EditedAt.Valid true }}{{ .EditedAt.Time | formatDate }}{{ end }}</td>
+                                <td>{{ getUsernameById .CreatedBy }}</td>
+                                <td>{{ .CreatedAt | formatDate }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
                                         <a class="btn btn-primary" href="/builddefinition/{{ .Id }}/edit">Edit</a>

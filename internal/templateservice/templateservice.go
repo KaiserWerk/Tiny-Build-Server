@@ -28,16 +28,16 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 		return err
 	}
 
-	layout := template.Must(template.New("_layout.html").Parse(string(layoutContent))).Funcs(funcMap)
+	layout := template.Must(template.New("_layout.html").Parse(layoutContent)).Funcs(funcMap)
 
-	content, err := internal.FSString(true, "/templates/content/" + file) // with leading slash?
+	content, err := internal.FSString(true, "/templates/content/"+file) // with leading slash?
 	if err != nil {
 		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
 	}
 
 	tmpl := template.Must(layout.Clone())
-	_, err = tmpl.Parse(string(content))
+	_, err = tmpl.Parse(content)
 	if err != nil {
 		helper.WriteToConsole("could not parse template into base layout: " + err.Error())
 		return err
