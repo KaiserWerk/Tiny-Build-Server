@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -38,7 +39,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		helper.WriteToConsole("could not fetch latest build definitions: " + err.Error())
 	}
 
-	indexData := struct {
+	data := struct {
 		CurrentUser     entity.User
 		LatestBuilds    []entity.BuildExecution
 		LatestBuildDefs []entity.BuildDefinition
@@ -48,7 +49,8 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "index.html", indexData); err != nil {
+	if err := templateservice.ExecuteTemplate(w, "index.html", data); err != nil {
+		fmt.Println("Error: " + err.Error())
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }

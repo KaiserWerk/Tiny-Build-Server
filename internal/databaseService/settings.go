@@ -48,7 +48,5 @@ func (ds databaseService) SetSetting(name, value string) error {
 		}
 	}
 
-
-
 	return nil
 }

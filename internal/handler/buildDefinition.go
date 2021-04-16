@@ -74,9 +74,10 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		bd := entity.BuildDefinition{
-			Caption:         caption,
-			Content:         content,
-			CreatedBy:       currentUser.Id,
+			Caption:   caption,
+			Token:     security.GenerateToken(20),
+			Content:   content,
+			CreatedBy: currentUser.Id,
 		}
 
 		ds := databaseService.New()
@@ -145,11 +146,11 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		bd := entity.BuildDefinition{
-			Id:              id,
-			Caption:         caption,
-			Content:         content,
-			EditedBy:        currentUser.Id,
-			EditedAt:        sql.NullTime{
+			Id:       id,
+			Caption:  caption,
+			Content:  content,
+			EditedBy: currentUser.Id,
+			EditedAt: sql.NullTime{
 				Time:  time.Now(),
 				Valid: true,
 			},
@@ -195,22 +196,28 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	currentUser, err := sessionService.GetUserFromSession(session)
 	if err != nil {
-		helper.WriteToConsole("show build definition handler: could not fetch user by ID")
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	vars := mux.Vars(r) // id
+	vars := mux.Vars(r)
 	ds := databaseService.New()
 	//defer ds.Quit()
 
-	// TODO: rework into method
-	//var bd entity.BuildDefinition
-	//row := db.QueryRow("SELECT id, build_target, build_target_os_arch, build_target_arm, altered_by, caption, enabled, deployment_enabled, repo_hoster, "+
-	//	"repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at FROM build_definition WHERE id = ?", vars["id"])
-	//err = row.Scan(&bd.Id, &bd.BuildTarget, &bd.BuildTargetOsArch, &bd.BuildTargetArm, &bd.AlteredBy, &bd.Caption,
-	//	&bd.Enabled, &bd.DeploymentEnabled, &bd.RepoHoster, &bd.RepoHosterUrl, &bd.RepoFullname, &bd.RepoUsername,
-	//	&bd.RepoSecret, &bd.RepoBranch, &bd.AlteredAt)
+	settings, err := ds.GetAllSettings()
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch settings: " + err.Error())
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	baseUrl, ok := settings["base_url"]
+	if !ok {
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not get setting base_url")
+		baseUrl = "http://127.0.0.1:8271"
+	}
+
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionShowHandler: could not parse build definition id, setting to -1")
@@ -222,26 +229,6 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	//var be entity.BuildExecution
-	//var beList = make([]entity.BuildExecution, 0)
-	//rows, err := db.Query("SELECT id, build_definition_id, initiated_by, manual_run, result, execution_time, executed_at FROM build_execution WHERE "+
-	//	"build_definition_id = ? ORDER BY executed_at DESC", bd.Id)
-	//if err != nil {
-	//	helper.WriteToConsole("show build definition handler: could not fetch most recent build executions: " + err.Error())
-	//	w.WriteHeader(http.StatusInternalServerError)
-	//	return
-	//}
-	//
-	//for rows.Next() {
-	//	err = rows.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.Result, &be.ExecutionTime, &be.ExecutedAt)
-	//	if err != nil {
-	//		helper.WriteToConsole("show build definition handler: could not scan build execution: " + err.Error())
-	//		continue
-	//	}
-	//	beList = append(beList, be)
-	//	be = entity.BuildExecution{}
-	//}
 
 	beList, err := ds.FindBuildExecutions("build_definition_id = ?", bd.Id)
 
@@ -280,6 +267,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		SuccessBuildCount int
 		SuccessRate       string
 		AvgRuntime        string
+		BaseUrl           string
 	}{
 		BuildDefinition:   bd,
 		RecentExecutions:  recentExecutions,
@@ -289,6 +277,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		SuccessBuildCount: successBuildCount,
 		SuccessRate:       fmt.Sprintf("%.2f", successRate),
 		AvgRuntime:        fmt.Sprintf("%.2f", avg),
+		BaseUrl:           baseUrl,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {

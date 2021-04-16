@@ -325,8 +325,8 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	contextData := struct {
-		CurrentUser entity.User
-		UserToRemove  entity.User
+		CurrentUser  entity.User
+		UserToRemove entity.User
 	}{
 		CurrentUser:  currentUser,
 		UserToRemove: user,

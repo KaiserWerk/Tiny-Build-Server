@@ -31,10 +31,10 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	buildExecutions, err := ds.GetNewestBuildExecutions(0)
 
 	data := struct {
-		CurrentUser entity.User
+		CurrentUser     entity.User
 		BuildExecutions []entity.BuildExecution
 	}{
-		CurrentUser: currentUser,
+		CurrentUser:     currentUser,
 		BuildExecutions: buildExecutions,
 	}
 

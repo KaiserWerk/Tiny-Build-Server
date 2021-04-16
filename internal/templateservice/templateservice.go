@@ -18,10 +18,10 @@ import (
 
 func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error {
 	ds := databaseService.New()
-	var funcMap = template.FuncMap {
-		"getUsernameById": GetUsernameById,
-		"getFlashbag":     GetFlashbag(global.GetSessionManager()),
-		"formatDate":      helper.FormatDate,
+	var funcMap = template.FuncMap{
+		"getUsernameById":    GetUsernameById,
+		"getFlashbag":        GetFlashbag(global.GetSessionManager()),
+		"formatDate":         helper.FormatDate,
 		"getBuildDefCaption": ds.GetBuildDefCaption,
 	}
 	layoutContent, err := internal.FSString(true, "/templates/_layout.html") // with leading slash?

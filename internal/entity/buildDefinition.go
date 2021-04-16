@@ -8,6 +8,7 @@ import (
 type BuildDefinition struct {
 	Id              int
 	Caption         string
+	Token           string
 	Content         string
 	EditedBy        int
 	EditedAt        sql.NullTime

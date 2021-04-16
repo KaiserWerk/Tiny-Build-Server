@@ -7,6 +7,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type databaseService struct {
@@ -21,7 +22,13 @@ func New() *databaseService {
 		driver = sqlite.Open(config.Database.DSN)
 	}
 
-	db, err := gorm.Open(driver, &gorm.Config{})
+	db, err := gorm.Open(driver, &gorm.Config{
+		PrepareStmt: true,
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+			NoLowerCase:   false,
+		},
+	})
 	if err != nil {
 		panic("gorm connection error: " + err.Error())
 	}

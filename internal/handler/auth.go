@@ -314,9 +314,8 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/register", http.StatusSeeOther)
 			return
 		}
-
-		exists := ds.RowExists("SELECT id FROM user WHERE displayname = ?", displayName)
-		if exists {
+		_, err = ds.FindUser("displayname = ?", displayName)
+		if err == nil {
 			helper.WriteToConsole("this displayname is already in use")
 			sessMgr.AddMessage("error", "This display name is already in use, please select a different one.")
 			http.Redirect(w, r, "/register", http.StatusSeeOther)

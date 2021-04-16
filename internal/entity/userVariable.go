@@ -5,5 +5,5 @@ type UserVariable struct {
 	UserEntryId int
 	Variable    string
 	Value       string
-	AccessLevel int
+	Public      bool
 }

@@ -3,10 +3,10 @@
 {{ $execClass := "" }}
 {{ $execLabel := "" }}
 <div class="container-fluid">
-    <h1 class="mt-4 mb-3 offset-2">Build definition Details</h1>
+    <h1 class="mt-4 mb-3 offset-1">Build definition Details</h1>
     <div class="row">
         {{ getFlashbag }}
-        <div class="col-xl-8 offset-2">
+        <div class="col-xl-10 offset-1">
             <div class="card mb-4">
                 <div class="card-header">
                     {{ .BuildDefinition.Caption }}
@@ -20,11 +20,22 @@
                         <div class="col-xl-8">
 
                             <div class="row">
-                                <div class="col-xl-8">
+                                <div class="col-xl-12">
                                     <h5>Details</h5>
+
+                                    <table class="table table-borderless table-condensed">
+                                        <tbody>
+                                        <tr>
+                                            <td>Webhook link</td>
+                                            <td>{{ .BaseUrl }}/api/v1/receive?token={{ .BuildDefinition.Token }}</td>
+                                        </tr>
+
+                                        </tbody>
+                                    </table>
 
                                 </div>
                             </div>
+
                             <div class="row">
                                 <div class="col-xl-12">
                                     <h5>Recent build executions</h5>
@@ -33,7 +44,7 @@
                                             <tr>
                                                 <th>Started at</th>
                                                 <th>Duration</th>
-                                                <th>Status</th>
+                                                <th>Result</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -60,46 +71,48 @@
                                 </div>
                             </div>
 
-                            <div class="row">
-                                <div class="col-xl-12">
-                                    <h5>Metrics</h5>
-                                    <table class="table table-borderless table-condensed">
-                                        <tbody>
-                                            <tr>
-                                                <td>Total Execution Count</td>
-                                                <td>{{ .TotalBuildCount }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Failed Execution Count</td>
-                                                <td>{{ .FailedBuildCount }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Successful Execution Count</td>
-                                                <td>{{ .SuccessBuildCount }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Success Rate</td>
-                                                <td>{{ .SuccessRate }}%</td>
-                                            </tr>
-                                            <tr>
-                                                <td>Average Runtime</td>
-                                                <td>{{ .AvgRuntime }} seconds</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+
 
                             <div class="row">
                                 <div class="col-xl-12">
                                     <h5>Deployments</h5>
-
+                                    coming soon
                                 </div>
                             </div>
 
                         </div>
                         <div class="col-xl-4">
-                            Build steps here
+
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <h5>Metrics</h5>
+                                    <table class="table table-borderless table-condensed">
+                                        <tbody>
+                                        <tr>
+                                            <td>Total Execution Count</td>
+                                            <td>{{ .TotalBuildCount }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Failed Execution Count</td>
+                                            <td>{{ .FailedBuildCount }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Successful Execution Count</td>
+                                            <td>{{ .SuccessBuildCount }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Success Rate</td>
+                                            <td>{{ .SuccessRate }}%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Average Runtime</td>
+                                            <td>{{ .AvgRuntime }} seconds</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>

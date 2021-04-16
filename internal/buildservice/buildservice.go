@@ -7,7 +7,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/pkg/sftp"
 	"github.com/stvp/slug"
@@ -224,26 +223,26 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//	//}
 	//}
 
-	db := global.GetDbConnection()
-	var depList []entity.DeploymentDefinition
-	var dep entity.DeploymentDefinition
-	rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, "+
-		"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition "+
-		"WHERE build_definition_id = ?", definition.MetaData.Id)
-	if err != nil {
-		messageCh <- "could not fetch deployment definitions for build definition: " + err.Error()
-		return "", err
-	}
-	for rows.Next() {
-		err = rows.Scan(&dep.Id, &dep.BuildDefinitionId, &dep.Caption, &dep.Host, &dep.Username, &dep.Password,
-			&dep.ConnectionType, &dep.WorkingDirectory, &dep.PreDeploymentActions, &dep.PostDeploymentActions)
-		if err != nil {
-			messageCh <- "could not scan row"
-			continue
-		}
-		depList = append(depList, dep)
-		dep = entity.DeploymentDefinition{}
-	}
+	//db := global.GetDbConnection()
+	//var depList []entity.DeploymentDefinition
+	//var dep entity.DeploymentDefinition
+	//rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, "+
+	//	"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition "+
+	//	"WHERE build_definition_id = ?", definition.MetaData.Id)
+	//if err != nil {
+	//	messageCh <- "could not fetch deployment definitions for build definition: " + err.Error()
+	//	return "", err
+	//}
+	//for rows.Next() {
+	//	err = rows.Scan(&dep.Id, &dep.BuildDefinitionId, &dep.Caption, &dep.Host, &dep.Username, &dep.Password,
+	//		&dep.ConnectionType, &dep.WorkingDirectory, &dep.PreDeploymentActions, &dep.PostDeploymentActions)
+	//	if err != nil {
+	//		messageCh <- "could not scan row"
+	//		continue
+	//	}
+	//	depList = append(depList, dep)
+	//	dep = entity.DeploymentDefinition{}
+	//}
 
 	if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
 		err = deployArtifact(definition.Content, messageCh, artifact)
