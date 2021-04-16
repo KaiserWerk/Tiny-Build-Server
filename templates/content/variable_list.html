@@ -1,0 +1,55 @@
+{{template "header_default" .}}
+{{ $userId := .CurrentUser.Id }}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-1">Variables Overview</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-10 offset-1">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-columns"></i>
+                    Your available variables
+                    <a class="btn btn-sm btn-info float-right" href="/variable/add">Add new</a>
+                </div>
+                <div class="card-body">
+
+                    <table class="table table-bordered table-condensed">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>Owner</th>
+                            <th>Public</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{ range .Variables }}
+                            <tr>
+                                <td>{{ .Variable }}</td>
+                                <td>{{ .Value }}</td>
+                                <td>{{ if ne .UserEntryId $userId }}{{ getUsernameById .UserEntryId }}{{ else }}<b><u>You</u></b>{{ end }}</td>
+                                <td>{{ if eq .Public true }}<span class="badge-pill badge-warning">Yes</span>{{ else }}<span class="badge-pill badge-dark">No</span>{{ end }}</td>
+                                <td>
+                                    {{ if eq .UserEntryId $userId }}
+                                    <div class="btn-group btn-group-sm">
+                                        <a class="btn btn-primary" href="/variable/{{ .Id }}/edit">Edit</a>
+                                        <a class="btn btn-danger" href="/variable/{{ .Id }}/remove">Remove</a>
+                                    </div>
+                                    {{ end }}
+                                </td>
+                            </tr>
+                        {{ else }}
+                            <tr>
+                                <td colspan="5" class="text-center">No Variables found. <a href="/variable/add">Create one!</a></td>
+                            </tr>
+                        {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}

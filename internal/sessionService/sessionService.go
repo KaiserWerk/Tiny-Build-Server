@@ -1,6 +1,7 @@
 package sessionService
 
 import (
+	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/sessionstore"
@@ -11,7 +12,7 @@ import (
 func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 	userIdStr, ok := s.GetVar("user_id")
 	if !ok {
-		return entity.User{}, nil
+		return entity.User{}, fmt.Errorf("variable key user_id not found")
 	}
 
 	userId, _ := strconv.Atoi(userIdStr)

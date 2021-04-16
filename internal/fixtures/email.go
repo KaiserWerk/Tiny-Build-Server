@@ -9,6 +9,7 @@ const (
 	RequestNewPasswordEmail    EmailMessageType = "request_new_password"
 	RegistrationConfirmedEmail EmailMessageType = "registration_confirmed"
 	ConfirmPasswordResetEmail  EmailMessageType = "confirm_password_reset"
+	Test                       EmailMessageType = "test"
 )
 
 var EmailSubjects = map[EmailMessageType]string{

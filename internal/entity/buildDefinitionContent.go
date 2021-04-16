@@ -11,7 +11,7 @@ type BuildDefinitionContent struct {
 		Branch       string `yaml:"branch"`
 	} `yaml:"repository"`
 	Setup       []string `yaml:"setup"`
-	Test        []string `yaml:"test"`
+	Test        []string `yaml:"test.html"`
 	PreBuild    []string `yaml:"pre_build"`
 	Build       []string `yaml:"build"`
 	PostBuild   []string `yaml:"post_build"`

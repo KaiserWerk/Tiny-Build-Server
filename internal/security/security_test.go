@@ -25,7 +25,7 @@ func TestHashString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "Test HashString() + DoesHashMatch()", args: args{password: "test"}, want: "test", wantErr: false},
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "test.html"}, want: "test.html", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "r4gz1tw69s1t5g"}, want: "r4gz1tw69s1t5g", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "w43ztg3et"}, want: "w43ztg3et", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "MeinTollesPasswort123!"}, want: "MeinTollesPasswort123!", wantErr: false},
@@ -54,19 +54,19 @@ func TestDoesHashMatch(t *testing.T) {
 		args args
 		want bool
 	}{
-		{name: "Test DoesHashMatch()", args: args{
+		{name: "Test DoesHashMatch() 1", args: args{
 			password: "hallo123",
 			hash:     "$2a$12$3YUcQnQjsm2I.kKDlrsSkuovuQhgtSzqViOywSEwOeNjw8GwaoeQu",
 		}, want: true},
-		{name: "Test DoesHashMatch()", args: args{
+		{name: "Test DoesHashMatch() 2", args: args{
 			password: "r4gz1tw69s1t5g",
 			hash:     "$2a$12$/6aKRIdoi6Ty5virvUmyBe0y6M2xk4n4AKOJlibCOQweXiCuJSoca",
 		}, want: true},
-		{name: "Test DoesHashMatch()", args: args{
+		{name: "Test DoesHashMatch() 3", args: args{
 			password: "MeinTollesPasswort123!",
 			hash:     "$2a$12$8JIY1DGesX7WRpW/BNIuvedseG4lNIur1ILEJQhr4C99MAZOZTyqC",
 		}, want: true},
-		{name: "Test DoesHashMatch()", args: args{
+		{name: "Test DoesHashMatch() 4", args: args{
 			password: "test",
 			hash:     "$2a$12$rjKereh7RdSKFNTjRjDJNedRFS/rv58L7GWT/32wk5fvEQp2WB17u",
 		}, want: true},
@@ -90,7 +90,7 @@ func TestCheckLogin(t *testing.T) {
 		want    sessionstore.Session
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{name: "Test Checklogin()", args: args{r: &http.Request{Method: http.MethodGet}}, want: sessionstore.Session{}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

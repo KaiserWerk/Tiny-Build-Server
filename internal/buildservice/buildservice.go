@@ -194,7 +194,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//if definition. {
 	//	err = definition.RunTests(messageCh)
 	//	if err != nil {
-	//		//messageCh <- "process cancelled by test run: " + err.Error()
+	//		//messageCh <- "process cancelled by test.html run: " + err.Error()
 	//		return "", err
 	//	}
 	//}
@@ -202,7 +202,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//if definition.RunBenchmarkTests {
 	//	err = definition.RunBenchmarkTests(messageCh)
 	//	if err != nil {
-	//		//messageCh <- "process cancelled by benchmark test run: " + err.Error()
+	//		//messageCh <- "process cancelled by benchmark test.html run: " + err.Error()
 	//		return "", err
 	//	}
 	//}

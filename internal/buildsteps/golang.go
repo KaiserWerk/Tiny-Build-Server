@@ -18,7 +18,7 @@ type GolangBuildDefinition struct {
 }
 
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
-	cmd := exec.Command("go", "test", "./...")
+	cmd := exec.Command("go", "test.html", "./...")
 	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.CombinedOutput()
@@ -26,12 +26,12 @@ func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 		return errors.New("could not run unit tests: " + err.Error())
 	}
 
-	messageCh <- "unit test result:\n" + string(output)
+	messageCh <- "unit test.html result:\n" + string(output)
 	return nil
 }
 
 func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
-	cmd := exec.Command("go", "test", "-bench=.")
+	cmd := exec.Command("go", "test.html", "-bench=.")
 	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.CombinedOutput()
@@ -39,7 +39,7 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 		return errors.New("could not run benchmark tests: " + err.Error())
 	}
 
-	messageCh <- "benchmark test result:\n" + string(output)
+	messageCh <- "benchmark test.html result:\n" + string(output)
 	return nil
 }
 
