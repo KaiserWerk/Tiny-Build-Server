@@ -1,6 +1,9 @@
 package security
 
 import (
+	"github.com/KaiserWerk/sessionstore"
+	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -9,12 +12,6 @@ func TestGenerateToken(t *testing.T) {
 
 	if len(token) != 80 {
 		t.Errorf("Token length not generated correctly; expected %d, got %d", 80, len(token))
-	}
-}
-
-func BenchmarkGenerateToken(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_ = GenerateToken(40)
 	}
 }
 
@@ -28,7 +25,10 @@ func TestHashString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "test"}, want: "test", wantErr: false},
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "r4gz1tw69s1t5g"}, want: "r4gz1tw69s1t5g", wantErr: false},
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "w43ztg3et"}, want: "w43ztg3et", wantErr: false},
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "MeinTollesPasswort123!"}, want: "MeinTollesPasswort123!", wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -37,8 +37,70 @@ func TestHashString(t *testing.T) {
 				t.Errorf("HashString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if !DoesHashMatch(tt.want, got) {
 				t.Errorf("HashString() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDoesHashMatch(t *testing.T) {
+	type args struct {
+		password string
+		hash     string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{name: "Test DoesHashMatch()", args: args{
+			password: "hallo123",
+			hash:     "$2a$12$3YUcQnQjsm2I.kKDlrsSkuovuQhgtSzqViOywSEwOeNjw8GwaoeQu",
+		}, want: true},
+		{name: "Test DoesHashMatch()", args: args{
+			password: "r4gz1tw69s1t5g",
+			hash:     "$2a$12$/6aKRIdoi6Ty5virvUmyBe0y6M2xk4n4AKOJlibCOQweXiCuJSoca",
+		}, want: true},
+		{name: "Test DoesHashMatch()", args: args{
+			password: "MeinTollesPasswort123!",
+			hash:     "$2a$12$8JIY1DGesX7WRpW/BNIuvedseG4lNIur1ILEJQhr4C99MAZOZTyqC",
+		}, want: true},
+		{name: "Test DoesHashMatch()", args: args{
+			password: "test",
+			hash:     "$2a$12$rjKereh7RdSKFNTjRjDJNedRFS/rv58L7GWT/32wk5fvEQp2WB17u",
+		}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DoesHashMatch(tt.args.password, tt.args.hash); got != tt.want {
+				t.Errorf("DoesHashMatch() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCheckLogin(t *testing.T) {
+	type args struct {
+		r *http.Request
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    sessionstore.Session
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CheckLogin(tt.args.r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckLogin() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CheckLogin() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
