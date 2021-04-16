@@ -408,32 +408,24 @@ func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) 
 
 func CheckPayloadRequest(r *http.Request) (entity.BuildDefinition, error) {
 	buildDefinition := entity.BuildDefinition{}
-	// TODO: check client-supplied secret key?
+
 	// get id
-	idStr := r.URL.Query().Get("id")
-	if idStr == "" {
-		return buildDefinition, fmt.Errorf("could not determine ID of build definition")
-	}
-	// convert to integer
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return buildDefinition, fmt.Errorf("invalid ID value supplied (%s)", idStr)
-	}
-	// get DB connection
-	ds := databaseService.New()
-	if !ds.RowExists("SELECT id FROM build_definition WHERE id = ?", id) {
-		return buildDefinition, fmt.Errorf("build definition cannot be found in database for id %d", id)
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		return buildDefinition, fmt.Errorf("could not determine token")
 	}
 
-	buildDefinition, err = ds.GetBuildDefinitionById(id)
+	// get DB connection
+	ds := databaseService.New()
+	buildDefinition, err := ds.FindBuildDefinition("token = ?", token)
 	if err != nil {
-		return entity.BuildDefinition{}, fmt.Errorf("could not get build definition by id %d", id)
+		return buildDefinition, fmt.Errorf("build definition cannot be found in database for token %s", token)
 	}
 
 	var cont entity.BuildDefinitionContent
 	err = yaml.Unmarshal([]byte(buildDefinition.Content), &cont)
 	if err != nil {
-		return entity.BuildDefinition{}, fmt.Errorf("could not unmarshal build definition content yaml for id %d", id)
+		return entity.BuildDefinition{}, fmt.Errorf("could not unmarshal build definition content yaml for token %s", token)
 	}
 
 	// check relevant headers and payload values

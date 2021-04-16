@@ -39,7 +39,7 @@
                     <div class="dropdown-divider"></div>
                 {{end}}
                 <a class="dropdown-item" href="/user/settings"><i class="fa fa-id-card mr-1"></i>  Settings</a>
-                <a class="dropdown-item" href="/user/activity"><i class="fa fa-list mr-1"></i> Activity Log</a>
+<!--                <a class="dropdown-item" href="/user/activity"><i class="fa fa-list mr-1"></i> Activity Log</a>-->
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="/logout"><i class="fa fa-sign-out-alt mr-1"></i> Logout</a>
             </div>
@@ -66,7 +66,7 @@
                     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLayouts"
                        aria-expanded="false" aria-controls="collapseLayouts">
                         <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
-                        Build Definition
+                        Build Definitions
                         <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                     </a>
                     <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne"
@@ -76,6 +76,10 @@
                             <a class="nav-link" href="/builddefinition/add">Add Definition</a>
                         </nav>
                     </div>
+                    <a class="nav-link" href="/variables/list">
+                        <div class="sb-nav-link-icon"><i class="fas fa-bug"></i></div>
+                        Variables
+                    </a>
 
                     {{ if eq .CurrentUser.Admin true }}
                         <div class="sb-sidenav-menu-heading">Administration</div>
@@ -93,7 +97,7 @@
                         <div class="collapse" id="collapseAdminUsers" aria-labelledby="headingOne" data-parent="#sidenavAccordion">
                             <nav class="sb-sidenav-menu-nested nav">
                                 <a class="nav-link" href="/admin/user/list">Overview</a>
-                                <a class="nav-link" href="/admin/user/add">Add</a>
+                                <a class="nav-link" href="/admin/user/add">Add User</a>
                             </nav>
                         </div>
                     {{ end }}

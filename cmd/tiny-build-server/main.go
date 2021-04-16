@@ -136,37 +136,38 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
 
 	//site handlers
-	router.HandleFunc("/", handler.IndexHandler).Methods("GET")
-	router.HandleFunc("/login", handler.LoginHandler).Methods("GET", "POST")
-	router.HandleFunc("/logout", handler.LogoutHandler).Methods("GET", "POST")
-	router.HandleFunc("/password/request", handler.RequestNewPasswordHandler).Methods("GET", "POST")
-	router.HandleFunc("/password/reset", handler.ResetPasswordHandler).Methods("GET", "POST")
-	router.HandleFunc("/register", handler.RegistrationHandler).Methods("GET", "POST")
-	router.HandleFunc("/register/confirm", handler.RegistrationConfirmHandler).Methods("GET", "POST")
+	router.HandleFunc("/", handler.IndexHandler).Methods(http.MethodGet)
+	router.HandleFunc("/login", handler.LoginHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/logout", handler.LogoutHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/password/request", handler.RequestNewPasswordHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/password/reset", handler.ResetPasswordHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/register", handler.RegistrationHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/register/confirm", handler.RegistrationConfirmHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/user/settings", handler.UserSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/user/settings", handler.UserSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods("GET")
-	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods("GET", "POST")
-	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods("GET", "POST")
-	router.HandleFunc("/admin/user/{id}/remove", handler.AdminUserRemoveHandler).Methods("GET", "POST")
-	router.HandleFunc("/admin/settings", handler.AdminSettingsHandler).Methods("GET", "POST")
+	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods(http.MethodGet)
+	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/admin/user/{id}/remove", handler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/admin/settings", handler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/builddefinition/list", handler.BuildDefinitionListHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/add", handler.BuildDefinitionAddHandler).Methods("GET", "POST")
-	router.HandleFunc("/builddefinition/{id}/show", handler.BuildDefinitionShowHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods("GET", "POST")
-	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods("GET")
-	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods("GET") // TODO: implement handler
-	router.HandleFunc("/builddefinition/{id}/copy", nil).Methods("GET", "POST")                              // TODO: implement handler
-	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/list", handler.DeploymentDefinitionListHandler).Methods("GET")            // TODO: implement handler
-	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/add", handler.DeploymentDefinitionAddHandler).Methods("GET")              // TODO: implement handler
-	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/edit", handler.DeploymentDefinitionEditHandler).Methods("GET")     // TODO: implement handler
-	//router.HandleFunc("/builddefinition/{id}/deploymentdefinitions/{ddid}/remove", handler.DeploymentDefinitionRemoveHandler).Methods("GET") // TODO: implement handler
+	router.HandleFunc("/builddefinition/list", handler.BuildDefinitionListHandler).Methods(http.MethodGet)
+	router.HandleFunc("/builddefinition/add", handler.BuildDefinitionAddHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/builddefinition/{id}/show", handler.BuildDefinitionShowHandler).Methods(http.MethodGet)
+	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods(http.MethodGet)
+	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
 
-	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods("GET")
-	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods("GET")
+	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods(http.MethodGet)
+	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods(http.MethodGet)
+
+	router.HandleFunc("/variable/list", handler.VariableListHandler).Methods(http.MethodGet)
+	router.HandleFunc("/variable/{id}/show", handler.VariableShowHandler).Methods(http.MethodGet)
+	router.HandleFunc("/variable/add", handler.VariableAddHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/variable/{id}/edit", handler.VariableEditHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/variable/{id}/remove", handler.VariableRemoveHandler).Methods(http.MethodGet)
 
 	// API handler
 	router.HandleFunc("/api/v1/receive", handler.PayloadReceiveHandler).Methods(http.MethodPost)
