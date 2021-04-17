@@ -1,4 +1,3 @@
-
 $sourcecode = "cmd/tiny-build-server/main.go"
 $target = "build/tiny-build-server"
 $version = "0.0.0-dev"
