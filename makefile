@@ -1,5 +1,8 @@
 run:
 	go run cmd/tiny-build-server/main.go
+test:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
 build:
 	setx GOOS "linux"
 	setx GOARCH "amd64"
