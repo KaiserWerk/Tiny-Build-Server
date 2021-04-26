@@ -18,7 +18,7 @@ type GolangBuildDefinition struct {
 }
 
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
-	cmd := exec.Command("go", "test.html", "./...")
+	cmd := exec.Command("go", "test", "./...")
 	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.CombinedOutput()
@@ -26,12 +26,12 @@ func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 		return errors.New("could not run unit tests: " + err.Error())
 	}
 
-	messageCh <- "unit test.html result:\n" + string(output)
+	messageCh <- "unit test result:\n" + string(output)
 	return nil
 }
 
 func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
-	cmd := exec.Command("go", "test.html", "-bench=.")
+	cmd := exec.Command("go", "test", "-bench=.")
 	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.CombinedOutput()
@@ -39,7 +39,7 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 		return errors.New("could not run benchmark tests: " + err.Error())
 	}
 
-	messageCh <- "benchmark test.html result:\n" + string(output)
+	messageCh <- "benchmark test result:\n" + string(output)
 	return nil
 }
 
@@ -57,14 +57,15 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 			setenv := strings.Replace(preBuildStep, "setenv ", "", 1)
 			parts := strings.Split(setenv, "=")
 			if len(parts) != 2 {
+				messageCh <- "incorrect setenv syntax ("+preBuildStep+")"
 				continue
 			}
 			err = os.Setenv(parts[0], parts[1])
 			if err != nil {
-				messageCh <- fmt.Sprintf("preBuildStep failed: could not set envvar %s to value %s", parts[0], parts[1])
+				messageCh <- fmt.Sprintf("preBuildStep failed: could not set env var %s to value %s", parts[0], parts[1])
 				continue
 			}
-			messageCh <- fmt.Sprintf("preBuildStep executed: setting envvar '%s' to value '%s'", parts[0], parts[1])
+			messageCh <- fmt.Sprintf("preBuildStep executed: setting env var '%s' to value '%s'", parts[0], parts[1])
 		} else {
 			parts := strings.Split(preBuildStep, " ")
 			cmd := exec.Command(parts[0], parts[1:]...)
@@ -87,9 +88,9 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 
 	// actual build steps
 	for _, buildStep := range bd.Content.Build {
-		if buildStep == "go build" {
+		if buildStep == "build" {
 			buildCommand := fmt.Sprintf(
-				`go build -o %s -a -v -work -x -ldflags "-s -w -X" %s`,
+				`go build -o %s -a -v -work -x -ldflags "-s -w" %s`,
 				artifact,
 				bd.CloneDir,
 			)

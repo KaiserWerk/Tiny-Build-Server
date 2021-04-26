@@ -7,18 +7,15 @@ import (
 
 func (ds databaseService) GetNewestBuildExecutions(limit int) ([]entity.BuildExecution, error) {
 	beList := make([]entity.BuildExecution, 0)
-
 	var result *gorm.DB
 	if limit > 0 {
 		result = ds.db.Limit(limit).Find(&beList).Order("executed_at DESC")
 	} else {
 		result = ds.db.Find(&beList).Order("executed_at DESC")
 	}
-
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return beList, nil
 }
 
@@ -28,7 +25,6 @@ func (ds databaseService) GetBuildExecutionById(id int) (entity.BuildExecution, 
 	if result.Error != nil {
 		return entity.BuildExecution{}, result.Error
 	}
-
 	return be, nil
 }
 
@@ -38,6 +34,13 @@ func (ds databaseService) FindBuildExecutions(query interface{}, args ...interfa
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return executions, nil
+}
+
+func (ds databaseService) AddBuildExecution(be entity.BuildExecution) error {
+	result := ds.db.Create(&be)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }

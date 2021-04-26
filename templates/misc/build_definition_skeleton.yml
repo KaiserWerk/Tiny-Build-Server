@@ -17,10 +17,13 @@ build:
 post_build:
   -
 deployments:
-  - email_deployments:
-      - enabled: false
-        address:
-  - remote_deployments:
+  local_deployments:
+    - enabled: false
+      path: /your/target/path
+  email_deployments:
+    - enabled: false
+      address:
+  remote_deployments:
     - enabled: false
       host:
       port:

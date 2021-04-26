@@ -25,7 +25,7 @@ func TestHashString(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{name: "Test HashString() + DoesHashMatch()", args: args{password: "test.html"}, want: "test.html", wantErr: false},
+		{name: "Test HashString() + DoesHashMatch()", args: args{password: "test"}, want: "test", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "r4gz1tw69s1t5g"}, want: "r4gz1tw69s1t5g", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "w43ztg3et"}, want: "w43ztg3et", wantErr: false},
 		{name: "Test HashString() + DoesHashMatch()", args: args{password: "MeinTollesPasswort123!"}, want: "MeinTollesPasswort123!", wantErr: false},

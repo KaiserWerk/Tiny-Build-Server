@@ -69,7 +69,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-	data, err := internal.FSByte(true, "/public/"+path+"/"+file)
+	data, err := internal.FSByte(false, "/public/"+path+"/"+file)
 	if err != nil {
 		helper.WriteToConsole("could not locate asset " + file)
 		w.WriteHeader(404)

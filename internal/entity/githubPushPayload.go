@@ -3,27 +3,20 @@ package entity
 import "time"
 
 type GitHubPushPayload struct {
-	Ref        string        `json:"ref"`
-	Before     string        `json:"before"`
-	After      string        `json:"after"`
-	Created    bool          `json:"created"`
-	Deleted    bool          `json:"deleted"`
-	Forced     bool          `json:"forced"`
-	BaseRef    interface{}   `json:"base_ref"`
-	Compare    string        `json:"compare"`
-	Commits    []interface{} `json:"commits"`
-	HeadCommit interface{}   `json:"head_commit"`
+	Ref        string `json:"ref"`
+	Before     string `json:"before"`
+	After      string `json:"after"`
 	Repository struct {
-		ID       int    `json:"Id"`
+		ID       int    `json:"id"`
 		NodeID   string `json:"node_id"`
 		Name     string `json:"name"`
 		FullName string `json:"full_name"`
 		Private  bool   `json:"private"`
 		Owner    struct {
 			Name              string `json:"name"`
-			Email             string `json:"Email"`
+			Email             string `json:"email"`
 			Login             string `json:"login"`
-			ID                int    `json:"Id"`
+			ID                int    `json:"id"`
 			NodeID            string `json:"node_id"`
 			AvatarURL         string `json:"avatar_url"`
 			GravatarID        string `json:"gravatar_id"`
@@ -113,11 +106,11 @@ type GitHubPushPayload struct {
 	} `json:"repository"`
 	Pusher struct {
 		Name  string `json:"name"`
-		Email string `json:"Email"`
+		Email string `json:"email"`
 	} `json:"pusher"`
 	Sender struct {
 		Login             string `json:"login"`
-		ID                int    `json:"Id"`
+		ID                int    `json:"id"`
 		NodeID            string `json:"node_id"`
 		AvatarURL         string `json:"avatar_url"`
 		GravatarID        string `json:"gravatar_id"`
@@ -135,4 +128,51 @@ type GitHubPushPayload struct {
 		Type              string `json:"type"`
 		SiteAdmin         bool   `json:"site_admin"`
 	} `json:"sender"`
+	Created bool        `json:"created"`
+	Deleted bool        `json:"deleted"`
+	Forced  bool        `json:"forced"`
+	BaseRef interface{} `json:"base_ref"`
+	Compare string      `json:"compare"`
+	Commits []struct {
+		ID        string    `json:"id"`
+		TreeID    string    `json:"tree_id"`
+		Distinct  bool      `json:"distinct"`
+		Message   string    `json:"message"`
+		Timestamp time.Time `json:"timestamp"`
+		URL       string    `json:"url"`
+		Author    struct {
+			Name     string `json:"name"`
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"author"`
+		Committer struct {
+			Name     string `json:"name"`
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"committer"`
+		Added    []interface{} `json:"added"`
+		Removed  []interface{} `json:"removed"`
+		Modified []string      `json:"modified"`
+	} `json:"commits"`
+	HeadCommit struct {
+		ID        string    `json:"id"`
+		TreeID    string    `json:"tree_id"`
+		Distinct  bool      `json:"distinct"`
+		Message   string    `json:"message"`
+		Timestamp time.Time `json:"timestamp"`
+		URL       string    `json:"url"`
+		Author    struct {
+			Name     string `json:"name"`
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"author"`
+		Committer struct {
+			Name     string `json:"name"`
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"committer"`
+		Added    []interface{} `json:"added"`
+		Removed  []interface{} `json:"removed"`
+		Modified []string      `json:"modified"`
+	} `json:"head_commit"`
 }

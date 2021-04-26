@@ -28,7 +28,7 @@
                             <tr>
                                 <td>{{ .Variable }}</td>
                                 <td>{{ .Value }}</td>
-                                <td>{{ if ne .UserEntryId $userId }}{{ getUsernameById .UserEntryId }}{{ else }}<b><u>You</u></b>{{ end }}</td>
+                                <td>{{ if ne .UserEntryId $userId }}{{ getUsernameById .UserEntryId }}{{ else }}<b>You</b>{{ end }}</td>
                                 <td>{{ if eq .Public true }}<span class="badge-pill badge-warning">Yes</span>{{ else }}<span class="badge-pill badge-dark">No</span>{{ end }}</td>
                                 <td>
                                     {{ if eq .UserEntryId $userId }}

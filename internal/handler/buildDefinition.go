@@ -92,7 +92,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	skeleton, err := internal.FSString(true, "/templates/misc/build_definition_skeleton.yml")
+	skeleton, err := internal.FSString(false, "/templates/misc/build_definition_skeleton.yml")
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionAddHandler: could not get definition skeleton")
 		return

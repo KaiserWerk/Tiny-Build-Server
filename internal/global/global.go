@@ -1,7 +1,6 @@
 package global
 
 import (
-	"database/sql"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/sessionstore"
@@ -16,29 +15,9 @@ var (
 	configFile        = "config/app.yaml"
 	loadConfOnce      sync.Once
 	createSessMgrOnce sync.Once
-	db                *sql.DB
-	dbOnce            sync.Once
 )
 
-func GetDbConnection() *sql.DB {
-	dbOnce.Do(func() {
-		config := GetConfiguration()
-		handle, err := sql.Open(config.Database.Driver, config.Database.DSN)
-		if err != nil {
-			panic(err.Error())
-		}
-		db = handle
-	})
-	return db
-}
-
 func Cleanup() {
-	// close db connection
-	db := GetDbConnection()
-	err := db.Close()
-	if err != nil {
-		helper.WriteToConsole("could not close db connection: " + err.Error())
-	}
 	// flush log writer
 }
 

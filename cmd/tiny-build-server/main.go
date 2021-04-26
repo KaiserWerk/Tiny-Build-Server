@@ -113,7 +113,6 @@ func main() {
 			helper.WriteToConsole("TLS is enabled, but the certificate file or key file does not exist!")
 			quit <- os.Interrupt
 		} else {
-			//
 			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
 				helper.WriteToConsole("Could not listen with TLS on " + listenAddr + ": " + err.Error())
 				quit <- os.Interrupt
