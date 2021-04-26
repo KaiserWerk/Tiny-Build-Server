@@ -7,6 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/sftp v1.13.0
+	github.com/sebastianwebber/cmdr v0.0.0-20200721135958-c63f01a2c0c8 // indirect
 	github.com/stvp/slug v0.0.0-20150928221549-5ab8191bb1fe
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba

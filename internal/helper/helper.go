@@ -30,7 +30,7 @@ func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 	return header, nil
 }
 
-func SendEmail(settings map[string]string, body string, subject string, to []string) error {
+func SendEmail(settings map[string]string, body string, subject string, to, attachments []string) error {
 	if to == nil || len(to) == 0 {
 		return fmt.Errorf("could not send email; no recipients supplied")
 	}
@@ -41,6 +41,11 @@ func SendEmail(settings map[string]string, body string, subject string, to []str
 	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/html", body)
+	if attachments != nil && len(attachments) > 0 {
+		for _, v := range attachments {
+			m.Attach(v)
+		}
+	}
 	//m.Attach("/home/Alex/lolcat.jpg")
 
 	port, err := strconv.Atoi(settings["smtp_port"])

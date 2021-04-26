@@ -166,6 +166,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 				emailBody,
 				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
 				[]string{u.Email},
+				nil,
 			)
 			if err != nil {
 				helper.WriteToConsole("RequestNewPasswordHandler: could not send email: " + err.Error())
@@ -377,6 +378,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 			emailBody,
 			fixtures.EmailSubjects[fixtures.ConfirmRegistrationEmail],
 			[]string{email},
+			nil,
 		)
 		if err != nil {
 			helper.WriteToConsole("registration: could not send email: " + err.Error())

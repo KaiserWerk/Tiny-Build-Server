@@ -1,6 +1,7 @@
 .idea/
 vendor/
 build/
+data/
 /config/app.yaml
 /internal/embed.go
 coverage.out

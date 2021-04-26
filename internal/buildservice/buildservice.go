@@ -6,14 +6,20 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/pkg/sftp"
 	"github.com/stvp/slug"
 	"golang.org/x/crypto/ssh"
 	"io"
+	"io/ioutil"
+	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -27,7 +33,7 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 		ActionLog:         report,
 		Result:            result,
 		ArtifactPath:      artifactPath,
-		ExecutionTime:     float64(executionTime / 60),
+		ExecutionTime:     math.Round(float64(executionTime) / (1000 * 1000 * 1000)*100)/100,
 		ExecutedAt:        executedAt,
 	}
 
@@ -43,7 +49,7 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		err error
 		sb strings.Builder
 		result = "failed"
-		executionTime = time.Now().Unix()
+		executionTime = time.Now().UnixNano()
 
 		projectPath = fmt.Sprintf("%s%d/%d", basePath, definition.Id, time.Now().Unix())
 		buildPath = projectPath + "/build"
@@ -65,9 +71,17 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	}()
 	defer func() {
 		close(messageCh)
-		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().Unix() - executionTime, time.Now())
+		helper.WriteToConsole("writing report")
+		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
+		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano() - executionTime, time.Now())
 	}()
 	ds := databaseService.New()
+
+	owner, err := ds.GetUserById(definition.CreatedBy)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not determine owner for build definition with id %d: %s", definition.CreatedBy, err.Error())
+		return
+	}
 	//defer ds.Quit()
 
 	//if helper.FileExists(projectPath) {
@@ -100,7 +114,11 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	if content.Repository.AccessSecret != "" {
 		withCredentials = true
 	}
-	repositoryUrl := getRepositoryUrl(content, withCredentials)
+	repositoryUrl, err := getRepositoryUrl(content, withCredentials)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not determine repository url: %s", err.Error())
+		return
+	}
 	commandParts := strings.Split(fmt.Sprintf("git clone --single-branch --branch %s %s %s", content.Repository.Branch, repositoryUrl, clonePath), " ")
 	cmd := exec.Command(commandParts[0], commandParts[1:]...)
 	messageCh <- "clone repository command: " + cmd.String()
@@ -122,30 +140,33 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	if !ok || baseDataPath == "" {
 		messageCh <- "could not fetch base data path, falling back to default"
 	} else {
-		baseDataPath = "./"
+		baseDataPath = "."
 	}
-
 
 	switch content.ProjectType {
 	case "go":
 		fallthrough
 	case "golang":
 		def := buildsteps.GolangBuildDefinition{
-			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
-			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			Owner: owner,
+			CloneDir:    clonePath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			ArtifactDir: artifactPath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
 			MetaData:    definition,
 			Content:     content,
 		}
 		_, err = handleGolangProject(def, messageCh, projectPath)
 		if err != nil {
-			messageCh <- "could not build golang project (" + projectPath + ")"
+			messageCh <- fmt.Sprintf("could not build golang project (%s): %s", projectPath, err.Error())
 			return
-		} else {
-			// set artifact
-
-			// deploy artifact to any host
-			//err = deployArtifact(definition, artifact)
 		}
+	case "csharp":
+		fallthrough
+	case "fsharp":
+		fallthrough
+	case "vb":
+		fallthrough
+	case "visualbasic":
+		fallthrough
 	case "dotnet":
 		def := buildsteps.DotnetBuildDefinition{
 			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
@@ -183,7 +204,8 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 			return
 		}
 	}
-
+	helper.WriteToConsole("build succeeded")
+	result = "success"
 	fmt.Println("info received!") // set a proper response
 }
 
@@ -243,8 +265,9 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//	dep = entity.DeploymentDefinition{}
 	//}
 
+	// TODO gehört eigentlich eine Ebene höher
 	if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
-		err = deployArtifact(definition.Content, messageCh, artifact)
+		err = deployArtifact(definition.Owner, definition.Content, messageCh, artifact)
 	}
 
 	return artifact, nil
@@ -265,26 +288,85 @@ func handleRustProject(definition buildsteps.RustBuildDefinition, messageCh chan
 	return nil
 }
 
-func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
-	if len(cont.Deployments.LocalDeployments) > 0 {
+func deployArtifact(owner entity.User, cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
+	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
+	localDeploymentCount := len(cont.Deployments.LocalDeployments)
+	if localDeploymentCount > 0 {
+		messageCh <- fmt.Sprintf("%d local deployments found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
 			if !deployment.Enabled {
 				continue
 			}
-			// TODO implement
+
+			bytes, err := ioutil.ReadFile(artifact)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not read artifact (%s): %s", artifact, err.Error())
+				return err
+			}
+			targetPath := deployment.Path
+
+			if deployment.Path[:len(deployment.Path) - 1] == "/" {
+				targetPath = filepath.Join(deployment.Path, filepath.Base(artifact))
+			}
+
+			err = ioutil.WriteFile(targetPath, bytes, 0744)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not write artifact (%s) to target (%s): %s", artifact, targetPath, err.Error())
+				return err
+			}
 		}
+	} else {
+		messageCh <- "no local deployments found"
 	}
 
-	if len(cont.Deployments.EmailDeployments) > 0 {
+	emailDeploymentCount := len(cont.Deployments.EmailDeployments)
+	if emailDeploymentCount > 0 {
+		messageCh <- fmt.Sprintf("%d email deployments found", emailDeploymentCount)
+
+		ds := databaseService.New()
+		settings, err := ds.GetAllSettings()
+		if err != nil {
+			messageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
+			return err
+		}
+
 		for _, deployment := range cont.Deployments.EmailDeployments {
 			if !deployment.Enabled {
 				continue
 			}
-			// TODO implement
+
+			data := struct {
+				Version string
+				Title string
+			}{
+				Version: "n/a", // TODO
+				Title: cont.Repository.Name,
+			}
+
+			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not parse deployment email template: %s", err.Error())
+				return err
+			}
+			err = helper.SendEmail(
+				settings,
+				emailBody,
+				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
+				[]string{owner.Email},
+				[]string{artifact},
+			)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", owner.Email, err.Error())
+				return err
+			}
 		}
+	} else {
+		messageCh <- "no email deployments found"
 	}
 
-	if len(cont.Deployments.RemoteDeployments) > 0 {
+	remoteDeploymentCount := len(cont.Deployments.RemoteDeployments)
+	if remoteDeploymentCount > 0 {
+		messageCh <- fmt.Sprintf("%d remote deployments found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
 			if !deployment.Enabled {
 				continue
@@ -378,47 +460,28 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 			_ = sftpClient.Close()
 			_ = sshClient.Close()
 		}
+	} else {
+		messageCh <- "no remote deplyoments found"
 	}
 
 	return nil
 }
 
-func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) string {
-	var url string
+func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) (string, error) {
+	//var url string
 	switch cont.Repository.Hoster {
 	case "local":
-		return cont.Repository.Url
-	case "bitbucket":
-		url = "bitbucket.org/" + cont.Repository.Name
-		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", cont.Repository.AccessUser, cont.Repository.AccessSecret, url)
-		}
-		return "https://" + url
-	case "github":
-		url = "github.com/" + cont.Repository.Name
-		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", cont.Repository.AccessUser, cont.Repository.AccessSecret, url)
-		}
-		return "https://" + url
-	case "gitlab":
-		url = "gitlab.com/" + cont.Repository.Name
-		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", cont.Repository.AccessUser, cont.Repository.AccessSecret, url)
-		}
-		return "https://" + url
-	case "gitea":
-		url = cont.Repository.Url + "/" + cont.Repository.Name
-		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", cont.Repository.AccessUser, cont.Repository.AccessSecret, url)
-		}
-		return "https://" + url
-
+		return cont.Repository.Url, nil
 	default:
-		url = cont.Repository.Url + "/" + cont.Repository.Name
-		if withCredentials {
-			url = fmt.Sprintf("%s:%s@%s", cont.Repository.AccessUser, cont.Repository.AccessSecret, url)
+		urlParts, err := url.ParseRequestURI(cont.Repository.Url)
+		if err != nil {
+			return "", err
 		}
-		return "http://" + url // just http
+		if !withCredentials {
+			return urlParts.String(), nil
+		}
+		urlParts.User = url.UserPassword(cont.Repository.AccessUser, cont.Repository.AccessSecret)
+		return urlParts.String(), nil
 	}
 }
 

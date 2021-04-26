@@ -4,13 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/sebastianwebber/cmdr"
 	"github.com/stvp/slug"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
 type GolangBuildDefinition struct {
+	Owner entity.User
 	CloneDir    string
 	ArtifactDir string
 	MetaData    entity.BuildDefinition
@@ -48,8 +51,6 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 	slug.Replacement = '-' // TODO: move elsewhere
 	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.Content.Repository.Name, "/")[1]))
 
-	// TODO: remove clone directory?
-
 	// pre build steps
 	for _, preBuildStep := range bd.Content.PreBuild {
 		// set an environment variable
@@ -80,7 +81,11 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 	}
 
 	// if it's windows, append .exe to the binary file
-	if strings.Contains(strings.ToLower(os.Getenv("GOOS")), "win") {
+	goos := os.Getenv("GOOS")
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if strings.Contains(strings.ToLower(goos), "win") {
 		binaryName += ".exe"
 	}
 	messageCh <- "binary name set to " + binaryName
@@ -88,21 +93,56 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 
 	// actual build steps
 	for _, buildStep := range bd.Content.Build {
-		if buildStep == "build" {
-			buildCommand := fmt.Sprintf(
-				`go build -o %s -a -v -work -x -ldflags "-s -w" %s`,
+		if strings.Contains(buildStep, "build") {
+			if strings.Contains(buildStep, " ") {
+				stepParts := strings.Split(buildStep, " ")
+				if len(stepParts) != 2 {
+					messageCh <- fmt.Sprintf("build step '%s': incorrect build syntax", buildStep)
+					continue
+				}
+				bd.CloneDir += strings.TrimLeft(stepParts[1], "./")
+			} else {
+				bd.CloneDir += "/main.go"
+			}
+
+			//absArtifact, err := filepath.Abs(artifact)
+			//if err != nil {
+			//	messageCh <- err.Error()
+			//	return "", err
+			//}
+			//
+			//absCloneDir, err := filepath.Abs(bd.CloneDir)
+			//if err != nil {
+			//	messageCh <- err.Error()
+			//	return "", err
+			//}
+
+			buildCommand := []string{
+				"go",
+				"build",
+				"-o",
 				artifact,
+				"-a",
+				"-v",
+				"-work",
+				"-x",
+				`-ldflags`,
+				`-s -w`,
 				bd.CloneDir,
-			)
-			parts := strings.Split(buildCommand, " ")
-			cmd := exec.Command(parts[0], parts[1:]...)
-			messageCh <- fmt.Sprintf("build command to be executed: '%s'", cmd.String())
-			result, err := cmd.CombinedOutput()
+			}
+
+			//parts := strings.Split(fmt.Sprintf(`  -o %s -a -v -work -x -ldflags "-s -w" %s`, artifact, bd.CloneDir), " ")
+			//cmd := exec.Command(buildCommand[0], buildCommand[1:]...)
+			//messageCh <- fmt.Sprintf("build command to be executed: '%s'", cmd.String())
+			//result, err := cmd.Output()
+
+			cmd := cmdr.New(false, buildCommand[0], buildCommand[1:]...)
+			result, err := cmd.Run()
 			if err != nil {
-				messageCh <- "build failed: " + err.Error()
+				messageCh <- fmt.Sprintf("build step '%s': failed because %s", buildStep, err.Error())
 				return "", err
 			}
-			messageCh <- "build successful: " + string(result)
+			messageCh <- fmt.Sprintf("build step '%s': successful with content:\n%s", buildStep, string(result))
 		} else {
 			parts := strings.Split(buildStep, " ")
 			cmd := exec.Command(parts[0], parts[1:]...)
