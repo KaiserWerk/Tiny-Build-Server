@@ -13,7 +13,6 @@ import (
 )
 
 type GolangBuildDefinition struct {
-	Owner entity.User
 	CloneDir    string
 	ArtifactDir string
 	MetaData    entity.BuildDefinition
@@ -122,10 +121,10 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 				"build",
 				"-o",
 				artifact,
-				"-a",
-				"-v",
-				"-work",
-				"-x",
+				//"-a",
+				//"-v",
+				//"-work",
+				//"-x",
 				`-ldflags`,
 				`-s -w`,
 				bd.CloneDir,
