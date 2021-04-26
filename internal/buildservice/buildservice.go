@@ -57,16 +57,22 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		clonePath = projectPath + "/clone"
 	)
 
-	messageCh := make(chan string, 100)
+	messageCh := make(chan string)
 	go func() {
 		for {
-			s, ok := <-messageCh
-			if ok {
-				helper.WriteToConsole(s)
-				sb.WriteString(strings.TrimSpace(s) + "\n")
-			} else {
-				return
+			select {
+			case s, ok := <-messageCh:
+				if ok {
+					helper.WriteToConsole(s)
+					sb.WriteString(strings.TrimSpace(s) + "\n")
+				} else {
+					return
+				}
+			default:
+				// waiting
 			}
+
+
 		}
 	}()
 	defer func() {
@@ -76,12 +82,6 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano() - executionTime, time.Now())
 	}()
 	ds := databaseService.New()
-
-	owner, err := ds.GetUserById(definition.CreatedBy)
-	if err != nil {
-		messageCh <- fmt.Sprintf("could not determine owner for build definition with id %d: %s", definition.CreatedBy, err.Error())
-		return
-	}
 	//defer ds.Quit()
 
 	//if helper.FileExists(projectPath) {
@@ -148,7 +148,6 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		fallthrough
 	case "golang":
 		def := buildsteps.GolangBuildDefinition{
-			Owner: owner,
 			CloneDir:    clonePath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
 			ArtifactDir: artifactPath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
 			MetaData:    definition,
@@ -267,7 +266,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 
 	// TODO gehört eigentlich eine Ebene höher
 	if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
-		err = deployArtifact(definition.Owner, definition.Content, messageCh, artifact)
+		err = deployArtifact(definition.Content, messageCh, artifact)
 	}
 
 	return artifact, nil
@@ -288,11 +287,11 @@ func handleRustProject(definition buildsteps.RustBuildDefinition, messageCh chan
 	return nil
 }
 
-func deployArtifact(owner entity.User, cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
+func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
 	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
 	localDeploymentCount := len(cont.Deployments.LocalDeployments)
 	if localDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d local deployments found", localDeploymentCount)
+		messageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
 			if !deployment.Enabled {
 				continue
@@ -321,7 +320,7 @@ func deployArtifact(owner entity.User, cont entity.BuildDefinitionContent, messa
 
 	emailDeploymentCount := len(cont.Deployments.EmailDeployments)
 	if emailDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d email deployments found", emailDeploymentCount)
+		messageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
 
 		ds := databaseService.New()
 		settings, err := ds.GetAllSettings()
@@ -351,14 +350,15 @@ func deployArtifact(owner entity.User, cont entity.BuildDefinitionContent, messa
 			err = helper.SendEmail(
 				settings,
 				emailBody,
-				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
-				[]string{owner.Email},
+				fixtures.EmailSubjects[fixtures.DeploymentEmail],
+				[]string{deployment.Address},
 				[]string{artifact},
 			)
 			if err != nil {
-				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", owner.Email, err.Error())
+				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", deployment.Address, err.Error())
 				return err
 			}
+			messageCh <- fmt.Sprintf("deployment email sent to owner %s", deployment.Address)
 		}
 	} else {
 		messageCh <- "no email deployments found"
@@ -366,7 +366,7 @@ func deployArtifact(owner entity.User, cont entity.BuildDefinitionContent, messa
 
 	remoteDeploymentCount := len(cont.Deployments.RemoteDeployments)
 	if remoteDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d remote deployments found", remoteDeploymentCount)
+		messageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
 			if !deployment.Enabled {
 				continue
