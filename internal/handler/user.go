@@ -32,27 +32,23 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		ds := databaseService.New()
 		//defer ds.Quit()
 
-		// check if password is correct
 		password := r.FormValue("password")
-		//row := db.QueryRow("SELECT password FROM user WHERE id = ?", currentUser.Id)
-		//var queriedHash string
-		//err = row.Scan(&queriedHash)
+		if password == "" {
+			helper.WriteToConsole("change user settings: password is empty")
+			sessMgr.AddMessage("error", "Please enter your current password!")
+			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
+			return
+		}
+
+		//hash, err := security.HashString(password)
 		//if err != nil {
-		//	helper.WriteToConsole("change user settings: error querying user")
+		//	helper.WriteToConsole("change user settings: could not hash password")
 		//	sessMgr.AddMessage("error", "An unexpected error occurred!")
 		//	http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 		//	return
 		//}
 
-		hash, err := security.HashString(password)
-		if err != nil {
-			helper.WriteToConsole("change user settings: could not hash password")
-			sessMgr.AddMessage("error", "An unexpected error occurred!")
-			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
-			return
-		}
-
-		if security.DoesHashMatch(currentUser.Password, hash) {
+		if !security.DoesHashMatch(password, currentUser.Password) {
 			helper.WriteToConsole("change user settings: entered password incorrect")
 			sessMgr.AddMessage("error", "You entered an incorrect password!")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -62,6 +58,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 		form := r.FormValue("form")
 		if form == "change_data" {
+			changes := 0
 			displayname := r.FormValue("displayname")
 			if displayname != "" && displayname != currentUser.Displayname {
 				if ds.RowExists("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.Id) {
@@ -70,7 +67,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
-
+				changes++
 				currentUser.Displayname = displayname
 				err = ds.UpdateUser(currentUser)
 				//_, err = db.Exec("UPDATE user SET displayname = ? where id = ?", displayname, currentUser.Id)
@@ -90,7 +87,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
-
+				changes++
 				currentUser.Email = email
 				err = ds.UpdateUser(currentUser)
 				//_, err = db.Exec("UPDATE user SET email = ? where id = ?", email, currentUser.Id)
@@ -102,8 +99,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if (displayname != "" && displayname != currentUser.Displayname) ||
-				(email != "" && email != currentUser.Email) {
+			if changes > 0 {
 				helper.WriteToConsole("change user settings: update successful")
 				sessMgr.AddMessage("success", "Your changes have been saved.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
