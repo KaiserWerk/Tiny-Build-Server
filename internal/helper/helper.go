@@ -3,8 +3,10 @@ package helper
 import (
 	"errors"
 	"fmt"
+	"github.com/jordan-wright/email"
 	"gopkg.in/gomail.v2"
 	"net/http"
+	"net/smtp"
 	"os"
 	"strconv"
 	"time"
@@ -34,7 +36,7 @@ func SendEmail(settings map[string]string, body string, subject string, to, atta
 	if to == nil || len(to) == 0 {
 		return fmt.Errorf("could not send email; no recipients supplied")
 	}
-
+	//fmt.Println("settings:", settings)
 	m := gomail.NewMessage()
 	m.SetHeader("From", settings["smtp_username"])
 	m.SetHeader("To", to...)
@@ -53,11 +55,33 @@ func SendEmail(settings map[string]string, body string, subject string, to, atta
 		return err
 	}
 	d := gomail.NewDialer(settings["smtp_host"], port, settings["smtp_username"], settings["smtp_password"])
+	//d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	if err := d.DialAndSend(m); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func SendEmail2(settings map[string]string, body string, subject string, to, attachments []string) error {
+	e := email.NewEmail()
+	e.From = settings["smtp_username"]
+	e.To = to
+	//e.Bcc = []string{"test_bcc@example.com"}
+	//e.Cc = []string{"test_cc@example.com"}
+	e.Subject = subject
+	e.Text = []byte("Text Body is, of course, supported!")
+	e.HTML = []byte(body)
+	if attachments != nil && len(attachments) > 0 {
+		for _, v := range attachments {
+			_, err := e.AttachFile(v)
+			if err != nil {
+				WriteToConsole("could not attach file " + v)
+			}
+		}
+	}
+	fmt.Println("settings:", settings)
+	return e.Send(fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_port"]), smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"]))
 }
 
 func FormatDate(t time.Time) string {

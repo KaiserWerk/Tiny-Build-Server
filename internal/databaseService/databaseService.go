@@ -59,7 +59,7 @@ func (ds databaseService) RowExists(query string, args ...interface{}) bool {
 	exists := true
 
 	result := ds.db.Exec(fmt.Sprintf("SELECT exists (%s)", query), args...)
-	if result.Error != nil {
+	if result.Error == nil {
 		exists = false
 	}
 

@@ -95,7 +95,7 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				err = ds.UpdateUser(currentUser)
 				//_, err = db.Exec("UPDATE user SET email = ? where id = ?", email, currentUser.Id)
 				if err != nil {
-					helper.WriteToConsole("change user settings: email " + displayname + " is already in use")
+					helper.WriteToConsole("change user settings: displayname " + displayname + " is already in use")
 					sessMgr.AddMessage("error", "Could not update data!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return

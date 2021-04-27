@@ -1,6 +1,8 @@
 package buildservice
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
@@ -342,6 +344,34 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				Title: cont.Repository.Name,
 			}
 
+			artifactContent, err := ioutil.ReadFile(artifact)
+			if err != nil {
+				messageCh <- "could not read artifact file: " + err.Error()
+				return err
+			}
+
+			zipBuffer := bytes.Buffer{}
+			zipWriter := zip.NewWriter(&zipBuffer)
+
+			zipFile, err := zipWriter.Create(filepath.Base(artifact))
+			if err != nil {
+				messageCh <- "could not create artifact file in zip archive: " + err.Error()
+				return err
+			}
+			_, err = zipFile.Write(artifactContent)
+			if err != nil {
+				messageCh <- "could not write artifact file in zip archive: " + err.Error()
+				return err
+			}
+			_ = zipWriter.Close()
+
+			zipArchiveName := artifact + ".zip"
+			err = ioutil.WriteFile(zipArchiveName, zipBuffer.Bytes(), 0744)
+			if err != nil {
+				messageCh <- "could not write zip archive bytes to file: " + err.Error()
+				return err
+			}
+
 			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not parse deployment email template: %s", err.Error())
@@ -352,7 +382,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				emailBody,
 				fixtures.EmailSubjects[fixtures.DeploymentEmail],
 				[]string{deployment.Address},
-				[]string{artifact},
+				[]string{zipArchiveName},
 			)
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", deployment.Address, err.Error())
