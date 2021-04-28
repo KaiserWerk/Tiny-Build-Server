@@ -28,7 +28,7 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 
 	ds := databaseService.New()
 
-	buildExecutions, err := ds.GetNewestBuildExecutions(0)
+	buildExecutions, err := ds.GetNewestBuildExecutions(0, "")
 
 	data := struct {
 		CurrentUser     entity.User

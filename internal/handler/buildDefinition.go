@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -230,7 +231,12 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	beList, err := ds.FindBuildExecutions("build_definition_id = ?", bd.Id)
+	beList, err := ds.GetNewestBuildExecutions(10, "build_definition_id = ?", bd.Id)
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionShowHandler: could not get newest build executions: " + err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	failedBuildCount := 0
 	successBuildCount := 0
@@ -348,5 +354,51 @@ func BuildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request
 }
 
 func BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement or scrap
+	session, err := security.CheckLogin(r)
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	currentUser, err := sessionService.GetUserFromSession(session)
+	if err != nil {
+		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	ds := databaseService.New()
+	//defer ds.Quit()
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionRestartHandler: could not parse build definition id")
+		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
+		return
+	}
+
+	bd, err := ds.GetBuildDefinitionById(id)
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionRestartHandler: could not get buildDefinition: " + err.Error())
+		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
+		return
+	}
+
+	variables, err := ds.GetAvailableVariablesForUser(currentUser.Id)
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionRestartHandler: could not get variables: " + err.Error())
+		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
+		return
+	}
+
+	cont, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
+	if err != nil {
+		helper.WriteToConsole("BuildDefinitionRestartHandler: could not unmarshal build definition content: " + err.Error())
+		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
+		return
+	}
+
+	go buildservice.StartBuildProcess(bd, cont)
+
+	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusOK)
 }

@@ -30,7 +30,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	ds := databaseService.New()
 	//defer ds.Quit()
 
-	latestBuilds, err := ds.GetNewestBuildExecutions(5)
+	latestBuilds, err := ds.GetNewestBuildExecutions(5, "")
 	if err != nil {
 		helper.WriteToConsole("could not fetch latest build executions: " + err.Error())
 	}

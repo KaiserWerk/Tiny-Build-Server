@@ -40,14 +40,6 @@ func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//hash, err := security.HashString(password)
-		//if err != nil {
-		//	helper.WriteToConsole("change user settings: could not hash password")
-		//	sessMgr.AddMessage("error", "An unexpected error occurred!")
-		//	http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
-		//	return
-		//}
-
 		if !security.DoesHashMatch(password, currentUser.Password) {
 			helper.WriteToConsole("change user settings: entered password incorrect")
 			sessMgr.AddMessage("error", "You entered an incorrect password!")

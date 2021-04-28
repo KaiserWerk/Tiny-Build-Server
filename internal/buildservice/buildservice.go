@@ -141,9 +141,9 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	baseDataPath, ok := settings["base_datapath"]
 	if !ok || baseDataPath == "" {
 		messageCh <- "could not fetch base data path, falling back to default"
-	} else {
 		baseDataPath = "."
 	}
+	messageCh <- fmt.Sprintf("setting baseDataPath to %s", baseDataPath)
 
 	switch content.ProjectType {
 	case "go":
@@ -331,6 +331,34 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 			return err
 		}
 
+		artifactContent, err := ioutil.ReadFile(artifact)
+		if err != nil {
+			messageCh <- "could not read artifact file: " + err.Error()
+			return err
+		}
+
+		zipBuffer := bytes.Buffer{}
+		zipWriter := zip.NewWriter(&zipBuffer)
+
+		zipFile, err := zipWriter.Create(filepath.Base(artifact))
+		if err != nil {
+			messageCh <- "could not create artifact file in zip archive: " + err.Error()
+			return err
+		}
+		_, err = zipFile.Write(artifactContent)
+		if err != nil {
+			messageCh <- "could not write artifact file in zip archive: " + err.Error()
+			return err
+		}
+		_ = zipWriter.Close()
+
+		zipArchiveName := artifact + ".zip"
+		err = ioutil.WriteFile(zipArchiveName, zipBuffer.Bytes(), 0744)
+		if err != nil {
+			messageCh <- "could not write zip archive bytes to file: " + err.Error()
+			return err
+		}
+
 		for _, deployment := range cont.Deployments.EmailDeployments {
 			if !deployment.Enabled {
 				continue
@@ -342,34 +370,6 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 			}{
 				Version: "n/a", // TODO
 				Title: cont.Repository.Name,
-			}
-
-			artifactContent, err := ioutil.ReadFile(artifact)
-			if err != nil {
-				messageCh <- "could not read artifact file: " + err.Error()
-				return err
-			}
-
-			zipBuffer := bytes.Buffer{}
-			zipWriter := zip.NewWriter(&zipBuffer)
-
-			zipFile, err := zipWriter.Create(filepath.Base(artifact))
-			if err != nil {
-				messageCh <- "could not create artifact file in zip archive: " + err.Error()
-				return err
-			}
-			_, err = zipFile.Write(artifactContent)
-			if err != nil {
-				messageCh <- "could not write artifact file in zip archive: " + err.Error()
-				return err
-			}
-			_ = zipWriter.Close()
-
-			zipArchiveName := artifact + ".zip"
-			err = ioutil.WriteFile(zipArchiveName, zipBuffer.Bytes(), 0744)
-			if err != nil {
-				messageCh <- "could not write zip archive bytes to file: " + err.Error()
-				return err
 			}
 
 			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)

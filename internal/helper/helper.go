@@ -3,12 +3,15 @@ package helper
 import (
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/jordan-wright/email"
 	"gopkg.in/gomail.v2"
+	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/smtp"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -86,4 +89,19 @@ func SendEmail2(settings map[string]string, body string, subject string, to, att
 
 func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02 15:04")
+}
+
+func UnmarshalBuildDefinitionContent(content string, variables []entity.UserVariable) (entity.BuildDefinitionContent, error) {
+
+	for _, v := range variables {
+		content = strings.Replace(content, fmt.Sprintf("%%%s%%", v.Variable), v.Value, -1)
+	}
+
+	var bdContent entity.BuildDefinitionContent
+	err := yaml.Unmarshal([]byte(content), &bdContent)
+	if err != nil {
+		return bdContent, err
+	}
+
+	return bdContent, nil
 }

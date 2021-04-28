@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"gopkg.in/yaml.v3"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"net/http"
 )
 
@@ -27,9 +26,14 @@ func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	variables, err := ds.GetAvailableVariablesForUser(bd.CreatedBy)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("could not determine variables for user: %s", err.Error()), http.StatusNotFound)
+		return
+	}
+
 	// unmarshal the build definition content
-	var bdContent entity.BuildDefinitionContent
-	err = yaml.Unmarshal([]byte(bd.Content), &bdContent)
+	bdContent, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
 	if err != nil {
 		http.Error(w, "could not unmarshal build definition content: " + err.Error(), http.StatusNotFound)
 		return

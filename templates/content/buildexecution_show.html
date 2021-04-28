@@ -1,6 +1,6 @@
 {{ template "header_default" . }}
 <div class="container-fluid">
-    <h1 class="mt-4 mb-3 offset-1">Build definition Details</h1>
+    <h1 class="mt-4 mb-3 offset-1">Build Execution Details</h1>
     <div class="row">
         {{ getFlashbag }}
         <div class="col-xl-10 offset-1">
@@ -11,14 +11,14 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-xl-8">
+                        <div class="col-xl-12">
 
                             <div class="row">
-                                <div class="col-xl-8">
+                                <div class="col-xl-12">
                                     <h5>Details</h5>
                                     <table class="table table-borderless table-condensed">
                                         <tr>
-                                            <td>Initiated by</td>
+                                            <td style="width: 15%;">Initiated by</td>
                                             <td>{{ if lt .BuildExecution.ManuallyRunBy 1 }}Repository Push{{ else }}User <i><b>{{ getUsernameById .BuildExecution.ManuallyRunBy }}</b></i>{{ end }}</td>
                                         </tr>
                                         <tr>
@@ -35,11 +35,15 @@
                                         </tr>
                                         <tr>
                                             <td>Executed at</td>
-                                            <td>{{ .BuildExecution.ExecutedAt }}</td>
+                                            <td>{{ .BuildExecution.ExecutedAt | formatDate }}</td>
                                         </tr>
                                         <tr>
                                             <td>Build Log</td>
-                                            <td><pre>{{ .BuildExecution.ActionLog }}</pre></td>
+                                            <td><form novalidate>
+                                                <textarea class="form-control" style="width: 100%; font-size: 11px; font-family: 'Courier New', monospace;" rows="15"
+                                                          wrap="off"
+                                                          readonly>{{ .BuildExecution.ActionLog }}</textarea>
+                                            </form></td>
                                         </tr>
                                     </table>
                                 </div>

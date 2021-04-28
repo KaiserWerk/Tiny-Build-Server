@@ -20,7 +20,7 @@ type GolangBuildDefinition struct {
 }
 
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
-	cmd := exec.Command("go", "test", "./...")
+	cmd := exec.Command("go", "test", "-race", "./...")
 	cmd.Dir = bd.CloneDir
 
 	output, err := cmd.CombinedOutput()

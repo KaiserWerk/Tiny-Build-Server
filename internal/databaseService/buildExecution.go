@@ -5,13 +5,22 @@ import (
 	"gorm.io/gorm"
 )
 
-func (ds databaseService) GetNewestBuildExecutions(limit int) ([]entity.BuildExecution, error) {
+func (ds databaseService) GetNewestBuildExecutions(limit int, query string, args ...interface{}) ([]entity.BuildExecution, error) {
 	beList := make([]entity.BuildExecution, 0)
 	var result *gorm.DB
 	if limit > 0 {
-		result = ds.db.Limit(limit).Find(&beList).Order("executed_at DESC")
+		if query != "" {
+			result = ds.db.Where(query, args).Limit(limit).Order("executed_at desc").Find(&beList)
+		} else {
+			result = ds.db.Limit(limit).Order("executed_at desc").Find(&beList)
+		}
+
 	} else {
-		result = ds.db.Find(&beList).Order("executed_at DESC")
+		if query != "" {
+			result = ds.db.Where(query, args).Order("executed_at desc").Find(&beList)
+		} else {
+			result = ds.db.Order("executed_at desc").Find(&beList)
+		}
 	}
 	if result.Error != nil {
 		return nil, result.Error
