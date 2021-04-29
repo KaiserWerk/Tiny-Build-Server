@@ -65,5 +65,3 @@ func (ds databaseService) RowExists(query string, args ...interface{}) bool {
 
 	return exists
 }
-
-

@@ -18,7 +18,7 @@ type BuildDefinitionContent struct {
 	Deployments struct {
 		LocalDeployments []struct {
 			Enabled bool   `yaml:"enabled"`
-			Path string `yaml:"path"`
+			Path    string `yaml:"path"`
 		} `yaml:"local_deployments,omitempty"`
 		EmailDeployments []struct {
 			Enabled bool   `yaml:"enabled"`

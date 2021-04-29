@@ -35,7 +35,7 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 		ActionLog:         report,
 		Result:            result,
 		ArtifactPath:      artifactPath,
-		ExecutionTime:     math.Round(float64(executionTime) / (1000 * 1000 * 1000)*100)/100,
+		ExecutionTime:     math.Round(float64(executionTime)/(1000*1000*1000)*100) / 100,
 		ExecutedAt:        executedAt,
 	}
 
@@ -48,15 +48,15 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDefinitionContent) {
 	// instantiate tools for build output
 	var (
-		err error
-		sb strings.Builder
-		result = "failed"
+		err           error
+		sb            strings.Builder
+		result        = "failed"
 		executionTime = time.Now().UnixNano()
 
-		projectPath = fmt.Sprintf("%s%d/%d", basePath, definition.Id, time.Now().Unix())
-		buildPath = projectPath + "/build"
+		projectPath  = fmt.Sprintf("%s%d/%d", basePath, definition.Id, time.Now().Unix())
+		buildPath    = projectPath + "/build"
 		artifactPath = projectPath + "/artifact"
-		clonePath = projectPath + "/clone"
+		clonePath    = projectPath + "/clone"
 	)
 
 	messageCh := make(chan string)
@@ -74,24 +74,23 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 				// waiting
 			}
 
-
 		}
 	}()
 	defer func() {
 		close(messageCh)
 		helper.WriteToConsole("writing report")
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
-		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano() - executionTime, time.Now())
+		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
 	ds := databaseService.New()
 	//defer ds.Quit()
 
 	//if helper.FileExists(projectPath) {
-		err = os.RemoveAll(projectPath)
-		if err != nil {
-			messageCh <- fmt.Sprintf("could not remove stale project directory (%s): %s", projectPath, err.Error())
-			return
-		}
+	err = os.RemoveAll(projectPath)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not remove stale project directory (%s): %s", projectPath, err.Error())
+		return
+	}
 	//}
 
 	// create a new build directory
@@ -150,7 +149,7 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		fallthrough
 	case "golang":
 		def := buildsteps.GolangBuildDefinition{
-			CloneDir:    clonePath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			CloneDir:    clonePath,    // strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
 			ArtifactDir: artifactPath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
 			MetaData:    definition,
 			Content:     content,
@@ -306,7 +305,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 			}
 			targetPath := deployment.Path
 
-			if deployment.Path[:len(deployment.Path) - 1] == "/" {
+			if deployment.Path[:len(deployment.Path)-1] == "/" {
 				targetPath = filepath.Join(deployment.Path, filepath.Base(artifact))
 			}
 
@@ -366,10 +365,10 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 
 			data := struct {
 				Version string
-				Title string
+				Title   string
 			}{
 				Version: "n/a", // TODO
-				Title: cont.Repository.Name,
+				Title:   cont.Repository.Name,
 			}
 
 			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)
@@ -624,7 +623,7 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 			return fmt.Errorf("gitea: branch names do not match (from payload: %s, from build definition: %s)", branch, content.Repository.Branch)
 		}
 		if payload.Repository.FullName != content.Repository.Name {
-			return fmt.Errorf("gitea: repository names do not match (from payload: %s, from build definition: %s)" + payload.Repository.FullName, content.Repository.Name)
+			return fmt.Errorf("gitea: repository names do not match (from payload: %s, from build definition: %s)"+payload.Repository.FullName, content.Repository.Name)
 		}
 	default:
 		return fmt.Errorf("unrecognized git hoster %s", content.Repository.Hoster)

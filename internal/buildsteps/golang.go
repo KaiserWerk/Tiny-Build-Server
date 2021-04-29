@@ -57,7 +57,7 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 			setenv := strings.Replace(preBuildStep, "setenv ", "", 1)
 			parts := strings.Split(setenv, "=")
 			if len(parts) != 2 {
-				messageCh <- "incorrect setenv syntax ("+preBuildStep+")"
+				messageCh <- "incorrect setenv syntax (" + preBuildStep + ")"
 				continue
 			}
 			err = os.Setenv(parts[0], parts[1])

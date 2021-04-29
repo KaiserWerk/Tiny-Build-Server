@@ -14,7 +14,7 @@ func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	// get token
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		http.Error(w,"could not determine token", http.StatusBadRequest)
+		http.Error(w, "could not determine token", http.StatusBadRequest)
 		return
 	}
 
@@ -35,7 +35,7 @@ func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	// unmarshal the build definition content
 	bdContent, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
 	if err != nil {
-		http.Error(w, "could not unmarshal build definition content: " + err.Error(), http.StatusNotFound)
+		http.Error(w, "could not unmarshal build definition content: "+err.Error(), http.StatusNotFound)
 		return
 	}
 
