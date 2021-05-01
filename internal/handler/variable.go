@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 )
@@ -17,14 +17,14 @@ func VariableListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("VariableListHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	variables, err := ds.GetAvailableVariablesForUser(currentUser.Id)
 
 	data := struct {
@@ -47,7 +47,7 @@ func VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("VariableAddHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -76,7 +76,7 @@ func VariableShowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("VariableShowHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -101,7 +101,7 @@ func VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("VariableEditHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -130,7 +130,7 @@ func VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("VariableRemoveHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

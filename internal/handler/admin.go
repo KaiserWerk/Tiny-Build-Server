@@ -2,12 +2,12 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -21,7 +21,7 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -32,7 +32,7 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 
 	userList, err := ds.GetAllUsers()
 	if err != nil {
@@ -61,7 +61,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -89,7 +89,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		if displayname != "" && email != "" {
 
-			ds := databaseService.New()
+			ds := databaseservice.New()
 
 			_, err := ds.FindUser("displayname = ?", displayname)
 			if err == nil {
@@ -166,7 +166,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -179,7 +179,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	if r.Method == http.MethodPost {
 
 		displayname := r.FormValue("displayname")
@@ -287,7 +287,7 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -307,7 +307,7 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	if r.Method == http.MethodPost {
 		err = ds.DeleteUser(userId)
 		if err != nil {
@@ -348,7 +348,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -360,7 +360,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessMgr := global.GetSessionManager()
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	if r.Method == http.MethodPost {

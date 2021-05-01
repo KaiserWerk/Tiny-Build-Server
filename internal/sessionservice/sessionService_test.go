@@ -1,4 +1,4 @@
-package sessionService
+package sessionservice
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"

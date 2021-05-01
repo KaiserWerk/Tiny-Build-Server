@@ -3,7 +3,7 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -21,7 +21,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		sessMgr := global.GetSessionManager()
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		//defer ds.Quit()
 
 		email := r.FormValue("login_email")
@@ -111,7 +111,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		//defer ds.Quit()
 
 		email := r.FormValue("login_email")
@@ -197,7 +197,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 
 	if r.Method == http.MethodPost {
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		//defer ds.Quit()
 
 		email := r.FormValue("email")
@@ -290,7 +290,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		//defer ds.Quit()
 
 		displayName := r.FormValue("display_name")
@@ -415,7 +415,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 
 	if token != "" {
 		sessMgr := global.GetSessionManager()
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		//defer ds.Quit()
 
 		ua, err := ds.GetUserActionByToken(token)

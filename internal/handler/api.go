@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"net/http"
 )
@@ -20,7 +20,7 @@ func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	// find build definition by token
 	bd, err := ds.FindBuildDefinition("token = ?", token)
 	if err != nil {

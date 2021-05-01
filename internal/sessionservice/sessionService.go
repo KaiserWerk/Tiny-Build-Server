@@ -1,8 +1,8 @@
-package sessionService
+package sessionservice
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/sessionstore"
 	_ "github.com/go-sql-driver/mysql"
@@ -18,7 +18,7 @@ func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 
 	userId, _ := strconv.Atoi(userIdStr)
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 	user, err := ds.GetUserById(userId)
 	return user, err

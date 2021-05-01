@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -25,14 +25,14 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionListHandler: could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	buildDefinitions, err := ds.GetAllBuildDefinitions()
 
 	data := struct {
@@ -55,7 +55,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -83,7 +83,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 			CreatedBy: currentUser.Id,
 		}
 
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		_, err := ds.AddBuildDefinition(bd)
 		if err != nil {
 			helper.WriteToConsole("BuildDefinitionAddHandler: could not insert build definition " + err.Error())
@@ -121,14 +121,14 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	sessMgr := global.GetSessionManager()
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	vars := mux.Vars(r)
@@ -199,7 +199,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -207,7 +207,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	settings, err := ds.GetAllSettings()
@@ -302,14 +302,14 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	vars := mux.Vars(r)
@@ -365,14 +365,14 @@ func BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	vars := mux.Vars(r)

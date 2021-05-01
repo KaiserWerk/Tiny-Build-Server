@@ -2,7 +2,7 @@ package templateservice
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"io"
@@ -18,7 +18,7 @@ import (
 
 // ExecuteTemplate executed a template with the supplied data into the io.Writer w
 func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	var funcMap = template.FuncMap{
 		"getUsernameById":    GetUsernameById,
 		"getFlashbag":        GetFlashbag(global.GetSessionManager()),
@@ -111,7 +111,7 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 
 // GetUsernameById returns a username by id
 func GetUsernameById(id int) string {
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	u, err := ds.GetUserById(id)

@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 	"strconv"
@@ -20,14 +20,14 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 
 	buildExecutions, err := ds.GetNewestBuildExecutions(0, "")
 
@@ -51,14 +51,14 @@ func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	currentUser, err := sessionService.GetUserFromSession(session)
+	currentUser, err := sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("could not fetch user by ID")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	vars := mux.Vars(r)

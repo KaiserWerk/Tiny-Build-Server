@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -43,7 +43,7 @@ func main() {
 
 	config := global.GetConfiguration()
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	err := ds.AutoMigrate()
 	if err != nil {
 		panic("AutoMigrate panic: " + err.Error())

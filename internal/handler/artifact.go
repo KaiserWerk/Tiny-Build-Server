@@ -2,10 +2,10 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +20,7 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	_, err = sessionService.GetUserFromSession(session)
+	_, err = sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("DownloadNewestArtifactHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -29,7 +29,7 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	ds := databaseService.New()
+	ds := databaseservice.New()
 
 	beList, err := ds.GetNewestBuildExecutions(1, "build_definition_id = ?", vars["id"])
 	if err != nil {
@@ -76,7 +76,7 @@ func DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	_, err = sessionService.GetUserFromSession(session)
+	_, err = sessionservice.GetUserFromSession(session)
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

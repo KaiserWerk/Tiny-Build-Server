@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -29,7 +29,7 @@ import (
 var basePath string = "data/"
 
 func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	be := entity.BuildExecution{
 		BuildDefinitionId: definition.Id,
 		ActionLog:         report,
@@ -83,7 +83,7 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
-	ds := databaseService.New()
+	ds := databaseservice.New()
 	//defer ds.Quit()
 
 	//if helper.FileExists(projectPath) {
@@ -324,7 +324,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 	if emailDeploymentCount > 0 {
 		messageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
 
-		ds := databaseService.New()
+		ds := databaseservice.New()
 		settings, err := ds.GetAllSettings()
 		if err != nil {
 			messageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
