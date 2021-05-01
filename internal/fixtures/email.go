@@ -21,5 +21,5 @@ var EmailSubjects = map[EmailMessageType]string{
 	RequestNewPasswordEmail:    "Tiny Build Server: Instructions on how to reset your password",
 	RegistrationConfirmedEmail: "Tiny Build Server: Your registration was successfully confirmed",
 	ConfirmPasswordResetEmail:  "Tiny Build Server: Your password has been reset",
-	DeploymentEmail:            "Tiny Build Server: New email deplyoment",
+	DeploymentEmail:            "Tiny Build Server: New email deployment",
 }

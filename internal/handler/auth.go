@@ -424,7 +424,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 		//err := row.Scan(&ua.UserId, &ua.Purpose, &ua.Validity)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not scan: " + err.Error())
-			sessMgr.AddMessage("error", "An unknown error occured.")
+			sessMgr.AddMessage("error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -446,7 +446,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 		user, err := ds.GetUserById(ua.UserId)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not get user from db: " + err.Error())
-			sessMgr.AddMessage("error", "An unknown error occured.")
+			sessMgr.AddMessage("error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -455,7 +455,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 		err = ds.UpdateUser(user)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not set locked flag in db: " + err.Error())
-			sessMgr.AddMessage("error", "An unknown error occured.")
+			sessMgr.AddMessage("error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -464,7 +464,7 @@ func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 		//_, err = db.Exec("UPDATE user_action SET validity = ? WHERE token = ?", sql.NullTime{}, ua.Token)
 		if err != nil {
 			helper.WriteToConsole("confirm registration: could not null token validity in db: " + err.Error())
-			sessMgr.AddMessage("error", "An unknown error occured.")
+			sessMgr.AddMessage("error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}

@@ -481,7 +481,7 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if errors > 0 {
-			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occured", errors)
+			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occurred", errors)
 			helper.WriteToConsole(output)
 			sessMgr.AddMessage("error", output)
 		} else {

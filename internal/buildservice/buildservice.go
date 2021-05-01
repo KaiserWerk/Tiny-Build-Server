@@ -532,7 +532,7 @@ func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) 
 //	}
 //}
 
-// CheckPayloadHeader checks the existance and values taken from HTTP request headers
+// CheckPayloadHeader checks the existence and values taken from HTTP request headers
 // from the given HTTP request
 func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) error {
 	var err error
