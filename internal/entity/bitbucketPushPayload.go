@@ -2,6 +2,7 @@ package entity
 
 import "time"
 
+// BitBucketPushPayload represents the webhook payload from bitbucket
 type BitBucketPushPayload struct {
 	Push struct {
 		Changes []struct {

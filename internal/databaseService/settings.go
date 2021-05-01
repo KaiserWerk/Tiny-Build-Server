@@ -4,6 +4,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 )
 
+// GetAllSettings fetches all settings
 func (ds databaseService) GetAllSettings() (map[string]string, error) {
 	settings := make(map[string]string)
 
@@ -21,6 +22,7 @@ func (ds databaseService) GetAllSettings() (map[string]string, error) {
 	return settings, nil
 }
 
+// SetSetting sets a new value for a given setting
 func (ds databaseService) SetSetting(name, value string) error {
 	//result := ds.db.Model(&entity.AdminSetting{}).Where("name = ?", name).Update("value", value)
 	var setting entity.AdminSetting

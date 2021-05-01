@@ -7,6 +7,7 @@ import (
 
 var limiter = rate.NewLimiter(15, 30)
 
+// Limit middleware limits the number of requests
 func Limit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !limiter.Allow() {

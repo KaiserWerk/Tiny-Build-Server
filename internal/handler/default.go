@@ -14,6 +14,7 @@ import (
 	"strings"
 )
 
+// IndexHandler serves the dashboard
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -55,6 +56,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// StaticAssetHandler serves static file. http.FileServer does not work as desired
 func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	file := vars["file"]

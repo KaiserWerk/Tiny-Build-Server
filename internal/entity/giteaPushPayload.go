@@ -2,6 +2,7 @@ package entity
 
 import "time"
 
+// GiteaPushPayload represents the webhook payload from bitbucket
 type GiteaPushPayload struct {
 	Secret     string `json:"secret"`
 	Ref        string `json:"ref"`

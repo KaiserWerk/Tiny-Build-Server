@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// LoginHandler handles logins
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider enabled 2fa
 
@@ -76,6 +77,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// LogoutHandler handles logouts
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	sessMgr := global.GetSessionManager()
 	helper.WriteToConsole("getting cookie value")
@@ -103,6 +105,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+// RequestNewPasswordHandler handles password reset requests
 func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled pw reset
 	sessMgr := global.GetSessionManager()
@@ -186,6 +189,7 @@ func RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ResetPasswordHandler handles password resets
 func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled pw reset
 	sessMgr := global.GetSessionManager()
@@ -280,6 +284,7 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// RegistrationHandler handles user account registrations
 func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider disabled registration
 	sessMgr := global.GetSessionManager()
@@ -397,6 +402,7 @@ func RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// RegistrationConfirmHandler handles confirmations for newly registered user accounts
 func RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 
 	var token string

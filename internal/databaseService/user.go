@@ -5,6 +5,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 )
 
+// GetAllUsers fetches a list of all users
 func (ds databaseService) GetAllUsers() ([]entity.User, error) {
 	users := make([]entity.User, 0)
 	result := ds.db.Find(&users)
@@ -14,6 +15,8 @@ func (ds databaseService) GetAllUsers() ([]entity.User, error) {
 	return users, nil
 }
 
+// GetUsernameById fetches a username by Id
+// Supposed to be used in templates
 func (ds databaseService) GetUsernameById(id int) string {
 	var u entity.User
 
@@ -25,6 +28,7 @@ func (ds databaseService) GetUsernameById(id int) string {
 	return u.Displayname
 }
 
+// GetUserByEmail fetches a user by email address
 func (ds databaseService) GetUserByEmail(email string) (entity.User, error) {
 	var u entity.User
 	result := ds.db.First(&u, "email = ?", email)
@@ -34,6 +38,7 @@ func (ds databaseService) GetUserByEmail(email string) (entity.User, error) {
 	return u, nil
 }
 
+// GetUserById fetches a user by Id
 func (ds databaseService) GetUserById(id int) (entity.User, error) {
 	var u entity.User
 	result := ds.db.First(&u, id)
@@ -44,6 +49,7 @@ func (ds databaseService) GetUserById(id int) (entity.User, error) {
 	return u, nil
 }
 
+// AddUser adds a new user
 func (ds databaseService) AddUser(user entity.User) (int, error) {
 	result := ds.db.Create(&user)
 	if result.Error != nil {
@@ -53,6 +59,7 @@ func (ds databaseService) AddUser(user entity.User) (int, error) {
 	return user.Id, nil
 }
 
+// UpdateUser alters an existing user
 func (ds databaseService) UpdateUser(user entity.User) error {
 	result := ds.db.Save(&user)
 	if result.Error != nil {
@@ -62,6 +69,7 @@ func (ds databaseService) UpdateUser(user entity.User) error {
 	return nil
 }
 
+// FindUser finds a user by the supplied criteria
 func (ds databaseService) FindUser(cond string, args ...interface{}) (entity.User, error) {
 	var user entity.User
 	result := ds.db.Where(cond, args).Find(&user)
@@ -76,6 +84,7 @@ func (ds databaseService) FindUser(cond string, args ...interface{}) (entity.Use
 	return user, nil
 }
 
+// DeleteUser removes a user by the given Id
 func (ds databaseService) DeleteUser(id int) error {
 	result := ds.db.Delete(&entity.User{}, id)
 	if result.Error != nil {

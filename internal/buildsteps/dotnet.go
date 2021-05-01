@@ -2,6 +2,7 @@ package buildsteps
 
 import "github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 
+// The DotnetBuildDefinition
 type DotnetBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string

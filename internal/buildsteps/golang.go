@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// The GolangBuildDefinition
 type GolangBuildDefinition struct {
 	CloneDir    string
 	ArtifactDir string
@@ -19,6 +20,7 @@ type GolangBuildDefinition struct {
 	Content     entity.BuildDefinitionContent
 }
 
+// RunTests runs the unit tests
 func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "-race", "./...")
 	cmd.Dir = bd.CloneDir
@@ -32,6 +34,7 @@ func (bd GolangBuildDefinition) RunTests(messageCh chan string) error {
 	return nil
 }
 
+// RunBenchmarkTests runs the benchmark tests
 func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 	cmd := exec.Command("go", "test", "-bench=.")
 	cmd.Dir = bd.CloneDir
@@ -45,6 +48,7 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 	return nil
 }
 
+// BuildArtifact builds an artifact
 func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir string) (string, error) {
 	var err error
 	slug.Replacement = '-' // TODO: move elsewhere

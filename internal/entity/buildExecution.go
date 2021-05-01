@@ -2,6 +2,7 @@ package entity
 
 import "time"
 
+// BuildExecution consists of metadata for a build definition
 type BuildExecution struct {
 	Id                int
 	BuildDefinitionId int

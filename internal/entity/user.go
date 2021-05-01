@@ -1,5 +1,6 @@
 package entity
 
+// User defines a user account
 type User struct {
 	Id          int
 	Displayname string

@@ -15,10 +15,12 @@ import (
 	"time"
 )
 
+// WriteToConsole writes a string to stdout
 func WriteToConsole(s string) {
 	fmt.Println("> " + s)
 }
 
+// FileExists checks whether a given file exists or not
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -27,6 +29,7 @@ func FileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// GetHeaderIfSet returns the value of a given headers, if it exists
 func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 	header := r.Header.Get(key)
 	if header == "" {
@@ -35,6 +38,7 @@ func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 	return header, nil
 }
 
+// SendEmail sends and email
 func SendEmail(settings map[string]string, body string, subject string, to, attachments []string) error {
 	if to == nil || len(to) == 0 {
 		return fmt.Errorf("could not send email; no recipients supplied")
@@ -66,6 +70,7 @@ func SendEmail(settings map[string]string, body string, subject string, to, atta
 	return nil
 }
 
+// SendEmail2 sends and email, as well
 func SendEmail2(settings map[string]string, body string, subject string, to, attachments []string) error {
 	e := email.NewEmail()
 	e.From = settings["smtp_username"]
@@ -87,10 +92,14 @@ func SendEmail2(settings map[string]string, body string, subject string, to, att
 	return e.Send(fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_port"]), smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"]))
 }
 
+// FormatDate formats a time.Time into a string
+// To be used in templates
 func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02 15:04")
 }
 
+// UnmarshalBuildDefinitionContent unmarshals a build definition content, inserts available
+// variables and returns it
 func UnmarshalBuildDefinitionContent(content string, variables []entity.UserVariable) (entity.BuildDefinitionContent, error) {
 
 	for _, v := range variables {

@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+// PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
+// sent by a Git hoster
 func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 

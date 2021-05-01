@@ -14,6 +14,7 @@ type databaseService struct {
 	db *gorm.DB
 }
 
+// New returns a new database service connection
 func New() *databaseService {
 	config := global.GetConfiguration()
 
@@ -36,6 +37,8 @@ func New() *databaseService {
 	return &databaseService{db: db}
 }
 
+// AutoMigrate makes sure the database tables exist, corresponding
+// to the supplied structs
 func (ds databaseService) AutoMigrate() error {
 	err := ds.db.AutoMigrate(
 		&entity.AdminSetting{},
@@ -51,10 +54,13 @@ func (ds databaseService) AutoMigrate() error {
 	return nil
 }
 
+// Quit ends the database connection
 func (ds databaseService) Quit() {
 	ds.Quit()
 }
 
+// RowExists takes an SQL query and return true, if at least one entry
+// exists for the given query
 func (ds databaseService) RowExists(query string, args ...interface{}) bool {
 	exists := true
 

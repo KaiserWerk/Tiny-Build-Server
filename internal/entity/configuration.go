@@ -1,5 +1,7 @@
 package entity
 
+// Configuration contains the configuration, taken from a
+// YAML configuration file
 type Configuration struct {
 	Database struct {
 		Driver string `yaml:"driver"`

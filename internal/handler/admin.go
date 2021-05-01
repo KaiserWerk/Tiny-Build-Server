@@ -14,6 +14,7 @@ import (
 	"strconv"
 )
 
+// AdminUserListHandler lists all existing user accounts
 func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -53,6 +54,7 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AdminUserAddHandler handles adding a new user account
 func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -155,6 +157,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AdminUserEditHandler handles edits to an existing user account
 func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	sessMgr := global.GetSessionManager()
@@ -275,6 +278,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AdminUserRemoveHandler handles removals of user accounts
 func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	sessMgr := global.GetSessionManager()
@@ -337,6 +341,7 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AdminSettingsHandler handles editing af administrative settings
 func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {

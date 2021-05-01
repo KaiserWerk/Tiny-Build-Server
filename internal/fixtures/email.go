@@ -1,5 +1,6 @@
 package fixtures
 
+// EmailMessageType defines different types of email messages
 type EmailMessageType string
 
 const (

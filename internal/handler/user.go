@@ -11,6 +11,7 @@ import (
 	"net/http"
 )
 
+// UserSettingsHandler handles changing a user's own settings
 func UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 

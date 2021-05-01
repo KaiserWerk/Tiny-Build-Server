@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// BuildExecutionListHandler lists all build executions in in descending order
 func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -43,6 +44,7 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BuildExecutionShowHandler shows details of a specific build execution
 func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {

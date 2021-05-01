@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 )
 
+// DownloadNewestArtifactHandler downloads the most recently created version
+// of a produced artifact
 func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -51,7 +53,7 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 
 	artifact += ".zip"
 
-	fmt.Printf("file to serve: %s\n", artifact)
+	//fmt.Printf("file to serve: %s\n", artifact)
 
 	cont, err := ioutil.ReadFile(artifact)
 	if err != nil {
@@ -66,6 +68,8 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprint(w, "heylo")
 }
 
+// DownloadSpecificArtifactHandler downloads a artifact produced by a specific
+// build execution
 func DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {

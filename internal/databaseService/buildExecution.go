@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetNewestBuildExecutions fetches the newest build executions
 func (ds databaseService) GetNewestBuildExecutions(limit int, query string, args ...interface{}) ([]entity.BuildExecution, error) {
 	beList := make([]entity.BuildExecution, 0)
 	var result *gorm.DB
@@ -28,6 +29,7 @@ func (ds databaseService) GetNewestBuildExecutions(limit int, query string, args
 	return beList, nil
 }
 
+// GetBuildExecutionById fetches a specific build execution by id
 func (ds databaseService) GetBuildExecutionById(id int) (entity.BuildExecution, error) {
 	var be entity.BuildExecution
 	result := ds.db.First(&be, id)
@@ -37,6 +39,7 @@ func (ds databaseService) GetBuildExecutionById(id int) (entity.BuildExecution, 
 	return be, nil
 }
 
+// FindBuildExecutions finds build executions by criteria
 func (ds databaseService) FindBuildExecutions(query interface{}, args ...interface{}) ([]entity.BuildExecution, error) {
 	executions := make([]entity.BuildExecution, 0)
 	result := ds.db.Where(query, args).Find(&executions)
@@ -46,6 +49,7 @@ func (ds databaseService) FindBuildExecutions(query interface{}, args ...interfa
 	return executions, nil
 }
 
+// AddBuildExecution adds a new build execution
 func (ds databaseService) AddBuildExecution(be entity.BuildExecution) error {
 	result := ds.db.Create(&be)
 	if result.Error != nil {

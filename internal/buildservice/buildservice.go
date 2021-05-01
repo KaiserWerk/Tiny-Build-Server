@@ -45,6 +45,7 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 	}
 }
 
+// StartBuildProcess start the build process for a given build definition
 func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDefinitionContent) {
 	// instantiate tools for build output
 	var (
@@ -531,6 +532,8 @@ func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) 
 //	}
 //}
 
+// CheckPayloadHeader checks the existance and values taken from HTTP request headers
+// from the given HTTP request
 func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) error {
 	var err error
 	// check relevant headers and payload values

@@ -2,6 +2,7 @@ package entity
 
 import "time"
 
+// GitHubPushPayload represents the webhook payload from bitbucket
 type GitHubPushPayload struct {
 	Ref        string `json:"ref"`
 	Before     string `json:"before"`

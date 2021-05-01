@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// GetUserFromSession returns a user from a given session, if possible
 func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 	userIdStr, ok := s.GetVar("user_id")
 	if !ok {

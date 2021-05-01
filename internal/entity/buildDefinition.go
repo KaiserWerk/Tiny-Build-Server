@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// BuildDefinition defines a build definition, wherein the Content fields
+// contains the actual YAML string
 type BuildDefinition struct {
 	Id              int
 	Caption         string

@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// BuildDefinitionListHandler lists all existing build definitions
 func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -47,6 +48,7 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BuildDefinitionAddHandler adds a new build definition
 func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -112,6 +114,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BuildDefinitionEditHandler allows for editing an existing build definition
 func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -189,6 +192,7 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BuildDefinitionShowHandler shows details of a build definition
 func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -291,6 +295,7 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// BuildDefinitionRemoveHandler removes an existing build definition
 func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -353,6 +358,7 @@ func BuildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request
 	// TODO: implement or scrap
 }
 
+// BuildDefinitionRestartHandler restarts the build process for a given build definition
 func BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {

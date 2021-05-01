@@ -17,10 +17,12 @@ var (
 	createSessMgrOnce sync.Once
 )
 
+// Cleanup takes care cleaning up after the log writer
 func Cleanup() {
 	// flush log writer
 }
 
+// GetSessionManager fetches the current session manager
 func GetSessionManager() *sessionstore.SessionManager {
 	createSessMgrOnce.Do(func() {
 		sessMgr = sessionstore.NewManager("tbs_sessid")
@@ -29,10 +31,12 @@ func GetSessionManager() *sessionstore.SessionManager {
 	return sessMgr
 }
 
+// SetConfigurationFile sets the path to a different configuration file
 func SetConfigurationFile(f string) {
 	configFile = f
 }
 
+// GetConfiguration fetches the configuration from a given file
 func GetConfiguration() *entity.Configuration {
 	loadConfOnce.Do(func() {
 		if !helper.FileExists(configFile) {

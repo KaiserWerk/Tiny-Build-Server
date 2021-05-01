@@ -5,18 +5,19 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseService"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"io"
 )
 
 import (
 	"bytes"
 	"html/template"
-	"net/http"
 	"strings"
 
 	"github.com/KaiserWerk/sessionstore"
 )
 
-func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error {
+// ExecuteTemplate executed a template with the supplied data into the io.Writer w
+func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 	ds := databaseService.New()
 	var funcMap = template.FuncMap{
 		"getUsernameById":    GetUsernameById,
@@ -54,6 +55,7 @@ func ExecuteTemplate(w http.ResponseWriter, file string, data interface{}) error
 	return nil
 }
 
+// ParseEmailTemplate parses and email template with the given data
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 	cont, err := internal.FSString(false, "/templates/email/"+messageType+".html")
 	if err != nil {
@@ -75,6 +77,7 @@ func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 	return b.String(), nil
 }
 
+// GetFlashbag return a HTML string populated with flash messages, if available
 func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
 		if mgr == nil {
@@ -106,6 +109,7 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	}
 }
 
+// GetUsernameById returns a username by id
 func GetUsernameById(id int) string {
 	ds := databaseService.New()
 	//defer ds.Quit()

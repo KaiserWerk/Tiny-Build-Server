@@ -5,6 +5,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 )
 
+// InsertUserAction adds a new user action
 func (ds databaseService) InsertUserAction(userId int, purpose, token string, validity sql.NullTime) error {
 
 	// 1. set all timely invalid actions to a null token
@@ -29,6 +30,7 @@ func (ds databaseService) InsertUserAction(userId int, purpose, token string, va
 	return nil
 }
 
+// GetUserActionByToken retrieves a specific user action by token
 func (ds databaseService) GetUserActionByToken(token string) (entity.UserAction, error) {
 	userAction := entity.UserAction{}
 	result := ds.db.Find(&userAction, "token = ?", token)
@@ -39,6 +41,7 @@ func (ds databaseService) GetUserActionByToken(token string) (entity.UserAction,
 	return userAction, nil
 }
 
+// InvalidatePasswordResets invalidates all user action of type 'password_reset'
 func (ds databaseService) InvalidatePasswordResets(userId int) error {
 	result := ds.db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?",
 		sql.NullTime{}, userId)
@@ -49,6 +52,7 @@ func (ds databaseService) InvalidatePasswordResets(userId int) error {
 	return nil
 }
 
+// AddUserAction creates a given user action
 func (ds databaseService) AddUserAction(action entity.UserAction) error {
 	result := ds.db.Create(&action)
 	if result.Error != nil {
@@ -58,6 +62,7 @@ func (ds databaseService) AddUserAction(action entity.UserAction) error {
 	return nil
 }
 
+// UpdateUserAction updates a given user action
 func (ds databaseService) UpdateUserAction(userAction entity.UserAction) error {
 	result := ds.db.Save(&userAction)
 	if result.Error != nil {

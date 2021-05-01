@@ -10,6 +10,7 @@ import (
 	"net/http"
 )
 
+// VariableListHandler lists all variables available to the logged in user
 func VariableListHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -39,6 +40,7 @@ func VariableListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// VariableAddHandler adds a new variable
 func VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -67,6 +69,7 @@ func VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// VariableShowHandler shows the specifics of a given variable
 func VariableShowHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -91,6 +94,7 @@ func VariableShowHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// VariableEditHandler edits a variable
 func VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {
@@ -119,6 +123,7 @@ func VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// VariableRemoveHandler removes a variable
 func VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := security.CheckLogin(r)
 	if err != nil {

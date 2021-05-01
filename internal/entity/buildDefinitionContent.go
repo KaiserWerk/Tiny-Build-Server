@@ -1,5 +1,7 @@
 package entity
 
+// BuildDefinitionContent is the counterpart of the YAML string
+// of a build definition
 type BuildDefinitionContent struct {
 	ProjectType string `yaml:"project_type"`
 	Repository  struct {
