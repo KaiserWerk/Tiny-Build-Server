@@ -267,9 +267,10 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//}
 
 	// TODO gehört eigentlich eine Ebene höher
-	if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
+	//if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
 		err = deployArtifact(definition.Content, messageCh, artifact)
-	}
+	//}
+	// TODO handle err
 
 	return artifact, nil
 }
