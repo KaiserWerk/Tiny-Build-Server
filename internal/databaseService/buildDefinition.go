@@ -35,7 +35,7 @@ func (ds databaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, er
 
 func (ds databaseService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
 	var bd entity.BuildDefinition
-	result := ds.db.Find(&bd).Where(cond, args)
+	result := ds.db.Where(cond, args).First(&bd)
 	if result.Error != nil {
 		return bd, result.Error
 	}

@@ -154,7 +154,7 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 			MetaData:    definition,
 			Content:     content,
 		}
-		_, err = handleGolangProject(def, messageCh, projectPath)
+		artifactPath, err = handleGolangProject(def, messageCh, projectPath)
 		if err != nil {
 			messageCh <- fmt.Sprintf("could not build golang project (%s): %s", projectPath, err.Error())
 			return
@@ -387,7 +387,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", deployment.Address, err.Error())
 				return err
 			}
-			messageCh <- fmt.Sprintf("deployment email sent to owner %s", deployment.Address)
+			messageCh <- fmt.Sprintf("deployment email sent to recipient %s", deployment.Address)
 		}
 	} else {
 		messageCh <- "no email deployments found"

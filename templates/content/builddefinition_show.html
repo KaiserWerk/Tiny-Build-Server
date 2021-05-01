@@ -18,6 +18,10 @@
                         <i class="fa fa-edit"></i>
                         Manually re-run
                     </a>
+                    <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/artifact">
+                        <i class="fa fa-download"></i>
+                        Download Artifact
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -49,6 +53,7 @@
                                                 <th>Started at</th>
                                                 <th>Duration</th>
                                                 <th>Result</th>
+                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -61,9 +66,10 @@
                                                 {{ $execLabel = "FAILED" }}
                                             {{ end }}
                                             <tr>
-                                                <td>{{ .ExecutedAt }}</td>
+                                                <td>{{ .ExecutedAt | formatDate }}</td>
                                                 <td>{{ .ExecutionTime }} seconds</td>
                                                 <td><span class="badge badge-{{ $execClass }}">{{ $execLabel }}</span></td>
+                                                <td><a href="/buildexecution/{{ .Id }}/show" class="btn btn-xs btn-primary">Show</a></td>
                                             </tr>
                                         {{ else }}
                                             <tr>

@@ -158,9 +158,11 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods(http.MethodGet)
 	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
+	router.HandleFunc("/builddefinition/{id}/artifact", handler.DownloadNewestArtifactHandler).Methods(http.MethodGet)
 
 	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods(http.MethodGet)
 	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods(http.MethodGet)
+	router.HandleFunc("/buildexecution/{id}/artifact", handler.DownloadSpecificArtifactHandler).Methods(http.MethodGet)
 
 	router.HandleFunc("/variable/list", handler.VariableListHandler).Methods(http.MethodGet)
 	router.HandleFunc("/variable/{id}/show", handler.VariableShowHandler).Methods(http.MethodGet)

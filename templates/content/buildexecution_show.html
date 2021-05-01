@@ -8,6 +8,11 @@
                 <div class="card-header">
                     <b>Execution #{{ .BuildExecution.Id }}</b> for build definition
                     <b>{{ .BuildDefinition.Caption }}</b>
+
+                    <a class="btn btn-sm btn-success float-right mx-1" href="/buildexecution/{{ .BuildExecution.Id }}/artifact">
+                        <i class="fa fa-download"></i>
+                        Download Artifact
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row">
