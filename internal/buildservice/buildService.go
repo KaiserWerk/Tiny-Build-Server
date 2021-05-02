@@ -348,7 +348,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 		}
 		_, err = zipFile.Write(artifactContent)
 		if err != nil {
-			messageCh <- "could not write artifact file in zip archive: " + err.Error()
+			messageCh <- "could not write artifact file to zip archive: " + err.Error()
 			return err
 		}
 		_ = zipWriter.Close()
