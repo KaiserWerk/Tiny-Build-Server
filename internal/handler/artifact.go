@@ -40,7 +40,7 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len(beList) < 1 {
 		helper.WriteToConsole("DownloadNewestArtifactHandler: could not find any build executions for definition: " + err.Error())
-		http.Redirect(w, r, "/buildexecution/list", http.StatusSeeOther)
+		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
 		return
 	}
 
@@ -65,7 +65,6 @@ func DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=%s", filepath.Base(artifact)))
 	w.Write(cont)
-	//fmt.Fprint(w, "heylo")
 }
 
 // DownloadSpecificArtifactHandler downloads a artifact produced by a specific
