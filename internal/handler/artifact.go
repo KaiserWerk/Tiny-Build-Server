@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strconv"
 )
 
 // DownloadNewestArtifactHandler downloads the most recently created version
@@ -77,10 +78,42 @@ func DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = sessionservice.GetUserFromSession(session)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch user by ID: " + err.Error())
+		helper.WriteToConsole("DownloadSpecificArtifactHandler: could not fetch user by ID: " + err.Error())
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	fmt.Fprint(w, "hey")
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	ds := databaseservice.New()
+
+	be, err := ds.GetBuildExecutionById(id)
+	if err != nil {
+		helper.WriteToConsole("DownloadSpecificArtifactHandler: could not fetch build execution by ID: " + err.Error())
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	artifact, err := filepath.Abs(be.ArtifactPath)
+	if err != nil {
+		helper.WriteToConsole("DownloadSpecificArtifactHandler: could not determine absolute path of file: " + err.Error())
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	artifact += ".zip"
+
+	//fmt.Printf("file to serve: %s\n", artifact)
+
+	cont, err := ioutil.ReadFile(artifact)
+	if err != nil {
+		helper.WriteToConsole("DownloadSpecificArtifactHandler: could not read artifact file: " + err.Error())
+		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=%s", filepath.Base(artifact)))
+	w.Write(cont)
 }
