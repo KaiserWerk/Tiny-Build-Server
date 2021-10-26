@@ -10,30 +10,15 @@ type DotnetBuildDefinition struct {
 	Content     entity.BuildDefinitionContent
 }
 
-func (bd DotnetBuildDefinition) Initialize() {
-
+func (bd DotnetBuildDefinition) RunTests(messageCh chan string) error {
+	panic("implement me")
 }
 
-func (bd DotnetBuildDefinition) FetchSource() {
-
+func (bd DotnetBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
+	panic("implement me")
 }
 
-func (bd DotnetBuildDefinition) RunTests() {
-
+func (bd DotnetBuildDefinition) BuildArtifact(messageCh chan string) (string, error) {
+	panic("implement me")
 }
 
-func (bd DotnetBuildDefinition) BuildArtifact() {
-
-}
-
-func (bd DotnetBuildDefinition) ApplyMigrations() {
-
-}
-
-func (bd DotnetBuildDefinition) CreateReport() {
-
-}
-
-func (bd DotnetBuildDefinition) CleanUp() {
-
-}

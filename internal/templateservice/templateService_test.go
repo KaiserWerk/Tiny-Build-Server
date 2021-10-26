@@ -1,13 +1,15 @@
 package templateservice
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
-	"github.com/KaiserWerk/sessionstore"
 	"html/template"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+
+	"github.com/KaiserWerk/sessionstore"
 )
 
 func TestExecuteTemplate(t *testing.T) {

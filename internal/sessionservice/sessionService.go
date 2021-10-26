@@ -2,11 +2,13 @@ package sessionservice
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+
 	"github.com/KaiserWerk/sessionstore"
 	_ "github.com/go-sql-driver/mysql"
-	"strconv"
 )
 
 // GetUserFromSession returns a user from a given session, if possible

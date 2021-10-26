@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -71,7 +71,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 		path = "css"
 	}
 
-	data, err := internal.FSByte(false, "/public/"+path+"/"+file)
+	data, err := assets.GetWebAssetFile(path+"/"+file)
 	if err != nil {
 		helper.WriteToConsole("could not locate asset " + file)
 		w.WriteHeader(404)

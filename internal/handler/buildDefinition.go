@@ -3,7 +3,11 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -12,10 +16,8 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
+
 	"github.com/gorilla/mux"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 // BuildDefinitionListHandler lists all existing build definitions
@@ -95,7 +97,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	skeleton, err := internal.FSString(false, "/templates/misc/build_definition_skeleton.yml")
+	skeleton, err := assets.GetMiscFile("build_definition_skeleton.yml")
 	if err != nil {
 		helper.WriteToConsole("BuildDefinitionAddHandler: could not get definition skeleton")
 		return
@@ -106,7 +108,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 		Skeleton    string
 	}{
 		CurrentUser: currentUser,
-		Skeleton:    skeleton,
+		Skeleton:    string(skeleton),
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {

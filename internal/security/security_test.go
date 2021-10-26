@@ -1,10 +1,11 @@
 package security
 
 import (
-	"github.com/KaiserWerk/sessionstore"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/KaiserWerk/sessionstore"
 )
 
 func TestGenerateToken(t *testing.T) {

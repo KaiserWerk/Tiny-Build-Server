@@ -1,12 +1,14 @@
 package global
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/sessionstore"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"sync"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+
+	"github.com/KaiserWerk/sessionstore"
+	"gopkg.in/yaml.v2"
 )
 
 var (

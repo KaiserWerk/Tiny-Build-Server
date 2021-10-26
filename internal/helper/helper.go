@@ -3,16 +3,18 @@ package helper
 import (
 	"errors"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/jordan-wright/email"
-	"gopkg.in/gomail.v2"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+
+	"github.com/jordan-wright/email"
+	"gopkg.in/gomail.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // WriteToConsole writes a string to stdout

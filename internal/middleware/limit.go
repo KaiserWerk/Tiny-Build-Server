@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"golang.org/x/time/rate"
 	"net/http"
+
+	"golang.org/x/time/rate"
 )
 
 var limiter = rate.NewLimiter(15, 30)

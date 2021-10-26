@@ -1,15 +1,16 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"net/http"
 	"strconv"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
+
 	"github.com/gorilla/mux"
 )
 

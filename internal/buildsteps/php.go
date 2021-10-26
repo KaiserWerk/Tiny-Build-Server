@@ -9,3 +9,16 @@ type PhpBuildDefinition struct {
 	MetaData    entity.BuildDefinition
 	Content     entity.BuildDefinitionContent
 }
+
+func (p PhpBuildDefinition) RunTests(messageCh chan string) error {
+	panic("implement me")
+}
+
+func (p PhpBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
+	panic("implement me")
+}
+
+func (p PhpBuildDefinition) BuildArtifact(messageCh chan string) (string, error) {
+	panic("implement me")
+}
+

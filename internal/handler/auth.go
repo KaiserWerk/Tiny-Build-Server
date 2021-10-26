@@ -3,6 +3,10 @@ package handler
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
@@ -10,9 +14,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 // LoginHandler handles logins

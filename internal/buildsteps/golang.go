@@ -49,7 +49,7 @@ func (bd GolangBuildDefinition) RunBenchmarkTests(messageCh chan string) error {
 }
 
 // BuildArtifact builds an artifact
-func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir string) (string, error) {
+func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string) (string, error) {
 	var err error
 	slug.Replacement = '-' // TODO: move elsewhere
 	binaryName := slug.Clean(strings.ToLower(strings.Split(bd.Content.Repository.Name, "/")[1]))
@@ -116,7 +116,7 @@ func (bd GolangBuildDefinition) BuildArtifact(messageCh chan string, projectDir 
 					messageCh <- fmt.Sprintf("build step '%s' has incorrect build syntax; skipped", buildStep)
 					continue
 				}
-				bd.CloneDir = filepath.Join(bd.CloneDir, strings.TrimLeft(stepParts[1], "./"))
+				bd.CloneDir = filepath.Join(bd.CloneDir, strings.TrimLeft(stepParts[1], `./\`))
 			} else {
 				bd.CloneDir = filepath.Join(bd.CloneDir, "main.go")
 			}

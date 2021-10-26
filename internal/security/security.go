@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"net/http"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+
 	"github.com/KaiserWerk/sessionstore"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
 )
 
 // GenerateToken generates a token with a given length

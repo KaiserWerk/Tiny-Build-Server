@@ -1,10 +1,12 @@
 package sessionservice
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/sessionstore"
 	"reflect"
 	"testing"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+
+	"github.com/KaiserWerk/sessionstore"
 )
 
 func TestGetUserFromSession(t *testing.T) {

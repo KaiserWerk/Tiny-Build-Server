@@ -1,7 +1,7 @@
 package templateservice
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -25,22 +25,22 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 		"formatDate":         helper.FormatDate,
 		"getBuildDefCaption": ds.GetBuildDefCaption,
 	}
-	layoutContent, err := internal.FSString(false, "/templates/_layout.html") // with leading slash?
+	layoutContent, err := assets.GetTemplate("_layout.html")
 	if err != nil {
 		helper.WriteToConsole("could not get layout template: " + err.Error())
 		return err
 	}
 
-	layout := template.Must(template.New("_layout.html").Parse(layoutContent)).Funcs(funcMap)
+	layout := template.Must(template.New("_layout.html").Parse(string(layoutContent))).Funcs(funcMap)
 
-	content, err := internal.FSString(false, "/templates/content/"+file) // with leading slash?
+	content, err := assets.GetTemplate("content/"+file)
 	if err != nil {
 		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
 		return err
 	}
 
 	tmpl := template.Must(layout.Clone())
-	_, err = tmpl.Parse(content)
+	_, err = tmpl.Parse(string(content))
 	if err != nil {
 		helper.WriteToConsole("could not parse template into base layout: " + err.Error())
 		return err
@@ -57,7 +57,7 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 
 // ParseEmailTemplate parses and email template with the given data
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
-	cont, err := internal.FSString(false, "/templates/email/"+messageType+".html")
+	cont, err := assets.GetTemplate("email/"+messageType+".html")
 	if err != nil {
 		helper.WriteToConsole("could not get FSString email template: " + err.Error())
 		return "", err

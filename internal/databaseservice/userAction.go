@@ -2,6 +2,7 @@ package databaseservice
 
 import (
 	"database/sql"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 )
 

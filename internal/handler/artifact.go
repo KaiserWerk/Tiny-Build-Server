@@ -2,15 +2,17 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strconv"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
+
+	"github.com/gorilla/mux"
 )
 
 // DownloadNewestArtifactHandler downloads the most recently created version

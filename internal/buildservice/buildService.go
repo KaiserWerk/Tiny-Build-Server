@@ -5,15 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-	"github.com/pkg/sftp"
-	"github.com/stvp/slug"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"
 	"math"
@@ -24,6 +15,17 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
+
+	"github.com/pkg/sftp"
+	"github.com/stvp/slug"
+	"golang.org/x/crypto/ssh"
 )
 
 var basePath string = "data/"
@@ -229,7 +231,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 	//	}
 	//}
 
-	artifact, err := definition.BuildArtifact(messageCh, projectDir)
+	artifact, err := definition.BuildArtifact(messageCh)
 	if err != nil {
 		//messageCh <- "build failed: " + err.Error()
 		return "", err
