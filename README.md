@@ -19,7 +19,7 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 ### Dependencies
 
 * Git (for cloning projects)
-* [go](https://golang.org/) >= 1.16 (for Golang projects)
+* [go](https://golang.org/) (for Golang projects)
 * cargo through [rustup](https://www.rust-lang.org/) (for Rust projects)
 * [dotnet](https://dotnet.microsoft.com/download) (for .NET projects)
 
