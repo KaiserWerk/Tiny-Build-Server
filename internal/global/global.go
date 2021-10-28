@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	Version     = "0.0.0-dev"
+	VersionDate = "0000-00-00 00:00:00 +00:00"
 	sessMgr           *sessionstore.SessionManager
 	config            *entity.Configuration
 	configFile        = "config/app.yaml"
@@ -19,9 +21,9 @@ var (
 	createSessMgrOnce sync.Once
 )
 
-// Cleanup takes care cleaning up after the log writer
-func Cleanup() {
-	// flush log writer
+func Set(version, versionDate string) {
+	Version = version
+	VersionDate = versionDate
 }
 
 // GetSessionManager fetches the current session manager
@@ -36,6 +38,11 @@ func GetSessionManager() *sessionstore.SessionManager {
 // SetConfigurationFile sets the path to a different configuration file
 func SetConfigurationFile(f string) {
 	configFile = f
+}
+
+// GetConfigurationFile returns the name of the configuration file
+func GetConfigurationFile() string {
+	return configFile
 }
 
 // GetConfiguration fetches the configuration from a given file
