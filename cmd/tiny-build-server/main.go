@@ -9,9 +9,12 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/shutdownManager"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,20 +22,24 @@ import (
 	"time"
 )
 
-const (
-	version     = "0.0.0-dev"
-	versionDate = "0000-00-00 00:00:00 +00:00"
-)
-
 var (
+	Version     = "0.0.0-dev"
+	VersionDate = "0000-00-00 00:00:00 +00:00"
 	listenPort string
 	configFile string
+	err error
 )
 
 func main() {
-	helper.WriteToConsole("Tiny Build Server")
-	helper.WriteToConsole("  Version: " + version)
-	helper.WriteToConsole("  Build date: " + versionDate)
+	global.Set(Version, VersionDate)
+	err = logging.Init()
+	if err != nil {
+		panic(err.Error())
+	}
+	defer shutdownManager.Initiate()
+
+	logger := logging.GetLoggerWithContext("main")
+
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
 	flag.Parse()
@@ -41,19 +48,27 @@ func main() {
 		global.SetConfigurationFile(configFile)
 	}
 
+	logger.WithFields(logrus.Fields{
+		"app": "Tiny Build Server",
+		"version": global.Version,
+		"versionDate": global.VersionDate,
+		"port": listenPort,
+		"configFile": global.GetConfigurationFile(),
+	}).Info("app information")
+
 	config := global.GetConfiguration()
 
 	ds := databaseservice.New()
 	err := ds.AutoMigrate()
 	if err != nil {
-		panic("AutoMigrate panic: " + err.Error())
+		logger.Panic("AutoMigrate panic: " + err.Error())
 	}
 	//ds.Quit()
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
-	helper.WriteToConsole("  Server will be handling requests at port " + listenPort)
+	logger.Trace("Server starts handling requests")
 	if config.Tls.Enabled {
-		helper.WriteToConsole("  TLS is enabled")
+		logger.Debug("  TLS is enabled")
 	}
 
 	router := mux.NewRouter()
@@ -96,36 +111,35 @@ func main() {
 
 	go func() {
 		<-quit
-		helper.WriteToConsole("Server is shutting down...")
-		global.Cleanup()
+		logger.Debug("Server is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			helper.WriteToConsole("Could not gracefully shut down the server: " + err.Error())
+			logger.Error("Could not gracefully shut down the server: " + err.Error())
 		}
 	}()
 
 	if config.Tls.Enabled {
 		if !helper.FileExists(config.Tls.CertFile) || !helper.FileExists(config.Tls.CertFile) {
-			helper.WriteToConsole("TLS is enabled, but the certificate file or key file does not exist!")
+			logger.Debug("TLS is enabled, but the certificate file or key file does not exist!")
 			quit <- os.Interrupt
 		} else {
 			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
-				helper.WriteToConsole("Could not listen with TLS on " + listenAddr + ": " + err.Error())
+				logger.WithField("listenAddr", listenAddr).Error("Could not listen with TLS: " + err.Error())
 				quit <- os.Interrupt
 			}
 		}
 	} else {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			helper.WriteToConsole("Could not listen on " + listenAddr + ": " + err.Error())
+			logger.WithField("listenAddr", listenAddr).Error("Could not listen: " + err.Error())
 			quit <- os.Interrupt
 		}
 	}
 
-	helper.WriteToConsole("Server shutdown complete. Have a nice day!")
+	logger.Trace("Server shutdown complete. Have a nice day!")
 }
 
 func setupRoutes(router *mux.Router) {
