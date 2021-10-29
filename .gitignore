@@ -2,7 +2,12 @@
 vendor/
 build/
 data/
+
+*.exe
+*.log
+
 /config/app.yaml
 /internal/embed.go
 coverage.out
 coverage.html
+
