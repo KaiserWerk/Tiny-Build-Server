@@ -1,6 +1,7 @@
 package global
 
 import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"io/ioutil"
 	"sync"
 
@@ -12,11 +13,11 @@ import (
 )
 
 var (
-	Version     = "0.0.0-dev"
-	VersionDate = "0000-00-00 00:00:00 +00:00"
+	Version           = "0.0.0-dev"
+	VersionDate       = "0000-00-00 00:00:00 +00:00"
 	sessMgr           *sessionstore.SessionManager
 	config            *entity.Configuration
-	configFile        = "config/app.yaml"
+	configFile        = "app.yaml"
 	loadConfOnce      sync.Once
 	createSessMgrOnce sync.Once
 )
@@ -49,11 +50,17 @@ func GetConfigurationFile() string {
 func GetConfiguration() *entity.Configuration {
 	loadConfOnce.Do(func() {
 		if !helper.FileExists(configFile) {
-			panic("configuration file '" + configFile + "' does not exist!")
+			content, err := assets.GetConfig("app.dist.yaml")
+			if err != nil {
+				panic("configuration dist file 'app.dist.yaml' could not be read!")
+			}
+			err = ioutil.WriteFile(configFile, content, 0744)
+			if err != nil {
+			}
 		}
 		cont, err := ioutil.ReadFile(configFile)
 		if err != nil {
-			panic("Could not read configuration file '" + configFile + "': " + err.Error())
+			panic("Could not write configuration file '" + configFile + "': " + err.Error())
 		}
 
 		var cfg *entity.Configuration
