@@ -5,6 +5,7 @@ data/
 
 *.exe
 *.log
+*.yaml
 
 /config/app.yaml
 /internal/embed.go
