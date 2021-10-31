@@ -204,42 +204,45 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 
 // ResetPasswordHandler handles password resets
 func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: consider disabled pw reset
-	sessMgr := global.GetSessionManager()
-	email := r.URL.Query().Get("email")
-	token := r.URL.Query().Get("token")
+	var (
+		logger = logging.GetLoggerWithContext("ResetPasswordHandler")
+		sessMgr = global.GetSessionManager()
+		email = r.URL.Query().Get("email")
+		token = r.URL.Query().Get("token")
+	)
+	// TODO: consider disabled pw reset via setting
 
 	if r.Method == http.MethodPost {
 		email := r.FormValue("email")
 		token := r.FormValue("token")
 		user, err := h.Ds.GetUserByEmail(email)
 		if err != nil {
-			helper.WriteToConsole("could not fetch user by email: " + err.Error())
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+				"email": email,
+			}).Error("could not fetch user by email")
 			sessMgr.AddMessage("error", "A user with the supplied email address does not exist.")
 			http.Redirect(w, r, "/password/reset?token="+token, http.StatusSeeOther)
 			return
 		}
 
-		// TODO: move to method in databaseservice
-		//row := db.QueryRow("SELECT id, user_id, purpose, token, validity FROM user_action WHERE token = ?", token)
-		//err = row.Scan(&action.Id, &action.UserId, &action.Purpose, &action.Token, &action.Validity)
 		action, err := h.Ds.GetUserActionByToken(token)
 		if err != nil {
-			helper.WriteToConsole("could not scan user action in ResetPasswordHandler: " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not scan user action")
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
 
 		if !action.Validity.Valid || action.Validity.Time.Before(time.Now()) {
-			helper.WriteToConsole("validity of token ran out")
+			logger.Debug("validity of token ran out")
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
 
 		if action.Purpose != "password_reset" {
-			helper.WriteToConsole("token was for other purpose: " + action.Purpose)
+			logger.WithField("purpose", action.Purpose).Warn("token was for other purpose")
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
@@ -248,7 +251,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		pw1 := r.FormValue("password1")
 		pw2 := r.FormValue("password2")
 		if pw1 != pw2 {
-			helper.WriteToConsole("passwords don't match")
+			logger.Debug("passwords don't match")
 			sessMgr.AddMessage("error", "Your entered passwords don't match.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
@@ -257,7 +260,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 
 		hash, err := security.HashString(pw1)
 		if err != nil {
-			helper.WriteToConsole("could not hash password: " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not hash password")
 			sessMgr.AddMessage("error", "An error occurred. Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
@@ -266,7 +269,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		user.Password = hash
 		err = h.Ds.UpdateUser(user)
 		if err != nil {
-			helper.WriteToConsole("could not update to new password: " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not update to new password")
 			sessMgr.AddMessage("error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
@@ -274,7 +277,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		//_, err = db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?", sql.NullTime{}, user.Id)
 		err = h.Ds.InvalidatePasswordResets(user.Id)
 		if err != nil {
-			helper.WriteToConsole("could not update user actions: " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not update user actions")
 		}
 
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -296,6 +299,9 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 
 // RegistrationHandler handles user account registrations
 func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		logger = logging.GetLoggerWithContext("RegistrationHandler")
+	)
 	// TODO: consider disabled registration
 	sessMgr := global.GetSessionManager()
 
