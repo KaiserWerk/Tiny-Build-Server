@@ -1,32 +1,26 @@
 package handler
 
 import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"net/http"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
 // VariableListHandler lists all variables available to the logged in user
-func VariableListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("VariableListHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("VariableListHandler")
+	)
 
-	ds := databaseservice.New()
-	variables, err := ds.GetAvailableVariablesForUser(currentUser.Id)
+	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
+	if err != nil {
+		logger.WithField("error", err.Error()).Error("could not get variables for user")
+		http.Error(w, "could not get variables for user", http.StatusInternalServerError)
+		return
+	}
 
 	data := struct {
 		CurrentUser entity.User
@@ -42,21 +36,15 @@ func VariableListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // VariableAddHandler adds a new variable
-func VariableAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("VariableAddHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("VariableAddHandler")
+	)
 
 	if r.Method == http.MethodPost {
-
+		logger.Trace("TODO")
+		// TODO: implement
 	}
 
 	data := struct {
@@ -71,46 +59,34 @@ func VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // VariableShowHandler shows the specifics of a given variable
-func VariableShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("VariableShowHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	data := struct {
-		CurrentUser entity.User
-	}{
-		CurrentUser: currentUser,
-	}
-
-	if err := templateservice.ExecuteTemplate(w, "variable_list.html", data); err != nil {
-		w.WriteHeader(http.StatusNotFound)
-	}
-}
+//func (h *HttpHandler) VariableShowHandler(w http.ResponseWriter, r *http.Request) {
+//	var (
+//		currentUser = r.Context().Value("user").(entity.User)
+//		logger = logging.GetLoggerWithContext("VariableShowHandler")
+//	)
+//
+//
+//	data := struct {
+//		CurrentUser entity.User
+//	}{
+//		CurrentUser: currentUser,
+//	}
+//
+//	if err := templateservice.ExecuteTemplate(w, "variable_list.html", data); err != nil {
+//		w.WriteHeader(http.StatusNotFound)
+//	}
+//}
 
 // VariableEditHandler edits a variable
-func VariableEditHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("VariableEditHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("VariableEditHandler")
+	)
 
 	if r.Method == http.MethodPost {
-
+		logger.Trace("TODO")
+		// TODO: implement
 	}
 
 	data := struct {
@@ -125,18 +101,13 @@ func VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // VariableRemoveHandler removes a variable
-func VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("VariableRemoveHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		_ = logging.GetLoggerWithContext("VariableRemoveHandler")
+	)
+
+	// TODO: implement
 
 	data := struct {
 		CurrentUser entity.User

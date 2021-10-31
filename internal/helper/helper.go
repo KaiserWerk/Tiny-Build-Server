@@ -17,11 +17,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// WriteToConsole writes a string to stdout
-func WriteToConsole(s string) {
-	fmt.Println("> " + s)
-}
-
 // FileExists checks whether a given file exists or not
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
@@ -86,7 +81,7 @@ func SendEmail2(settings map[string]string, body string, subject string, to, att
 		for _, v := range attachments {
 			_, err := e.AttachFile(v)
 			if err != nil {
-				WriteToConsole("could not attach file " + v)
+				return err
 			}
 		}
 	}

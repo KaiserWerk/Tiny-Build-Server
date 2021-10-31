@@ -5,6 +5,8 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/sirupsen/logrus"
 	"io"
 )
 
@@ -18,16 +20,19 @@ import (
 
 // ExecuteTemplate executed a template with the supplied data into the io.Writer w
 func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
-	ds := databaseservice.New()
-	var funcMap = template.FuncMap{
-		"getUsernameById":    GetUsernameById,
-		"getFlashbag":        GetFlashbag(global.GetSessionManager()),
-		"formatDate":         helper.FormatDate,
-		"getBuildDefCaption": ds.GetBuildDefCaption,
-	}
+	var (
+		ds = databaseservice.Get()
+		funcMap = template.FuncMap{
+			"getUsernameById":    GetUsernameById,
+			"getFlashbag":        GetFlashbag(global.GetSessionManager()),
+			"formatDate":         helper.FormatDate,
+			"getBuildDefCaption": ds.GetBuildDefCaption,
+		}
+		logger = logging.GetLoggerWithContext("ExecuteTemplate")
+	)
 	layoutContent, err := assets.GetTemplate("_layout.html")
 	if err != nil {
-		helper.WriteToConsole("could not get layout template: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not get layout template")
 		return err
 	}
 
@@ -35,20 +40,26 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 
 	content, err := assets.GetTemplate("content/"+file)
 	if err != nil {
-		helper.WriteToConsole("could not find template " + file + ": " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"file": file,
+		}).Error("could not find template")
 		return err
 	}
 
 	tmpl := template.Must(layout.Clone())
 	_, err = tmpl.Parse(string(content))
 	if err != nil {
-		helper.WriteToConsole("could not parse template into base layout: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not parse template into base layout")
 		return err
 	}
 
 	err = tmpl.Execute(w, data)
 	if err != nil {
-		helper.WriteToConsole("could not execute template " + file + ": " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"file": file,
+		}).Error("could not execute template")
 		return err
 	}
 
@@ -57,21 +68,23 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 
 // ParseEmailTemplate parses and email template with the given data
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
+	logger := logging.GetLoggerWithContext("ParseEmailTemplate")
 	cont, err := assets.GetTemplate("email/"+messageType+".html")
 	if err != nil {
-		helper.WriteToConsole("could not get FSString email template: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not get email template")
 		return "", err
 	}
 	t, err := template.New(messageType).Parse(string(cont))
 	if err != nil {
-		helper.WriteToConsole("could not parse email template")
+		logger.WithField("error", err.Error()).Error("could not parse email template")
 		return "", err
 	}
 
-	b := bytes.NewBufferString("")
+	b := new(bytes.Buffer)
 	err = t.Execute(b, data)
 	if err != nil {
-		helper.WriteToConsole("could not execute email template")
+		logger.WithField("error", err.Error()).Error("could not execute email template")
+		return "", err
 	}
 
 	return b.String(), nil
@@ -80,8 +93,9 @@ func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 // GetFlashbag return a HTML string populated with flash messages, if available
 func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
+		logger := logging.GetLoggerWithContext("GetFlashbag")
 		if mgr == nil {
-			helper.WriteToConsole("sessionManager is nil in getFlashbag")
+			logger.Error("sessionManager is nil")
 			return template.HTML("")
 		}
 		var sb strings.Builder
@@ -111,7 +125,7 @@ func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 
 // GetUsernameById returns a username by id
 func GetUsernameById(id int) string {
-	ds := databaseservice.New()
+	ds := databaseservice.Get()
 	//defer ds.Quit()
 
 	u, err := ds.GetUserById(id)

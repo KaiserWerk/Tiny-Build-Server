@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -58,7 +59,7 @@ func main() {
 
 	config := global.GetConfiguration()
 
-	ds := databaseservice.New()
+	ds := databaseservice.Get()
 	err := ds.AutoMigrate()
 	if err != nil {
 		logger.Panic("AutoMigrate panic: " + err.Error())
@@ -71,14 +72,7 @@ func main() {
 		logger.Debug("  TLS is enabled")
 	}
 
-	router := mux.NewRouter()
-	router.Use(middleware.Limit, middleware.Headers)
-	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
-	})
-
-	setupRoutes(router)
+	router := setupRoutes(config)
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
@@ -142,48 +136,75 @@ func main() {
 	logger.Trace("Server shutdown complete. Have a nice day!")
 }
 
-func setupRoutes(router *mux.Router) {
+func setupRoutes(conf *entity.Configuration) *mux.Router {
+	router := mux.NewRouter()
+	router.Use(middleware.Limit, middleware.Headers)
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
+	})
+
+	httpHandler := handler.HttpHandler{
+		Ds: databaseservice.Get(),
+	}
+
 	//asset file handlers
-	router.HandleFunc("/assets/{file}", handler.StaticAssetHandler)
-	router.HandleFunc("/js/{file}", handler.StaticAssetHandler)
-	router.HandleFunc("/css/{file}", handler.StaticAssetHandler)
+	router.HandleFunc("/assets/{file}", httpHandler.StaticAssetHandler)
+	router.HandleFunc("/js/{file}", httpHandler.StaticAssetHandler)
+	router.HandleFunc("/css/{file}", httpHandler.StaticAssetHandler)
 
 	//site handlers
-	router.HandleFunc("/", handler.IndexHandler).Methods(http.MethodGet)
-	router.HandleFunc("/login", handler.LoginHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/logout", handler.LogoutHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/password/request", handler.RequestNewPasswordHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/password/reset", handler.ResetPasswordHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/register", handler.RegistrationHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/register/confirm", handler.RegistrationConfirmHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/login", httpHandler.LoginHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/logout", httpHandler.LogoutHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/password/request", httpHandler.RequestNewPasswordHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/password/reset", httpHandler.ResetPasswordHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/register", httpHandler.RegistrationHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/register/confirm", httpHandler.RegistrationConfirmHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/user/settings", handler.UserSettingsHandler).Methods(http.MethodGet, http.MethodPost)
+	// Misc
+	miscRouter := router.PathPrefix("").Subrouter()
+	miscRouter.Use(middleware.Auth)
+	miscRouter.HandleFunc("/", httpHandler.IndexHandler).Methods(http.MethodGet)
 
-	router.HandleFunc("/admin/user/list", handler.AdminUserListHandler).Methods(http.MethodGet)
-	router.HandleFunc("/admin/user/add", handler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/admin/user/{id}/edit", handler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/admin/user/{id}/remove", handler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/admin/settings", handler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
+	userRouter := router.PathPrefix("/user").Subrouter()
+	userRouter.Use(middleware.Auth)
+	userRouter.HandleFunc("/settings", httpHandler.UserSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/builddefinition/list", handler.BuildDefinitionListHandler).Methods(http.MethodGet)
-	router.HandleFunc("/builddefinition/add", handler.BuildDefinitionAddHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/builddefinition/{id}/show", handler.BuildDefinitionShowHandler).Methods(http.MethodGet)
-	router.HandleFunc("/builddefinition/{id}/edit", handler.BuildDefinitionEditHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/builddefinition/{id}/remove", handler.BuildDefinitionRemoveHandler).Methods(http.MethodGet)
-	router.HandleFunc("/builddefinition/{id}/listexecutions", handler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
-	router.HandleFunc("/builddefinition/{id}/restart", handler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
-	router.HandleFunc("/builddefinition/{id}/artifact", handler.DownloadNewestArtifactHandler).Methods(http.MethodGet)
+	adminRouter := router.PathPrefix("/admin").Subrouter()
+	adminRouter.Use(middleware.AuthWithAdmin)
+	router.HandleFunc("/user/list", httpHandler.AdminUserListHandler).Methods(http.MethodGet)
+	router.HandleFunc("/user/add", httpHandler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/user/{id}/edit", httpHandler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/user/{id}/remove", httpHandler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
+	router.HandleFunc("/settings", httpHandler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
-	router.HandleFunc("/buildexecution/list", handler.BuildExecutionListHandler).Methods(http.MethodGet)
-	router.HandleFunc("/buildexecution/{id}/show", handler.BuildExecutionShowHandler).Methods(http.MethodGet)
-	router.HandleFunc("/buildexecution/{id}/artifact", handler.DownloadSpecificArtifactHandler).Methods(http.MethodGet)
+	bdRouter := router.PathPrefix("/builddefinition").Subrouter()
+	bdRouter.Use(middleware.Auth)
+	bdRouter.HandleFunc("/list", httpHandler.BuildDefinitionListHandler).Methods(http.MethodGet)
+	bdRouter.HandleFunc("/add", httpHandler.BuildDefinitionAddHandler).Methods(http.MethodGet, http.MethodPost)
+	bdRouter.HandleFunc("/{id}/show", httpHandler.BuildDefinitionShowHandler).Methods(http.MethodGet)
+	bdRouter.HandleFunc("/{id}/edit", httpHandler.BuildDefinitionEditHandler).Methods(http.MethodGet, http.MethodPost)
+	bdRouter.HandleFunc("/{id}/remove", httpHandler.BuildDefinitionRemoveHandler).Methods(http.MethodGet)
+	bdRouter.HandleFunc("/{id}/listexecutions", httpHandler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
+	bdRouter.HandleFunc("/{id}/restart", httpHandler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
+	bdRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadNewestArtifactHandler).Methods(http.MethodGet)
 
-	router.HandleFunc("/variable/list", handler.VariableListHandler).Methods(http.MethodGet)
-	router.HandleFunc("/variable/{id}/show", handler.VariableShowHandler).Methods(http.MethodGet)
-	router.HandleFunc("/variable/add", handler.VariableAddHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/variable/{id}/edit", handler.VariableEditHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/variable/{id}/remove", handler.VariableRemoveHandler).Methods(http.MethodGet)
+	beRouter := router.PathPrefix("/buildexecution").Subrouter()
+	beRouter.Use(middleware.Auth)
+	beRouter.HandleFunc("/list", httpHandler.BuildExecutionListHandler).Methods(http.MethodGet)
+	beRouter.HandleFunc("/{id}/show", httpHandler.BuildExecutionShowHandler).Methods(http.MethodGet)
+	beRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadSpecificArtifactHandler).Methods(http.MethodGet)
+
+	varRouter := router.PathPrefix("/variable").Subrouter()
+	varRouter.Use(middleware.Auth)
+	varRouter.HandleFunc("/list", httpHandler.VariableListHandler).Methods(http.MethodGet)
+	//varRouter.HandleFunc("/{id}/show", httpHandler.VariableShowHandler).Methods(http.MethodGet)
+	varRouter.HandleFunc("/add", httpHandler.VariableAddHandler).Methods(http.MethodGet, http.MethodPost)
+	varRouter.HandleFunc("/{id}/edit", httpHandler.VariableEditHandler).Methods(http.MethodGet, http.MethodPost)
+	varRouter.HandleFunc("/{id}/remove", httpHandler.VariableRemoveHandler).Methods(http.MethodGet)
 
 	// API handler
-	router.HandleFunc("/api/v1/receive", handler.PayloadReceiveHandler).Methods(http.MethodPost)
+	router.HandleFunc("/api/v1/receive", httpHandler.PayloadReceiveHandler).Methods(http.MethodPost)
+
+	return router
 }

@@ -1,36 +1,29 @@
 package handler
 
 import (
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/gorilla/mux"
 )
 
 // BuildExecutionListHandler lists all build executions in in descending order
-func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildExecutionListHandler")
+	)
+
+	buildExecutions, err := h.Ds.GetNewestBuildExecutions(0, "")
 	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		logger.WithField("error", err.Error()).Error("could not get build executions")
 		return
 	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	ds := databaseservice.New()
-
-	buildExecutions, err := ds.GetNewestBuildExecutions(0, "")
 
 	data := struct {
 		CurrentUser     entity.User
@@ -46,49 +39,39 @@ func BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuildExecutionShowHandler shows details of a specific build execution
-func BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildExecutionShowHandler")
+		vars = mux.Vars(r)
+	)
 
-	ds := databaseservice.New()
-	//defer ds.Quit()
 
-	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildExecutionShowHandler: could not parse entry ID: " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not parse entry ID")
 		w.WriteHeader(500)
 		return
 	}
-	//var be entity.BuildExecution
-	//row := db.QueryRow("SELECT id, build_definition_id, initiated_by, manual_run, action_log,"+
-	//	" result, artifact_path, execution_time, executed_at FROM build_execution WHERE id = ?", vars["id"])
-	//err = row.Scan(&be.Id, &be.BuildDefinitionId, &be.InitiatedBy, &be.ManualRun, &be.ActionLog,
-	//	&be.Result, &be.ArtifactPath, &be.ExecutionTime, &be.ExecutedAt)
-	buildExecution, err := ds.GetBuildExecutionById(id)
+	buildExecution, err := h.Ds.GetBuildExecutionById(id)
 	if err != nil {
-		helper.WriteToConsole("could not scan buildExecution in buildExecutionShowHandler")
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not scan buildExecution")
 		w.WriteHeader(500)
 		return
 	}
 
-	//be.ActionLog = strings.ReplaceAll(be.ActionLog, "\n", "<br>")
-
-	//var bd entity.BuildDefinition
-	//row = db.QueryRow("SELECT id, caption FROM build_definition WHERE id = ?", buildExecution.BuildDefinitionId)
-	//err = row.Scan(&bd.Id, &bd.Caption)
-	buildDefinition, err := ds.GetBuildDefinitionById(buildExecution.BuildDefinitionId)
+	buildDefinition, err := h.Ds.GetBuildDefinitionById(buildExecution.BuildDefinitionId)
 	if err != nil {
-		helper.WriteToConsole("could not scan buildDefinition in buildExecutionShowHandler")
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"buildDefinitionId": buildExecution.BuildDefinitionId,
+		}).Error("could not scan buildDefinition")
 		w.WriteHeader(500)
 		return
 	}

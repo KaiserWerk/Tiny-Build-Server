@@ -7,7 +7,7 @@ import (
 )
 
 // GetNewestBuildDefinitions fetches the most recently edited or added build definitions
-func (ds databaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
+func (ds DatabaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
 
 	var bdList []entity.BuildDefinition
 
@@ -26,7 +26,7 @@ func (ds databaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDe
 }
 
 // GetAllBuildDefinitions fetches all build definitions
-func (ds databaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
+func (ds DatabaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
 	bds := make([]entity.BuildDefinition, 0)
 	result := ds.db.Find(&bds)
 	if result.Error != nil {
@@ -37,7 +37,7 @@ func (ds databaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, er
 }
 
 // FindBuildDefinition looks for a specific build definition
-func (ds databaseService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
+func (ds DatabaseService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
 	var bd entity.BuildDefinition
 	result := ds.db.Where(cond, args).First(&bd)
 	if result.Error != nil {
@@ -48,7 +48,7 @@ func (ds databaseService) FindBuildDefinition(cond string, args ...interface{}) 
 }
 
 // GetBuildDefinitionById fetches a build definition by Id
-func (ds databaseService) GetBuildDefinitionById(id int) (entity.BuildDefinition, error) {
+func (ds DatabaseService) GetBuildDefinitionById(id int) (entity.BuildDefinition, error) {
 	var buildDefinition entity.BuildDefinition
 	result := ds.db.First(&buildDefinition, id)
 	if result.Error != nil {
@@ -59,7 +59,7 @@ func (ds databaseService) GetBuildDefinitionById(id int) (entity.BuildDefinition
 
 // GetBuildDefCaption fetches the caption of a given build definition id
 // It is to be used in templates
-func (ds databaseService) GetBuildDefCaption(id int) (string, error) {
+func (ds DatabaseService) GetBuildDefCaption(id int) (string, error) {
 	var bd entity.BuildDefinition
 	result := ds.db.First(&bd, id)
 	if result.Error != nil {
@@ -69,7 +69,7 @@ func (ds databaseService) GetBuildDefCaption(id int) (string, error) {
 }
 
 // DeleteBuildDefinition removes a build definition
-func (ds databaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error {
+func (ds DatabaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error {
 	result := ds.db.Delete(&bd)
 	if result.Error != nil {
 		return result.Error
@@ -78,7 +78,7 @@ func (ds databaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error
 }
 
 // AddBuildDefinition adds a new build definition
-func (ds databaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, error) {
+func (ds DatabaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, error) {
 	result := ds.db.Create(&bd)
 	if result.Error != nil {
 		return 0, result.Error
@@ -88,7 +88,7 @@ func (ds databaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, er
 }
 
 // UpdateBuildDefinition updates a build definition
-func (ds databaseService) UpdateBuildDefinition(bd entity.BuildDefinition) error {
+func (ds DatabaseService) UpdateBuildDefinition(bd entity.BuildDefinition) error {
 	result := ds.db.Updates(&bd)
 	if result.Error != nil {
 		return result.Error

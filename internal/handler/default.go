@@ -1,13 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -15,29 +11,23 @@ import (
 )
 
 // IndexHandler serves the dashboard
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		helper.WriteToConsole("dashboard: redirect to login: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	ds := databaseservice.New()
-	//defer ds.Quit()
+func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("IndexHandler")
+	)
 
-	latestBuilds, err := ds.GetNewestBuildExecutions(5, "")
+	latestBuilds, err := h.Ds.GetNewestBuildExecutions(5, "")
 	if err != nil {
-		helper.WriteToConsole("could not fetch latest build executions: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not fetch latest build executions")
+		http.Error(w, "could not fetch latest build definitions", http.StatusInternalServerError)
+		return
 	}
-	latestBuildDefs, err := ds.GetNewestBuildDefinitions(5)
+	latestBuildDefs, err := h.Ds.GetNewestBuildDefinitions(5)
 	if err != nil {
-		helper.WriteToConsole("could not fetch latest build definitions: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not fetch latest build definitions")
+		http.Error(w, "could not fetch latest build definitions", http.StatusInternalServerError)
+		return
 	}
 
 	data := struct {
@@ -51,17 +41,19 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "index.html", data); err != nil {
-		fmt.Println("Error: " + err.Error())
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
 
 // StaticAssetHandler serves static file. http.FileServer does not work as desired
-func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := vars["file"]
+func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		logger = logging.GetLoggerWithContext("StaticAssetHandler")
+		vars = mux.Vars(r)
+		file = vars["file"]
+		path string
+	)
 
-	var path string
 	switch true {
 	case strings.Contains(r.URL.Path, "assets/"):
 		path = "assets"
@@ -73,7 +65,7 @@ func StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 
 	data, err := assets.GetWebAssetFile(path+"/"+file)
 	if err != nil {
-		helper.WriteToConsole("could not locate asset " + file)
+		logger.WithField("file", file).Warn("could not locate asset file")
 		w.WriteHeader(404)
 		return
 	}

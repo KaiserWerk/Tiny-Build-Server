@@ -2,43 +2,29 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/gorilla/mux"
 )
 
 // AdminUserListHandler lists all existing user accounts
-func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	if !currentUser.Admin {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		logger = logging.GetLoggerWithContext("AdminUserListHandler")
+		currentUser = r.Context().Value("user").(entity.User)
+	)
 
-	ds := databaseservice.New()
-
-	userList, err := ds.GetAllUsers()
+	userList, err := h.Ds.GetAllUsers()
 	if err != nil {
-		helper.WriteToConsole("adminUserListHandler: could not query users: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not query users")
 		w.WriteHeader(500)
 		return
 	}
@@ -57,24 +43,13 @@ func AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AdminUserAddHandler handles adding a new user account
-func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	if !currentUser.Admin {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	sessMgr := global.GetSessionManager()
+func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+		logger = logging.GetLoggerWithContext("AdminUserAddHandler")
+		currentUser = r.Context().Value("user").(entity.User)
+		sessMgr = global.GetSessionManager()
+	)
 
 	if r.Method == "POST" {
 		// displayname, email, password, locked, admin
@@ -90,12 +65,11 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if displayname != "" && email != "" {
-
-			ds := databaseservice.New()
+			ds := h.Ds
 
 			_, err := ds.FindUser("displayname = ?", displayname)
 			if err == nil {
-				helper.WriteToConsole("AdminUserAddHandler: displayname already in use: " + err.Error())
+				logger.WithField("error", err.Error()).Error("displayname already in use")
 				sessMgr.AddMessage("error", "This display name is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
@@ -103,7 +77,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 
 			_, err = ds.FindUser("email = ?", email)
 			if err == nil {
-				helper.WriteToConsole("AdminUserAddHandler: email already in use: " + err.Error())
+				logger.WithField("error", err.Error()).Error("email already in use")
 				sessMgr.AddMessage("error", "This email address is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
@@ -113,7 +87,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 			if password != "" {
 				passwordHash, err = security.HashString(password)
 				if err != nil {
-					helper.WriteToConsole("AdminUserAddHandler: could not hash password: " + err.Error())
+					logger.WithField("error", err.Error()).Error("could not hash password")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -121,7 +95,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 				password = security.GenerateToken(10)
 				passwordHash, err = security.HashString(password)
 				if err != nil {
-					helper.WriteToConsole("AdminUserAddHandler: could not hash generated password: " + err.Error())
+					logger.WithField("error", err.Error()).Error("could not hash generated password")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -136,7 +110,7 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			_, err = ds.AddUser(userToAdd)
 			if err != nil {
-				helper.WriteToConsole("AdminUserAddHandler: could not insert new user: " + err.Error())
+				logger.WithField("error", err.Error()).Error("could not insert new user")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -160,28 +134,15 @@ func AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AdminUserEditHandler handles edits to an existing user account
-func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-	sessMgr := global.GetSessionManager()
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	if !currentUser.Admin {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+		sessMgr = global.GetSessionManager()
+		logger = logging.GetLoggerWithContext("AdminUserEditHandler")
+		currentUser = r.Context().Value("user").(entity.User)
+		vars = mux.Vars(r)
+	)
 
-	vars := mux.Vars(r)
-
-	ds := databaseservice.New()
 	if r.Method == http.MethodPost {
 
 		displayname := r.FormValue("displayname")
@@ -195,17 +156,17 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 			admin = true
 		}
 
-		_, err = ds.FindUser("displayname = ? AND id != ?", displayname, vars["id"])
+		_, err = h.Ds.FindUser("displayname = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
-			helper.WriteToConsole("display name already in use")
+			logger.WithField("error", err.Error()).Error("display name already in use")
 			sessMgr.AddMessage("error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
 		}
 
-		_, err = ds.FindUser("email = ? AND id != ?", displayname, vars["id"])
+		_, err = h.Ds.FindUser("email = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
-			helper.WriteToConsole("display name already in use")
+			logger.WithField("error", err.Error()).Error("display name already in use")
 			sessMgr.AddMessage("error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
@@ -213,7 +174,7 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 
 		userId, err := strconv.Atoi(vars["id"])
 		if err != nil {
-			helper.WriteToConsole("invalid user id: " + err.Error())
+			logger.WithField("error", err.Error()).Error("invalid user id")
 			sessMgr.AddMessage("error", "You supplied an invalid user id!")
 			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 			return
@@ -230,20 +191,20 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 		if password != "" {
 			passwordHash, err := security.HashString(password)
 			if err != nil {
-				helper.WriteToConsole("AdminUserEditHandler: could not hash password: " + err.Error())
+				logger.WithField("error", err.Error()).Error("could not hash password")
 				w.WriteHeader(500)
 				return
 			}
 
 			updateUser.Password = passwordHash
 		}
-		err = ds.UpdateUser(updateUser)
+		err = h.Ds.UpdateUser(updateUser)
 		//query := fmt.Sprintf("UPDATE user SET displayname = ?, email = ?, %slocked = ?, admin = ? WHERE id = ?", pwQueryPart)
 		//helper.WriteToConsole("edit user: query to execute: " + query)
 		// update user
 
 		if err != nil {
-			helper.WriteToConsole("could not update user: " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not update user")
 			w.WriteHeader(500)
 			return
 		}
@@ -255,14 +216,14 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 
 	userId, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("invalid user id: " + err.Error())
+		logger.WithField("error", err.Error()).Error("invalid user id")
 		sessMgr.AddMessage("error", "You supplied an invalid user id!")
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
-	editedUser, err := ds.GetUserById(userId)
+	editedUser, err := h.Ds.GetUserById(userId)
 	if err != nil {
-		helper.WriteToConsole("could not scan user in adminUserEditHandler: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
 		return
 	}
@@ -281,39 +242,31 @@ func AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AdminUserRemoveHandler handles removals of user accounts
-func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-	sessMgr := global.GetSessionManager()
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	if !currentUser.Admin {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+		sessMgr = global.GetSessionManager()
+		logger = logging.GetLoggerWithContext("AdminUserRemoveHandler")
+		currentUser = r.Context().Value("user").(entity.User)
+		vars = mux.Vars(r)
+	)
 
-	vars := mux.Vars(r)
+
 	userId, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("invalid user id: " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"userId": userId,
+		}).Error("invalid user id")
 		sessMgr.AddMessage("error", "You supplied an invalid user id!")
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
 
-	ds := databaseservice.New()
 	if r.Method == http.MethodPost {
-		err = ds.DeleteUser(userId)
+		err = h.Ds.DeleteUser(userId)
 		if err != nil {
-			helper.WriteToConsole("error removing user: " + err.Error())
+			logger.WithField("error", err.Error()).Error("error removing user")
 			sessMgr.AddMessage("error", "An unknown error occurred, please try again.")
 			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 			return
@@ -323,9 +276,9 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := ds.GetUserById(userId)
+	user, err := h.Ds.GetUserById(userId)
 	if err != nil {
-		helper.WriteToConsole("could not scan user in adminUserEditHandler: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
 		return
 	}
@@ -344,147 +297,174 @@ func AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // AdminSettingsHandler handles editing af administrative settings
-func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	if !currentUser.Admin {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	sessMgr := global.GetSessionManager()
-	ds := databaseservice.New()
-	//defer ds.Quit()
+func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+		logger = logging.GetLoggerWithContext("AdminSettingsHandler")
+		currentUser = r.Context().Value("user").(entity.User)
+		sessMgr = global.GetSessionManager()
+	)
 
 	if r.Method == http.MethodPost {
-
 		var errors uint8 = 0
 		form := r.FormValue("form")
-
 		if form == "general_settings" {
 			baseDatapath := r.FormValue("base_datapath")
-			err = ds.SetSetting("base_datapath", baseDatapath)
+			err = h.Ds.SetSetting("base_datapath", baseDatapath)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set baseDatapath")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "base_datapath",
+				}).Error("could not save setting")
 			}
 			baseUrl := r.FormValue("base_url")
-			err = ds.SetSetting("base_url", baseUrl)
+			err = h.Ds.SetSetting("base_url", baseUrl)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set baseUrl")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "base_url",
+				}).Error("could not save setting")
 			}
 		} else if form == "security" {
 			securityDisableRegistration := r.FormValue("security_disable_registration")
 			if securityDisableRegistration != "1" {
 				securityDisableRegistration = "0"
 			}
-			err = ds.SetSetting("security_disable_registration", securityDisableRegistration)
+			err = h.Ds.SetSetting("security_disable_registration", securityDisableRegistration)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set securityDisableRegistration")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "security_disable_registration",
+				}).Error("could not save setting")
 			}
 
 			securityDisablePasswordReset := r.FormValue("security_disable_password_reset")
 			if securityDisablePasswordReset != "1" {
 				securityDisablePasswordReset = "0"
 			}
-			err = ds.SetSetting("security_disable_password_reset", securityDisablePasswordReset)
+			err = h.Ds.SetSetting("security_disable_password_reset", securityDisablePasswordReset)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set securityDisableRegistration")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "security_disable_password_reset",
+				}).Error("could not save setting")
 			}
 
 			securityEmailConfirmationRequired := r.FormValue("security_email_confirmation_required")
 			if securityEmailConfirmationRequired != "1" {
 				securityEmailConfirmationRequired = "0"
 			}
-			err = ds.SetSetting("security_email_confirmation_required", securityEmailConfirmationRequired)
+			err = h.Ds.SetSetting("security_email_confirmation_required", securityEmailConfirmationRequired)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set securityEmailConfirmationRequired")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "security_email_confirmation_required",
+				}).Error("could not save setting")
 			}
 
 			security2fa := r.FormValue("security_2fa")
 			if security2fa != "none" && security2fa != "email" && security2fa != "sms" {
 				security2fa = "none"
 			}
-			err = ds.SetSetting("security_2fa", security2fa)
+			err = h.Ds.SetSetting("security_2fa", security2fa)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set security2fa")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "security_2fa",
+				}).Error("could not save setting")
 			}
 
 		} else if form == "smtp" {
 			smtpUsername := r.FormValue("smtp_username")
-			err = ds.SetSetting("smtp_username", smtpUsername)
+			err = h.Ds.SetSetting("smtp_username", smtpUsername)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set smtpUsername")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "smtp_username",
+				}).Error("could not save setting")
 			}
 
 			smtpPassword := r.FormValue("smtp_password")
-			err = ds.SetSetting("smtp_password", smtpPassword)
+			err = h.Ds.SetSetting("smtp_password", smtpPassword)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set smtpPassword")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "smtp_password",
+				}).Error("could not save setting")
 			}
 
 			smtpHost := r.FormValue("smtp_host")
-			err = ds.SetSetting("smtp_host", smtpHost)
+			err = h.Ds.SetSetting("smtp_host", smtpHost)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set smtpHost")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "smtp_host",
+				}).Error("could not save setting")
 			}
 
 			smtpPort := r.FormValue("smtp_port")
-			err = ds.SetSetting("smtp_port", smtpPort)
+			err = h.Ds.SetSetting("smtp_port", smtpPort)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set smtpPort")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "smtp_port",
+				}).Error("could not save setting")
 			}
 
 			smtpEncryption := r.FormValue("smtp_encryption")
-			err = ds.SetSetting("smtp_encryption", smtpEncryption)
+			err = h.Ds.SetSetting("smtp_encryption", smtpEncryption)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set smtpEncryption")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "smtp_encryption",
+				}).Error("could not save setting")
 			}
 		} else if form == "executables" {
 			goExec := r.FormValue("golang_executable")
-			err = ds.SetSetting("golang_executable", goExec)
+			err = h.Ds.SetSetting("golang_executable", goExec)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set goExec")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "golang_executable",
+				}).Error("could not save setting")
 			}
 
 			dotnetExec := r.FormValue("dotnet_executable")
-			err = ds.SetSetting("dotnet_executable", dotnetExec)
+			err = h.Ds.SetSetting("dotnet_executable", dotnetExec)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set dotnetExec")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "dotnet_executable",
+				}).Error("could not save setting")
 			}
 
 			rustExec := r.FormValue("rust_executable")
-			err = ds.SetSetting("rust_executable", rustExec)
+			err = h.Ds.SetSetting("rust_executable", rustExec)
 			if err != nil {
 				errors++
-				helper.WriteToConsole("could not set rustExec")
+				logger.WithFields(logrus.Fields{
+					"error": err.Error(),
+					"setting": "rust_executable",
+				}).Error("could not save setting")
 			}
 		}
 
 		if errors > 0 {
 			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occurred", errors)
-			helper.WriteToConsole(output)
+			logger.Debug(output)
 			sessMgr.AddMessage("error", output)
 		} else {
 			sessMgr.AddMessage("success", "Settings saved successfully!")
@@ -493,9 +473,9 @@ func AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/settings", http.StatusSeeOther)
 		return
 	}
-	allSettings, err := ds.GetAllSettings()
+	allSettings, err := h.Ds.GetAllSettings()
 	if err != nil {
-		helper.WriteToConsole("could not get allSettings: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not get allSettings: " + err.Error())
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}

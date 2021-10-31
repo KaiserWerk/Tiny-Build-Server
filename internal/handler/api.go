@@ -5,13 +5,12 @@ import (
 	"net/http"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 )
 
 // PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
 // sent by a Git hoster
-func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// get token
@@ -21,15 +20,14 @@ func PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ds := databaseservice.New()
 	// find build definition by token
-	bd, err := ds.FindBuildDefinition("token = ?", token)
+	bd, err := h.Ds.FindBuildDefinition("token = ?", token)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not find build definition for token %s: %s", token, err.Error()), http.StatusNotFound)
 		return
 	}
 
-	variables, err := ds.GetAvailableVariablesForUser(bd.CreatedBy)
+	variables, err := h.Ds.GetAvailableVariablesForUser(bd.CreatedBy)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("could not determine variables for user: %s", err.Error()), http.StatusNotFound)
 		return

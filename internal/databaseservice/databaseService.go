@@ -2,6 +2,7 @@ package databaseservice
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
@@ -12,36 +13,52 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type databaseService struct {
+type DatabaseService struct {
 	db *gorm.DB
 }
 
-// New returns a new database service connection
-func New() *databaseService {
-	config := global.GetConfiguration()
+var (
+	dbs DatabaseService
+	once sync.Once
+)
 
-	var driver gorm.Dialector = mysql.Open(config.Database.DSN)
-	if config.Database.Driver == "sqlite" {
-		driver = sqlite.Open(config.Database.DSN)
-	}
+// Get returns a new database service connection
+func Get() *DatabaseService {
+	once.Do(func() {
+		config := global.GetConfiguration()
 
-	db, err := gorm.Open(driver, &gorm.Config{
-		PrepareStmt: true,
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-			NoLowerCase:   false,
-		},
+		var driver gorm.Dialector = mysql.Open(config.Database.DSN)
+		if config.Database.Driver == "sqlite" {
+			driver = sqlite.Open(config.Database.DSN)
+		}
+
+		db, err := gorm.Open(driver, &gorm.Config{
+			PrepareStmt: true,
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: true,
+				NoLowerCase:   false,
+			},
+		})
+		if err != nil {
+			panic("gorm connection error: " + err.Error())
+		}
+
+		conn, err := db.DB()
+		if err != nil {
+			panic("form DB() error: " + err.Error())
+		}
+
+		conn.SetMaxIdleConns(10)
+		conn.SetMaxOpenConns(50)
+		dbs = DatabaseService{db: db}
 	})
-	if err != nil {
-		panic("gorm connection error: " + err.Error())
-	}
 
-	return &databaseService{db: db}
+	return &dbs
 }
 
 // AutoMigrate makes sure the database tables exist, corresponding
 // to the supplied structs
-func (ds databaseService) AutoMigrate() error {
+func (ds DatabaseService) AutoMigrate() error {
 	err := ds.db.AutoMigrate(
 		&entity.AdminSetting{},
 		&entity.BuildDefinition{},
@@ -57,13 +74,13 @@ func (ds databaseService) AutoMigrate() error {
 }
 
 // Quit ends the database connection
-func (ds databaseService) Quit() {
+func (ds DatabaseService) Quit() {
 	ds.Quit()
 }
 
 // RowExists takes an SQL query and return true, if at least one entry
 // exists for the given query
-func (ds databaseService) RowExists(query string, args ...interface{}) bool {
+func (ds DatabaseService) RowExists(query string, args ...interface{}) bool {
 	exists := true
 
 	result := ds.db.Exec(fmt.Sprintf("SELECT exists (%s)", query), args...)

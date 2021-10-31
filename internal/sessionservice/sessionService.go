@@ -20,7 +20,7 @@ func GetUserFromSession(s sessionstore.Session) (entity.User, error) {
 
 	userId, _ := strconv.Atoi(userIdStr)
 
-	ds := databaseservice.New()
+	ds := databaseservice.Get()
 	//defer ds.Quit()
 	user, err := ds.GetUserById(userId)
 	return user, err

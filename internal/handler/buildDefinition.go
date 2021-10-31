@@ -3,39 +3,35 @@ package handler
 import (
 	"database/sql"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/gorilla/mux"
 )
 
 // BuildDefinitionListHandler lists all existing build definitions
-func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
+func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildDefinitionListHandler")
+	)
+	buildDefinitions, err := h.Ds.GetAllBuildDefinitions()
 	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Error(w, "could not get all build definitions", http.StatusInternalServerError)
+		logger.WithField("error", err.Error()).Error("could not get all build definitions")
 		return
 	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("BuildDefinitionListHandler: could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	ds := databaseservice.New()
-	buildDefinitions, err := ds.GetAllBuildDefinitions()
 
 	data := struct {
 		CurrentUser      entity.User
@@ -51,28 +47,19 @@ func BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuildDefinitionAddHandler adds a new build definition
-func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	sessMgr := global.GetSessionManager()
+func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		sessMgr = global.GetSessionManager()
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildDefinitionAddHandler")
+	)
 
 	if r.Method == http.MethodPost {
-
 		caption := r.FormValue("caption")
 		content := r.FormValue("content")
 
 		if caption == "" || content == "" {
-			helper.WriteToConsole("BuildDefinitionAddHandler: missing required fields")
+			logger.Info("missing required fields")
 			sessMgr.AddMessage("info", "Fields caption and content cannot be empty")
 			http.Redirect(w, r, "/builddefinition/add", http.StatusSeeOther)
 			return
@@ -85,10 +72,9 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 			CreatedBy: currentUser.Id,
 		}
 
-		ds := databaseservice.New()
-		_, err := ds.AddBuildDefinition(bd)
+		_, err := h.Ds.AddBuildDefinition(bd)
 		if err != nil {
-			helper.WriteToConsole("BuildDefinitionAddHandler: could not insert build definition " + err.Error())
+			logger.WithField("error", err.Error()).Error("could not insert build definition")
 			w.WriteHeader(500)
 			return
 		}
@@ -99,7 +85,7 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 
 	skeleton, err := assets.GetMiscFile("build_definition_skeleton.yml")
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionAddHandler: could not get definition skeleton")
+		logger.WithField("error", err.Error()).Error("could not get definition skeleton")
 		return
 	}
 
@@ -117,26 +103,17 @@ func BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuildDefinitionEditHandler allows for editing an existing build definition
-func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	sessMgr := global.GetSessionManager()
-	ds := databaseservice.New()
-	//defer ds.Quit()
+func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		sessMgr = global.GetSessionManager()
+		vars = mux.Vars(r)
+		logger = logging.GetLoggerWithContext("BuildDefinitionEditHandler")
+	)
 
-	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionEditHandler: could not parse build definition id")
+		logger.WithField("error", err.Error()).Error("could not parse build definition id")
 		id = -1
 	}
 
@@ -145,7 +122,7 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		content := r.FormValue("content")
 
 		if caption == "" || content == "" {
-			helper.WriteToConsole("BuildDefinitionEditHandler: required fields missing")
+			logger.WithField("error", err.Error()).Error("required fields missing")
 			sessMgr.AddMessage("warning", "Please fill in required fields.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
@@ -162,9 +139,9 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		err = ds.UpdateBuildDefinition(bd)
+		err = h.Ds.UpdateBuildDefinition(bd)
 		if err != nil {
-			helper.WriteToConsole("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
+			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
 			sessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
@@ -174,9 +151,9 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bdt, err := ds.GetBuildDefinitionById(id)
+	bdt, err := h.Ds.GetBuildDefinitionById(id)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionEditHandler: could not get buildDefinition: " + err.Error())
+		logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not get buildDefinition: " + err.Error())
 		w.WriteHeader(500)
 		return
 	}
@@ -195,51 +172,41 @@ func BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuildDefinitionShowHandler shows details of a build definition
-func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch user by ID: " + err.Error())
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildDefinitionShowHandler")
+		vars = mux.Vars(r)
+	)
 
-	vars := mux.Vars(r)
-	ds := databaseservice.New()
-	//defer ds.Quit()
-
-	settings, err := ds.GetAllSettings()
+	settings, err := h.Ds.GetAllSettings()
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not fetch settings: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not fetch settings")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	baseUrl, ok := settings["base_url"]
 	if !ok {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not get setting base_url")
+		logger.Info("could not get setting base_url; using default")
 		baseUrl = "http://127.0.0.1:8271"
 	}
 
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not parse build definition id, setting to -1")
+		logger.WithField("error", err.Error()).Error("could not parse build definition id, setting to -1")
 		id = -1
 	}
-	bd, err := ds.GetBuildDefinitionById(id)
+	bd, err := h.Ds.GetBuildDefinitionById(id)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not scan buildDefinition: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not get buildDefinition")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	beList, err := ds.GetNewestBuildExecutions(10, "build_definition_id = ?", bd.Id)
+	beList, err := h.Ds.GetNewestBuildExecutions(10, "build_definition_id = ?", bd.Id)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionShowHandler: could not get newest build executions: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not get newest build executions")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -298,50 +265,36 @@ func BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // BuildDefinitionRemoveHandler removes an existing build definition
-func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	ds := databaseservice.New()
-	//defer ds.Quit()
-
-	vars := mux.Vars(r)
+func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildDefinitionRemoveHandler")
+		vars = mux.Vars(r)
+	)
 
 	confirm := r.URL.Query().Get("confirm")
 	if confirm == "yes" {
 		// TODO: implement "yes" action for build definition removal
 	}
 
-	//var buildDefinition entity.BuildDefinition
-	//row := db.QueryRow("SELECT id, build_target_id, altered_by, caption, enabled, deployment_enabled, "+
-	//	"repo_hoster, repo_hoster_url, repo_fullname, repo_username, repo_secret, repo_branch, altered_at, "+
-	//	"meta_migration_id FROM build_definition WHERE id = ?", vars["id"])
-	//err = row.Scan(&buildDefinition.Id, &buildDefinition.BuildTarget, &buildDefinition.AlteredBy,
-	//	&buildDefinition.Caption, &buildDefinition.Enabled, &buildDefinition.DeploymentEnabled,
-	//	&buildDefinition.RepoHoster, &buildDefinition.RepoHosterUrl, &buildDefinition.RepoFullname,
-	//	&buildDefinition.RepoUsername, &buildDefinition.RepoSecret, &buildDefinition.RepoBranch,
-	//	&buildDefinition.AlteredAt, &buildDefinition.MetaMigrationId)
-	//if err != nil {
-	//	helper.WriteToConsole("could not scan buildDefinition in buildDefinitionEditHandler: " + err.Error())
-	//	w.WriteHeader(500)
-	//	return
-	//}
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionRemoveHandler: could not parse entry ID: " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not parse entry ID")
 		w.WriteHeader(500)
 		return
 	}
-	buildDefinition, err := ds.GetBuildDefinitionById(id)
+	buildDefinition, err := h.Ds.GetBuildDefinitionById(id)
+	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not get build definition by ID")
+		http.Error(w, "could not get build definition by ID", http.StatusInternalServerError)
+		return
+	}
 
 	data := struct {
 		CurrentUser     entity.User
@@ -356,52 +309,51 @@ func BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func BuildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HttpHandler) BuildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: implement or scrap
 }
 
 // BuildDefinitionRestartHandler restarts the build process for a given build definition
-func BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := security.CheckLogin(r)
-	if err != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-	currentUser, err := sessionservice.GetUserFromSession(session)
-	if err != nil {
-		helper.WriteToConsole("could not fetch user by ID in buildDefinitionEditHandler")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		currentUser = r.Context().Value("user").(entity.User)
+		logger = logging.GetLoggerWithContext("BuildDefinitionRestartHandler")
+		vars = mux.Vars(r)
+	)
 
-	ds := databaseservice.New()
-	//defer ds.Quit()
-
-	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionRestartHandler: could not parse build definition id")
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not parse build definition ID")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
 		return
 	}
 
-	bd, err := ds.GetBuildDefinitionById(id)
+	bd, err := h.Ds.GetBuildDefinitionById(id)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionRestartHandler: could not get buildDefinition: " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"id": id,
+		}).Error("could not get buildDefinition")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
 		return
 	}
 
-	variables, err := ds.GetAvailableVariablesForUser(currentUser.Id)
+	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionRestartHandler: could not get variables: " + err.Error())
+		logger.WithFields(logrus.Fields{
+			"error": err.Error(),
+			"userID": currentUser.Id,
+		}).Error("could not get variables")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
 		return
 	}
 
 	cont, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
 	if err != nil {
-		helper.WriteToConsole("BuildDefinitionRestartHandler: could not unmarshal build definition content: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not unmarshal build definition content")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"io"
 	"io/ioutil"
 	"math"
@@ -28,10 +29,11 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var basePath string = "data/"
+var basePath string = "data"
 
 func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
-	ds := databaseservice.New()
+	logger := logging.GetLoggerWithContext("saveBuildReport")
+	ds := databaseservice.Get()
 	be := entity.BuildExecution{
 		BuildDefinitionId: definition.Id,
 		ActionLog:         report,
@@ -43,7 +45,7 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 
 	err := ds.AddBuildExecution(be)
 	if err != nil {
-		helper.WriteToConsole("saveBuildReport: could not create new build execution: " + err.Error())
+		logger.WithField("error", err.Error()).Error("could not insert new build execution")
 	}
 }
 
@@ -54,10 +56,10 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		err           error
 		sb            strings.Builder
 		result        = "failed"
+		logger = logging.GetLoggerWithContext("StartBuildProcess")
 		executionTime = time.Now().UnixNano()
-
-		projectPath  = fmt.Sprintf("%s%d/%d", basePath, definition.Id, time.Now().Unix())
-		buildPath    = projectPath + "/build"
+		projectPath  = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
+		//buildPath    = projectPath + "/build"
 		artifactPath = projectPath + "/artifact"
 		clonePath    = projectPath + "/clone"
 	)
@@ -68,7 +70,6 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 			select {
 			case s, ok := <-messageCh:
 				if ok {
-					helper.WriteToConsole(s)
 					sb.WriteString(strings.TrimSpace(s) + "\n")
 				} else {
 					return
@@ -81,12 +82,11 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	}()
 	defer func() {
 		close(messageCh)
-		helper.WriteToConsole("writing report")
+		logger.Trace("writing report")
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
-	ds := databaseservice.New()
-	//defer ds.Quit()
+	ds := databaseservice.Get()
 
 	//if helper.FileExists(projectPath) {
 	err = os.RemoveAll(projectPath)
@@ -97,11 +97,11 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	//}
 
 	// create a new build directory
-	err = os.MkdirAll(buildPath, 0744)
-	if err != nil {
-		messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
-		return
-	}
+	//err = os.MkdirAll(buildPath, 0744)
+	//if err != nil {
+	//	messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
+	//	return
+	//}
 	err = os.MkdirAll(artifactPath, 0744)
 	if err != nil {
 		messageCh <- "could not create artifact directory (" + artifactPath + "): " + err.Error()
@@ -207,9 +207,9 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 			return
 		}
 	}
-	helper.WriteToConsole("build succeeded")
+	logger.Trace("build succeeded")
 	result = "success"
-	fmt.Println("info received!") // set a proper response
+	fmt.Println("info received!") // TODO: set a proper response
 }
 
 func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh chan string, projectDir string) (string, error) {
@@ -327,7 +327,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 	if emailDeploymentCount > 0 {
 		messageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
 
-		ds := databaseservice.New()
+		ds := databaseservice.Get()
 		settings, err := ds.GetAllSettings()
 		if err != nil {
 			messageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
@@ -522,7 +522,7 @@ func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) 
 //	buildDefinition := entity.BuildDefinition{}
 //
 //	// get DB connection
-//	ds := databaseService.New()
+//	ds := databaseService.Get()
 //	buildDefinition, err := ds.FindBuildDefinition("token = ?", token)
 //	if err != nil {
 //		return buildDefinition, fmt.Errorf("build definition cannot be found in database for token %s", token)
