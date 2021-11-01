@@ -57,25 +57,6 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// VariableShowHandler shows the specifics of a given variable
-//func (h *HttpHandler) VariableShowHandler(w http.ResponseWriter, r *http.Request) {
-//	var (
-//		currentUser = r.Context().Value("user").(entity.User)
-//		logger = logging.GetLoggerWithContext("VariableShowHandler")
-//	)
-//
-//
-//	data := struct {
-//		CurrentUser entity.User
-//	}{
-//		CurrentUser: currentUser,
-//	}
-//
-//	if err := templateservice.ExecuteTemplate(w, "variable_list.html", data); err != nil {
-//		w.WriteHeader(http.StatusNotFound)
-//	}
-//}
-
 // VariableEditHandler edits a variable
 func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 	var (
