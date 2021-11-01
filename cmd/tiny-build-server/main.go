@@ -12,6 +12,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/shutdownManager"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
@@ -32,6 +33,7 @@ var (
 )
 
 func main() {
+	defer panicHandler.Handle()
 	global.Set(Version, VersionDate)
 	err = logging.Init()
 	if err != nil {
@@ -64,7 +66,6 @@ func main() {
 	if err != nil {
 		logger.Panic("AutoMigrate panic: " + err.Error())
 	}
-	//ds.Quit()
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	logger.Trace("Server starts handling requests")
@@ -138,7 +139,7 @@ func main() {
 
 func setupRoutes(conf *entity.Configuration) *mux.Router {
 	router := mux.NewRouter()
-	router.Use(middleware.Limit, middleware.Headers)
+	router.Use(middleware.Recover, middleware.Limit, middleware.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)

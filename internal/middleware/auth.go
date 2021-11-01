@@ -20,8 +20,7 @@ func Auth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "user", currentUser)
-		r.WithContext(ctx)
+		r = r.WithContext(context.WithValue(r.Context(), "user", currentUser))
 
 		next.ServeHTTP(w, r)
 	})
