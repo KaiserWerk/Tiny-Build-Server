@@ -2,13 +2,11 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
@@ -18,7 +16,7 @@ import (
 // AdminUserListHandler lists all existing user accounts
 func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	var (
-		logger = logging.GetLoggerWithContext("AdminUserListHandler")
+		logger = h.ContextLogger("AdminUserListHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 	)
 
@@ -46,13 +44,12 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err error
-		logger = logging.GetLoggerWithContext("AdminUserAddHandler")
+		logger = h.ContextLogger("AdminUserAddHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = global.GetSessionManager()
+		sessMgr = h.SessMgr
 	)
 
 	if r.Method == "POST" {
-		// displayname, email, password, locked, admin
 		displayname := r.FormValue("displayname")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
@@ -137,14 +134,13 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err error
-		sessMgr = global.GetSessionManager()
-		logger = logging.GetLoggerWithContext("AdminUserEditHandler")
+		sessMgr = h.SessMgr
+		logger = h.ContextLogger("AdminUserEditHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 		vars = mux.Vars(r)
 	)
 
 	if r.Method == http.MethodPost {
-
 		displayname := r.FormValue("displayname")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
@@ -199,10 +195,6 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 			updateUser.Password = passwordHash
 		}
 		err = h.Ds.UpdateUser(updateUser)
-		//query := fmt.Sprintf("UPDATE user SET displayname = ?, email = ?, %slocked = ?, admin = ? WHERE id = ?", pwQueryPart)
-		//helper.WriteToConsole("edit user: query to execute: " + query)
-		// update user
-
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not update user")
 			w.WriteHeader(500)
@@ -245,8 +237,8 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err error
-		sessMgr = global.GetSessionManager()
-		logger = logging.GetLoggerWithContext("AdminUserRemoveHandler")
+		sessMgr = h.SessMgr
+		logger = h.ContextLogger("AdminUserRemoveHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 		vars = mux.Vars(r)
 	)
@@ -300,9 +292,9 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err error
-		logger = logging.GetLoggerWithContext("AdminSettingsHandler")
+		logger = h.ContextLogger("AdminSettingsHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = global.GetSessionManager()
+		sessMgr = h.SessMgr
 	)
 
 	if r.Method == http.MethodPost {

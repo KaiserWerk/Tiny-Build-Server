@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildExecutionListHandler")
+		logger = h.ContextLogger("BuildExecutionListHandler")
 	)
 
 	buildExecutions, err := h.Ds.GetNewestBuildExecutions(0, "")
@@ -42,7 +41,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildExecutionShowHandler")
+		logger = h.ContextLogger("BuildExecutionShowHandler")
 		vars = mux.Vars(r)
 	)
 

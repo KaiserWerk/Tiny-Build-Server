@@ -1,18 +1,17 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"net/http"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
-// VariableListHandler lists all variables available to the logged in user
+// VariableListHandler lists all variables available to the logged-in user
 func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("VariableListHandler")
+		logger = h.ContextLogger("VariableListHandler")
 	)
 
 	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
@@ -39,7 +38,7 @@ func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request
 func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("VariableAddHandler")
+		logger = h.ContextLogger("VariableAddHandler")
 	)
 
 	if r.Method == http.MethodPost {
@@ -81,7 +80,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("VariableEditHandler")
+		logger = h.ContextLogger("VariableEditHandler")
 	)
 
 	if r.Method == http.MethodPost {
@@ -104,7 +103,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		_ = logging.GetLoggerWithContext("VariableRemoveHandler")
+		_ = h.ContextLogger("VariableRemoveHandler")
 	)
 
 	// TODO: implement

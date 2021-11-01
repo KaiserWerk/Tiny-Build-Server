@@ -146,6 +146,8 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 
 	httpHandler := handler.HttpHandler{
 		Ds: databaseservice.Get(),
+		SessMgr: global.GetSessionManager(),
+		Logger: logging.GetCentralLogger(),
 	}
 
 	//asset file handlers

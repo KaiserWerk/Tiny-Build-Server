@@ -3,7 +3,6 @@ package handler
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("IndexHandler")
+		logger = h.ContextLogger("IndexHandler")
 	)
 
 	latestBuilds, err := h.Ds.GetNewestBuildExecutions(5, "")
@@ -48,7 +47,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 // StaticAssetHandler serves static file. http.FileServer does not work as desired
 func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	var (
-		logger = logging.GetLoggerWithContext("StaticAssetHandler")
+		logger = h.ContextLogger("StaticAssetHandler")
 		vars = mux.Vars(r)
 		file = vars["file"]
 		path string

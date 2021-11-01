@@ -3,7 +3,6 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
@@ -24,7 +22,7 @@ import (
 func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildDefinitionListHandler")
+		logger = h.ContextLogger("BuildDefinitionListHandler")
 	)
 	buildDefinitions, err := h.Ds.GetAllBuildDefinitions()
 	if err != nil {
@@ -49,9 +47,9 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 // BuildDefinitionAddHandler adds a new build definition
 func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	var (
-		sessMgr = global.GetSessionManager()
+		sessMgr = h.SessMgr
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildDefinitionAddHandler")
+		logger = h.ContextLogger("BuildDefinitionAddHandler")
 	)
 
 	if r.Method == http.MethodPost {
@@ -106,9 +104,9 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = global.GetSessionManager()
+		sessMgr = h.SessMgr
 		vars = mux.Vars(r)
-		logger = logging.GetLoggerWithContext("BuildDefinitionEditHandler")
+		logger = h.ContextLogger("BuildDefinitionEditHandler")
 	)
 
 	id, err := strconv.Atoi(vars["id"])
@@ -175,7 +173,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildDefinitionShowHandler")
+		logger = h.ContextLogger("BuildDefinitionShowHandler")
 		vars = mux.Vars(r)
 	)
 
@@ -268,7 +266,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildDefinitionRemoveHandler")
+		logger = h.ContextLogger("BuildDefinitionRemoveHandler")
 		vars = mux.Vars(r)
 	)
 
@@ -317,7 +315,7 @@ func (h *HttpHandler) BuildDefinitionListExecutionsHandler(w http.ResponseWriter
 func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("BuildDefinitionRestartHandler")
+		logger = h.ContextLogger("BuildDefinitionRestartHandler")
 		vars = mux.Vars(r)
 	)
 

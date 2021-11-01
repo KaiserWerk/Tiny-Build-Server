@@ -18,7 +18,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 	var (
 		err error
 		vars = mux.Vars(r)
-		logger = logging.GetLoggerWithContext("DownloadNewestArtifactHandler")
+		logger = h.ContextLogger("DownloadNewestArtifactHandler")
 	)
 
 	beList, err := h.Ds.GetNewestBuildExecutions(1, "build_definition_id = ?", vars["id"])
@@ -95,9 +95,6 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 	}
 
 	artifact += ".zip"
-
-	//fmt.Printf("file to serve: %s\n", artifact)
-
 	cont, err := ioutil.ReadFile(artifact)
 	if err != nil {
 		logger.WithFields(logrus.Fields{

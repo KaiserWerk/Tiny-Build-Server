@@ -35,6 +35,10 @@ func GetLoggerWithContext(context string) *logrus.Entry {
 	return centralLogger.WithField("context", context)
 }
 
+func GetCentralLogger() *logrus.Logger {
+	return centralLogger
+}
+
 func CloseFileHandle(wg *sync.WaitGroup) {
 	// Flush?
 	_ = fh.Close()

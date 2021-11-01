@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"net/http"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -15,7 +14,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 	var (
 		err error
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = logging.GetLoggerWithContext("UserSettingsHandler")
+		logger = h.ContextLogger("UserSettingsHandler")
 	)
 
 	if r.Method == http.MethodPost {
