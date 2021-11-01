@@ -6,7 +6,7 @@ Installing the **TinyBuildServer** is quite easy.
 * Place the binary at an appropriate location, e.g. upload to any server.
 * Start the binary once to create the ``app.yaml`` configuration file, 
 set the configuration values according to your needs (mainly the database driver and DSN).
-* Once the changes are applied, the database schema will be automatically applied at startup´.
+* Once the changes are applied, the database schema will be automatically applied at startup.
 
 ### Startup
 
