@@ -56,7 +56,9 @@ func GetConfiguration() *entity.Configuration {
 			}
 			err = ioutil.WriteFile(configFile, content, 0744)
 			if err != nil {
+				panic("could not write config file: " + err.Error())
 			}
+			panic("Configuration file created; exiting...")
 		}
 		cont, err := ioutil.ReadFile(configFile)
 		if err != nil {
