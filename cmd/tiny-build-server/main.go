@@ -169,10 +169,12 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	miscRouter.Use(middleware.Auth)
 	miscRouter.HandleFunc("/", httpHandler.IndexHandler).Methods(http.MethodGet)
 
+	// user routes
 	userRouter := router.PathPrefix("/user").Subrouter()
 	userRouter.Use(middleware.Auth)
 	userRouter.HandleFunc("/settings", httpHandler.UserSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
+	// admin routes
 	adminRouter := router.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(middleware.AuthWithAdmin)
 	router.HandleFunc("/user/list", httpHandler.AdminUserListHandler).Methods(http.MethodGet)
@@ -181,6 +183,7 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	router.HandleFunc("/user/{id}/remove", httpHandler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
 	router.HandleFunc("/settings", httpHandler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
+	// build definition
 	bdRouter := router.PathPrefix("/builddefinition").Subrouter()
 	bdRouter.Use(middleware.Auth)
 	bdRouter.HandleFunc("/list", httpHandler.BuildDefinitionListHandler).Methods(http.MethodGet)
@@ -192,16 +195,17 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	bdRouter.HandleFunc("/{id}/restart", httpHandler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
 	bdRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadNewestArtifactHandler).Methods(http.MethodGet)
 
+	// build execution
 	beRouter := router.PathPrefix("/buildexecution").Subrouter()
 	beRouter.Use(middleware.Auth)
 	beRouter.HandleFunc("/list", httpHandler.BuildExecutionListHandler).Methods(http.MethodGet)
 	beRouter.HandleFunc("/{id}/show", httpHandler.BuildExecutionShowHandler).Methods(http.MethodGet)
 	beRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadSpecificArtifactHandler).Methods(http.MethodGet)
 
+	// variables
 	varRouter := router.PathPrefix("/variable").Subrouter()
 	varRouter.Use(middleware.Auth)
 	varRouter.HandleFunc("/list", httpHandler.VariableListHandler).Methods(http.MethodGet)
-	//varRouter.HandleFunc("/{id}/show", httpHandler.VariableShowHandler).Methods(http.MethodGet)
 	varRouter.HandleFunc("/add", httpHandler.VariableAddHandler).Methods(http.MethodGet, http.MethodPost)
 	varRouter.HandleFunc("/{id}/edit", httpHandler.VariableEditHandler).Methods(http.MethodGet, http.MethodPost)
 	varRouter.HandleFunc("/{id}/remove", httpHandler.VariableRemoveHandler).Methods(http.MethodGet)

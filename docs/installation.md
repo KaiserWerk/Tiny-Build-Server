@@ -1,22 +1,26 @@
 # Installation
 
-Installing the build server is quite easy. 
+Installing the **TinyBuildServer** is quite easy. 
 
-* Start your MySQL server, import the schema dump from ``docs/schema.sql`` and setup a MySQL
-user. 
+* Start your MySQL server, create a new database (and you would usually set up a MySQL user). 
 * Place the binary at an appropriate location, e.g. upload to any server.
-* Create a configuration file (you can copy the ``config/app.dist.yaml`` as a starting point), 
-set the configuration values according to your needs, mainly the MySQL DSN.
-The default location is ``config/app.yaml`` relative to the executable. For more info,
-refer to ``config/app.dist.yaml``.
+* Start the binary once to create the ``app.yaml`` configuration file, 
+set the configuration values according to your needs (mainly the database driver and DSN).
+* Once the changes are applied, the database schema will be automatically applied at startup´.
 
 ### Startup
 
-Start the server with the following command:
+Start the server with the following exemplary command:
 
-``./tiny-build-server -port 8271 -config config/app.yaml``
+``./tiny-build-server --port=1337 --config="/etc/tiny-build-server/app.yaml"``
 
-The default port is 8271. If you want to use default values, you can omit the parameters.
+For Windows it would be
+
+``.\tiny-build-server.exe --port=1337 --config="/etc/tiny-build-server/app.yaml"``
+
+The default port is 8271. The default configuration file location is just ``app.yaml`` 
+relative to the executable.
+If you want to use default values, you can omit the parameters.
 
 ### Setup
 
