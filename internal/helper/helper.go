@@ -98,9 +98,8 @@ func FormatDate(t time.Time) string {
 // UnmarshalBuildDefinitionContent unmarshals a build definition content, inserts available
 // variables and returns it
 func UnmarshalBuildDefinitionContent(content string, variables []entity.UserVariable) (entity.BuildDefinitionContent, error) {
-
 	for _, v := range variables {
-		content = strings.Replace(content, fmt.Sprintf("%%%s%%", v.Variable), v.Value, -1)
+		content = strings.ReplaceAll(content, fmt.Sprintf("${%s}", v.Variable), v.Value)
 	}
 
 	var bdContent entity.BuildDefinitionContent
