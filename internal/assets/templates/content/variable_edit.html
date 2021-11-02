@@ -1,0 +1,44 @@
+{{template "header_default" .}}
+<div class="container-fluid">
+    <h1 class="mt-4 mb-3 offset-1">Variables Overview</h1>
+    <div class="row">
+        {{ getFlashbag }}
+        <div class="col-xl-10 offset-1">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fa fa-columns"></i>
+                    Edit Variable
+                </div>
+                <div class="card-body">
+
+                    <form class="form-horizontal" method="post">
+                        <div class="form-group">
+                            <label class="control-label" for="_var_name">Variable Name*:</label><br>
+                            <input type="text" class="form-control" name="var_name" id="_var_name" value="{{ .Variable.Variable }}"
+                                   placeholder="Display name of the new variable" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="_var_value">Variable Name*:</label><br>
+                            <input type="text" class="form-control" name="var_value" id="_var_value" value="{{ .Variable.Value }}"
+                                   placeholder="Value of the new variable" required>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox">
+                                <label class="control-label" for="_var_public">
+                                    <input type="checkbox" name="var_public" id="_var_public" value="1"{{ if eq .Variable.Public true }} checked{{ end }}>
+                                    Public
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{{ template "footer_default" . }}

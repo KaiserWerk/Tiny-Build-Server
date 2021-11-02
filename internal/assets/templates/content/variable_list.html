@@ -34,7 +34,7 @@
                                     {{ if eq .UserEntryId $userId }}
                                     <div class="btn-group btn-group-sm">
                                         <a class="btn btn-primary" href="/variable/{{ .Id }}/edit">Edit</a>
-                                        <a class="btn btn-danger" href="/variable/{{ .Id }}/remove">Remove</a>
+                                        <a class="btn btn-danger" href="/variable/{{ .Id }}/remove" onclick="return confirm('Really delete?');">Remove</a>
                                     </div>
                                     {{ end }}
                                 </td>
