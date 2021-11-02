@@ -43,7 +43,7 @@ func (ds DatabaseService) GetBuildExecutionById(id int) (entity.BuildExecution, 
 // FindBuildExecutions finds build executions by criteria
 func (ds DatabaseService) FindBuildExecutions(query interface{}, args ...interface{}) ([]entity.BuildExecution, error) {
 	executions := make([]entity.BuildExecution, 0)
-	result := ds.db.Where(query, args).Find(&executions)
+	result := ds.db.Where(query, args...).Find(&executions)
 	if result.Error != nil {
 		return nil, result.Error
 	}

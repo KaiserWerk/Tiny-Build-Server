@@ -73,7 +73,7 @@ func (ds DatabaseService) UpdateUser(user entity.User) error {
 // FindUser finds a user by the supplied criteria
 func (ds DatabaseService) FindUser(cond string, args ...interface{}) (entity.User, error) {
 	var user entity.User
-	result := ds.db.Where(cond, args).Find(&user)
+	result := ds.db.Where(cond, args...).Find(&user)
 	if result.Error != nil {
 		return entity.User{}, result.Error
 	}
