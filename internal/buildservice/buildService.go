@@ -25,11 +25,23 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/pkg/sftp"
-	"github.com/stvp/slug"
 	"golang.org/x/crypto/ssh"
 )
 
 var basePath string = "data"
+
+func init() {
+	ds := databaseservice.Get()
+	setting, err := ds.GetAllSettings()
+	if err != nil {
+		panic("could not initate buildservice: " + err.Error())
+	}
+	for k, v := range setting {
+		if k == "base_datapath" && v != "" {
+			basePath = v
+		}
+	}
+}
 
 func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
 	logger := logging.GetLoggerWithContext("saveBuildReport")
@@ -56,12 +68,12 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		err           error
 		sb            strings.Builder
 		result        = "failed"
-		logger = logging.GetLoggerWithContext("StartBuildProcess")
+		logger        = logging.GetLoggerWithContext("StartBuildProcess")
+		ds            = databaseservice.Get()
 		executionTime = time.Now().UnixNano()
-		projectPath  = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
-		//buildPath    = projectPath + "/build"
-		artifactPath = projectPath + "/artifact"
-		clonePath    = projectPath + "/clone"
+		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
+		artifactPath  = projectPath + "/artifact"
+		clonePath     = projectPath + "/clone"
 	)
 
 	messageCh := make(chan string)
@@ -86,7 +98,6 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
-	ds := databaseservice.Get()
 
 	//if helper.FileExists(projectPath) {
 	err = os.RemoveAll(projectPath)
@@ -102,12 +113,12 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	//	messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
 	//	return
 	//}
-	err = os.MkdirAll(artifactPath, 0744)
+	err = os.MkdirAll(artifactPath, 0700)
 	if err != nil {
 		messageCh <- "could not create artifact directory (" + artifactPath + "): " + err.Error()
 		return
 	}
-	err = os.MkdirAll(clonePath, 0744)
+	err = os.MkdirAll(clonePath, 0700)
 	if err != nil {
 		messageCh <- "could not create clone directory (" + clonePath + "): " + err.Error()
 		return
@@ -152,8 +163,8 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		fallthrough
 	case "golang":
 		def := buildsteps.GolangBuildDefinition{
-			CloneDir:    clonePath,    // strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
-			ArtifactDir: artifactPath, // strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			CloneDir:    clonePath,
+			ArtifactDir: artifactPath,
 			MetaData:    definition,
 			Content:     content,
 		}
@@ -172,38 +183,38 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		fallthrough
 	case "dotnet":
 		def := buildsteps.DotnetBuildDefinition{
-			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
-			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			CloneDir:    clonePath,
+			ArtifactDir: artifactPath,
 			MetaData:    definition,
 			Content:     content,
 		}
 		err = handleDotnetProject(def, messageCh, projectPath)
 		if err != nil {
-			messageCh <- "could not build dotnet project (" + projectPath + ")"
+			messageCh <- fmt.Sprintf("could not build dotnet project (%s): %s", projectPath, err.Error())
 			return
 		}
 	case "php":
 		def := buildsteps.PhpBuildDefinition{
-			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
-			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			CloneDir:    clonePath,
+			ArtifactDir: artifactPath,
 			MetaData:    definition,
 			Content:     content,
 		}
 		err = handlePhpProject(def, messageCh, projectPath)
 		if err != nil {
-			messageCh <- "could not build php project (" + projectPath + ")"
+			messageCh <- fmt.Sprintf("could not build php project (%s): %s", projectPath, err.Error())
 			return
 		}
 	case "rust":
 		def := buildsteps.RustBuildDefinition{
-			CloneDir:    strings.ToLower(fmt.Sprintf("%s/%s/%s/clone", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
-			ArtifactDir: strings.ToLower(fmt.Sprintf("%s/%s/%s/artifact", baseDataPath, content.Repository.Hoster, slug.Clean(content.Repository.Name))),
+			CloneDir:    clonePath,
+			ArtifactDir: artifactPath,
 			MetaData:    definition,
 			Content:     content,
 		}
 		err = handleRustProject(def, messageCh, projectPath)
 		if err != nil {
-			messageCh <- "could not build rust project (" + projectPath + ")"
+			messageCh <- fmt.Sprintf("could not build rust project (%s): %s", projectPath, err.Error())
 			return
 		}
 	}
@@ -270,7 +281,7 @@ func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh 
 
 	// TODO gehört eigentlich eine Ebene höher
 	//if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
-		err = deployArtifact(definition.Content, messageCh, artifact)
+	err = deployArtifact(definition.Content, messageCh, artifact)
 	//}
 	// TODO handle err
 
@@ -547,7 +558,7 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 		for i := range headers {
 			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
 			if err != nil {
-				return fmt.Errorf("bitbucket: could not get bitbucket header %s", headers[i])
+				return fmt.Errorf("bitbucket: could not get header %s", headers[i])
 			}
 		}
 
@@ -620,10 +631,11 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 
 		var payload entity.GiteaPushPayload
 		err = json.NewDecoder(r.Body).Decode(&payload)
-		_ = r.Body.Close()
 		if err != nil {
 			return fmt.Errorf("gitea: could not decode json payload: %s", err.Error())
 		}
+		_ = r.Body.Close()
+
 		branch := strings.Split(payload.Ref, "/")[2]
 		if branch != content.Repository.Branch {
 			return fmt.Errorf("gitea: branch names do not match (from payload: %s, from build definition: %s)", branch, content.Repository.Branch)
