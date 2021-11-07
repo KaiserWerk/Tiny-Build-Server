@@ -9,7 +9,7 @@ import (
 type HttpHandler struct {
 	Ds *databaseservice.DatabaseService
 	SessMgr *sessionstore.SessionManager
-	Logger *logrus.Logger
+	Logger *logrus.Entry
 }
 
 func (h *HttpHandler) ContextLogger(context string) *logrus.Entry {

@@ -29,23 +29,21 @@ var (
 	VersionDate = "0000-00-00 00:00:00 +00:00"
 	listenPort string
 	configFile string
+	logDir string
 	err error
 )
 
 func main() {
-	defer panicHandler.Handle()
-	global.Set(Version, VersionDate)
-	err = logging.Init()
-	if err != nil {
-		panic(err.Error())
-	}
-	defer shutdownManager.Initiate()
-
-	logger := logging.GetLoggerWithContext("main")
-
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
+	flag.StringVar(&logDir, "logs", ".", "The path to place log files in")
 	flag.Parse()
+
+	defer panicHandler.Handle()
+	defer shutdownManager.Initiate()
+	global.Set(Version, VersionDate)
+	logging.Init(logDir)
+	logger := logging.New(logrus.DebugLevel, "main", true)
 
 	if configFile != "" {
 		global.SetConfigurationFile(configFile)
@@ -148,7 +146,7 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	httpHandler := handler.HttpHandler{
 		Ds: databaseservice.Get(),
 		SessMgr: global.GetSessionManager(),
-		Logger: logging.GetCentralLogger(),
+		Logger: logging.New(logrus.TraceLevel, "HttpHandler", true),
 	}
 
 	//asset file handlers
@@ -177,11 +175,11 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	// admin routes
 	adminRouter := router.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(middleware.AuthWithAdmin)
-	router.HandleFunc("/user/list", httpHandler.AdminUserListHandler).Methods(http.MethodGet)
-	router.HandleFunc("/user/add", httpHandler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/user/{id}/edit", httpHandler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/user/{id}/remove", httpHandler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/settings", httpHandler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
+	adminRouter.HandleFunc("/user/list", httpHandler.AdminUserListHandler).Methods(http.MethodGet)
+	adminRouter.HandleFunc("/user/add", httpHandler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
+	adminRouter.HandleFunc("/user/{id}/edit", httpHandler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
+	adminRouter.HandleFunc("/user/{id}/remove", httpHandler.AdminUserRemoveHandler).Methods(http.MethodGet, http.MethodPost)
+	adminRouter.HandleFunc("/settings", httpHandler.AdminSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
 	// build definition
 	bdRouter := router.PathPrefix("/builddefinition").Subrouter()

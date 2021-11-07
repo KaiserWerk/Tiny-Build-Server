@@ -71,7 +71,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		vars = mux.Vars(r)
-		logger = logging.GetLoggerWithContext("DownloadNewestArtifactHandler")
+		logger = logging.New(logrus.InfoLevel, "DownloadNewestArtifactHandler", true)
 	)
 	id, _ := strconv.Atoi(vars["id"])
 	be, err := h.Ds.GetBuildExecutionById(id)

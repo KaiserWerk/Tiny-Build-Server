@@ -44,8 +44,7 @@ func AuthWithAdmin(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", currentUser)
-		r.WithContext(ctx)
+		r = r.WithContext(context.WithValue(r.Context(), "user", currentUser))
 
 		next.ServeHTTP(w, r)
 	})

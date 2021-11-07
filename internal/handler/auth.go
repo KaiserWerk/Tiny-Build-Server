@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -64,6 +65,8 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
+
+			r = r.WithContext(context.WithValue(r.Context(), "user", u))
 		} else {
 			logger.Info("login: not successful, password hash doesn't match")
 			sessMgr.AddMessage("error", "Invalid credentials!")

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -44,7 +45,7 @@ func init() {
 }
 
 func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
-	logger := logging.GetLoggerWithContext("saveBuildReport")
+	logger := logging.New(logrus.DebugLevel, "saveBuildReport", true)
 	ds := databaseservice.Get()
 	be := entity.BuildExecution{
 		BuildDefinitionId: definition.Id,
@@ -68,7 +69,7 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		err           error
 		sb            strings.Builder
 		result        = "failed"
-		logger        = logging.GetLoggerWithContext("StartBuildProcess")
+		logger        = logging.New(logrus.DebugLevel, "StartBuildProcess", true)
 		ds            = databaseservice.Get()
 		executionTime = time.Now().UnixNano()
 		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)

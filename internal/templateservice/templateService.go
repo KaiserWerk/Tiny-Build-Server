@@ -28,7 +28,7 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 			"formatDate":         helper.FormatDate,
 			"getBuildDefCaption": ds.GetBuildDefCaption,
 		}
-		logger = logging.GetLoggerWithContext("ExecuteTemplate")
+		logger = logging.New(logrus.InfoLevel, "ExecuteTemplate", true)
 	)
 	layoutContent, err := assets.GetTemplate("_layout.html")
 	if err != nil {
@@ -68,7 +68,7 @@ func ExecuteTemplate(w io.Writer, file string, data interface{}) error {
 
 // ParseEmailTemplate parses and email template with the given data
 func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
-	logger := logging.GetLoggerWithContext("ParseEmailTemplate")
+	logger := logging.New(logrus.InfoLevel, "ParseEmailTemplate", true)
 	cont, err := assets.GetTemplate("email/"+messageType+".html")
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get email template")
@@ -93,7 +93,7 @@ func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
 // GetFlashbag return a HTML string populated with flash messages, if available
 func GetFlashbag(mgr *sessionstore.SessionManager) func() template.HTML {
 	return func() template.HTML {
-		logger := logging.GetLoggerWithContext("GetFlashbag")
+		logger := logging.New(logrus.InfoLevel, "GetFlashbag", true)
 		if mgr == nil {
 			logger.Error("sessionManager is nil")
 			return template.HTML("")

@@ -11,36 +11,35 @@ import (
 
 var (
 	err error
-	logFile string = "tbs.log" // TODO: log rotation?
-	fh *os.File
-	centralLogger *logrus.Logger
+	rotator *Rotator
 )
 
-func Init() error {
-	shutdownManager.Register(CloseFileHandle)
-
-	centralLogger = logrus.New()
-	centralLogger.SetLevel(logrus.TraceLevel)
-	centralLogger.SetReportCaller(true)
-	centralLogger.SetFormatter(&TbsFormatter{})
-	fh, err = os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-	if err != nil {
-		return err
+func New(lvl logrus.Level, context string, toConsole bool) *logrus.Entry {
+	l := logrus.New()
+	l.SetLevel(lvl)
+	l.SetFormatter(&TbsFormatter{
+		LevelPadding: 7,
+		ContextPadding: 9,
+	})
+	l.SetReportCaller(false)
+	if toConsole {
+		l.SetOutput(io.MultiWriter(rotator, os.Stdout))
+	} else {
+		l.SetOutput(rotator)
 	}
-	centralLogger.SetOutput(io.MultiWriter(fh, os.Stdout))
-	return nil
+
+	return l.WithField("context", context)
 }
 
-func GetLoggerWithContext(context string) *logrus.Entry {
-	return centralLogger.WithField("context", context)
-}
-
-func GetCentralLogger() *logrus.Logger {
-	return centralLogger
+func Init(dir string) {
+	shutdownManager.Register(CloseFileHandle)
+	rotator, err = NewRotator(dir, "tbs.log", 10 << 20, 0644)
+	if err != nil {
+		panic("cannot create rotator: " + err.Error())
+	}
 }
 
 func CloseFileHandle(wg *sync.WaitGroup) {
-	// Flush?
-	_ = fh.Close()
+	_ = rotator.Close()
 	wg.Done()
 }
