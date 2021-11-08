@@ -320,9 +320,9 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				return err
 			}
 
-			_ = os.MkdirAll(filepath.Base(deployment.Path), 0744)
+			_ = os.MkdirAll(filepath.Dir(deployment.Path), 0744)
 
-			err = ioutil.WriteFile(deployment.Path, fileBytes, 0744)
+			err = os.WriteFile(deployment.Path, fileBytes, 0744)
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not write artifact (%s) to target (%s): %s", artifact, deployment.Path, err.Error())
 				return err
