@@ -319,15 +319,12 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				messageCh <- fmt.Sprintf("could not read artifact (%s): %s", artifact, err.Error())
 				return err
 			}
-			targetPath := deployment.Path
 
-			if deployment.Path[len(deployment.Path)-1:] == "/" {
-				targetPath = filepath.Join(deployment.Path, filepath.Base(artifact))
-			}
+			_ = os.MkdirAll(deployment.Path, 0644)
 
-			err = ioutil.WriteFile(targetPath, fileBytes, 0744)
+			err = ioutil.WriteFile(deployment.Path, fileBytes, 0744)
 			if err != nil {
-				messageCh <- fmt.Sprintf("could not write artifact (%s) to target (%s): %s", artifact, targetPath, err.Error())
+				messageCh <- fmt.Sprintf("could not write artifact (%s) to target (%s): %s", artifact, deployment.Path, err.Error())
 				return err
 			}
 		}
