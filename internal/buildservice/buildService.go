@@ -320,7 +320,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 				return err
 			}
 
-			_ = os.MkdirAll(deployment.Path, 0644)
+			_ = os.MkdirAll(filepath.Base(deployment.Path), 0744)
 
 			err = ioutil.WriteFile(deployment.Path, fileBytes, 0744)
 			if err != nil {
