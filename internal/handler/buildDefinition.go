@@ -22,7 +22,7 @@ import (
 func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildDefinitionListHandler")
+		logger      = h.ContextLogger("BuildDefinitionListHandler")
 	)
 	buildDefinitions, err := h.Ds.GetAllBuildDefinitions()
 	if err != nil {
@@ -47,9 +47,9 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 // BuildDefinitionAddHandler adds a new build definition
 func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	var (
-		sessMgr = h.SessMgr
+		sessMgr     = h.SessMgr
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildDefinitionAddHandler")
+		logger      = h.ContextLogger("BuildDefinitionAddHandler")
 	)
 
 	if r.Method == http.MethodPost {
@@ -104,9 +104,9 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = h.SessMgr
-		vars = mux.Vars(r)
-		logger = h.ContextLogger("BuildDefinitionEditHandler")
+		sessMgr     = h.SessMgr
+		vars        = mux.Vars(r)
+		logger      = h.ContextLogger("BuildDefinitionEditHandler")
 	)
 
 	id, err := strconv.Atoi(vars["id"])
@@ -173,8 +173,10 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildDefinitionShowHandler")
-		vars = mux.Vars(r)
+		logger      = h.ContextLogger("BuildDefinitionShowHandler")
+		vars        = mux.Vars(r)
+		baseUrl     string
+		limit       int = 25
 	)
 
 	settings, err := h.Ds.GetAllSettings()
@@ -202,7 +204,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	beList, err := h.Ds.GetNewestBuildExecutions(10, "build_definition_id = ?", bd.Id)
+	beList, err := h.Ds.GetNewestBuildExecutions(limit, "build_definition_id = ?", bd.Id)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get newest build executions")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -245,6 +247,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		SuccessRate       string
 		AvgRuntime        string
 		BaseUrl           string
+		Limit             int
 	}{
 		BuildDefinition:   bd,
 		RecentExecutions:  recentExecutions,
@@ -255,6 +258,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		SuccessRate:       fmt.Sprintf("%.2f", successRate),
 		AvgRuntime:        fmt.Sprintf("%.2f", avg),
 		BaseUrl:           baseUrl,
+		Limit:             limit,
 	}
 
 	if err := templateservice.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
@@ -266,8 +270,8 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildDefinitionRemoveHandler")
-		vars = mux.Vars(r)
+		logger      = h.ContextLogger("BuildDefinitionRemoveHandler")
+		vars        = mux.Vars(r)
 	)
 
 	confirm := r.URL.Query().Get("confirm")
@@ -279,7 +283,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not parse entry ID")
 		w.WriteHeader(500)
 		return
@@ -288,7 +292,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not get build definition by ID")
 		http.Error(w, "could not get build definition by ID", http.StatusInternalServerError)
 		return
@@ -315,15 +319,15 @@ func (h *HttpHandler) BuildDefinitionListExecutionsHandler(w http.ResponseWriter
 func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildDefinitionRestartHandler")
-		vars = mux.Vars(r)
+		logger      = h.ContextLogger("BuildDefinitionRestartHandler")
+		vars        = mux.Vars(r)
 	)
 
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not parse build definition ID")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
 		return
@@ -333,7 +337,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not get buildDefinition")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusBadRequest)
 		return
@@ -342,7 +346,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":  err.Error(),
 			"userID": currentUser.Id,
 		}).Error("could not get variables")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
