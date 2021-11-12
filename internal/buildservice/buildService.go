@@ -33,15 +33,15 @@ var basePath string = "data"
 
 func init() {
 	ds := databaseservice.Get()
-	setting, err := ds.GetAllSettings()
+	settings, err := ds.GetAllSettings()
 	if err != nil {
 		panic("could not initate buildservice: " + err.Error())
 	}
-	for k, v := range setting {
-		if k == "base_datapath" && v != "" {
-			basePath = v
-		}
+
+	if path, ok := settings["base_datapath"]; ok && path != "" {
+		basePath = path
 	}
+
 }
 
 func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
@@ -100,20 +100,12 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
 
-	//if helper.FileExists(projectPath) {
 	err = os.RemoveAll(projectPath)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not remove stale project directory (%s): %s", projectPath, err.Error())
 		return
 	}
-	//}
 
-	// create a new build directory
-	//err = os.MkdirAll(buildPath, 0744)
-	//if err != nil {
-	//	messageCh <- "could not create build directory (" + buildPath + "): " + err.Error()
-	//	return
-	//}
 	err = os.MkdirAll(artifactPath, 0700)
 	if err != nil {
 		messageCh <- "could not create artifact directory (" + artifactPath + "): " + err.Error()
@@ -129,6 +121,9 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 	var withCredentials bool
 	if content.Repository.AccessSecret != "" {
 		withCredentials = true
+		if content.Repository.AccessUser == "" {
+			content.Repository.AccessUser = "nobody"
+		}
 	}
 	repositoryUrl, err := getRepositoryUrl(content, withCredentials)
 	if err != nil {
@@ -146,23 +141,19 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		messageCh <- string(cmdOutput)
 	}
 
-	settings, err := ds.GetAllSettings()
-	if err != nil {
-		messageCh <- "could not obtain setting values: " + err.Error()
-		return
-	}
-
-	baseDataPath, ok := settings["base_datapath"]
-	if !ok || baseDataPath == "" {
-		messageCh <- "could not fetch base data path, falling back to default"
-		baseDataPath = "."
-	}
-	messageCh <- fmt.Sprintf("setting baseDataPath to %s", baseDataPath)
+	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
 
 	switch content.ProjectType {
 	case "go":
 		fallthrough
 	case "golang":
+		// keine spezeielle build def versenden
+		// schritte der definition unter berücksichtigung der sprache durchführen
+		// erlaubt:
+			// setenv, unsetenv
+			// go
+			// git
+			// download (?)
 		def := buildsteps.GolangBuildDefinition{
 			CloneDir:    clonePath,
 			ArtifactDir: artifactPath,

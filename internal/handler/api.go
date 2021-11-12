@@ -46,7 +46,7 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	// unmarshal the build definition content
 	bdContent, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
 	if err != nil {
-		logger.WithField("error", err.Error()).Error("could not determine variables for user")
+		logger.WithField("error", err.Error()).Error("could not unmarshal build definition")
 		http.Error(w, "could not unmarshal build definition content: "+err.Error(), http.StatusNotFound)
 		return
 	}
