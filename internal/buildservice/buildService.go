@@ -70,7 +70,6 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		sb            strings.Builder
 		result        = "failed"
 		logger        = logging.New(logrus.DebugLevel, "StartBuildProcess", true)
-		ds            = databaseservice.Get()
 		executionTime = time.Now().UnixNano()
 		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
 		artifactPath  = projectPath + "/artifact"
