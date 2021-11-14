@@ -29,4 +29,5 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 * [Create a build definition](docs/create-a-build-definition.md)
 * [Create a webhook](docs/create-a-webhook.md)
 * [Admin Settings](docs/admin-settings.md)
+* [Using Variables](docs/using-variables.md)
 
