@@ -4,7 +4,7 @@
 
 **IMPORTANT: This is work in progress!**
 
-This project aims to be a functioning, minimal build server for Go, .NET, Rust and (probably) PHP projects.
+This project aims to be a functioning, minimal build server for Go, .NET and (probably) PHP projects.
 
 It can be used in conjunction with *BitBucket*, *GitHub*, *GitLab* and *Gitea* and it runs on 
 whatever platform you compile it for, be it *Windows*, *Linux* or *macOS*, even on a RaspberryPi.
