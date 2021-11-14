@@ -129,6 +129,11 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		messageCh <- fmt.Sprintf("could not determine repository url: %s", err.Error())
 		return
 	}
+
+	if content.Repository.Branch == "" {
+		content.Repository.Branch = "master"
+	}
+
 	commandParts := strings.Split(fmt.Sprintf("git clone --single-branch --branch %s %s %s", content.Repository.Branch, repositoryUrl, clonePath), " ")
 	cmd := exec.Command(commandParts[0], commandParts[1:]...)
 	messageCh <- "clone repository command: " + cmd.String()
