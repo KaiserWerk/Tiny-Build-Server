@@ -20,7 +20,6 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 
 * Git (for cloning projects)
 * [go](https://golang.org/) (for Golang projects)
-* cargo through [rustup](https://www.rust-lang.org/) (for Rust projects)
 * [dotnet](https://dotnet.microsoft.com/download) (for .NET projects)
 
 ### Documentation
