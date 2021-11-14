@@ -5,7 +5,7 @@ repository:
   name:
   access_user:
   access_secret:
-  branch:
+  branch: master
 setup:
   -
 test:
