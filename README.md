@@ -18,7 +18,7 @@ Free to use for any non-commercial purpose; refer to LICENSE.md
 
 ### Dependencies
 
-* [Git](https://git-scm.com/) (for cloning projects)
+* [Git](https://git-scm.com/)
 * [go](https://golang.org/) (for Go projects)
 * [dotnet](https://dotnet.microsoft.com/download) (for .NET projects)
 
