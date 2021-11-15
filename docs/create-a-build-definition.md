@@ -35,7 +35,8 @@ You could generally just pack all required steps into one section, these caption
 for separating concerns. 
 That means, in every section, you can set (and unset) environment variables,
 use git commands, use to ``go`` command or execute any arbitrary command you like, e.g.
-signing the artifact using [minisign](https://jedisct1.github.io/minisign/).
+signing the artifact using [minisign](https://jedisct1.github.io/minisign/) or compressing
+a binary using [UPX](https://upx.github.io/).
 An example might look like this:
 
 ```yaml
@@ -49,14 +50,18 @@ pre_build:
   - setenv GOOS windows
   - setenv GOARCH amd64
 build:
-  - go build -o ${artifact} -ldflags "-s -w" ${cloneDir}/cmd/myapp/main.go
+  - go build ${cloneDir}/cmd/myapp/main.go
 post_build:
   - minisign -Sm ${artifact} -t 'This comment will be signed as well'
 ```
+
+By default, the linker flags ``-ldflags "-s -w""`` are set. It is currently not possibly
+to modify that behaviour. I'm working on a working solution.
+
 Currently, the following default variables are available:
 
 * ``${artifact}`` contains the internal directory and filename to artifact which is about
-to be created (on Windows, *.exe* is appended automatically)
+to be created (for GOOS=windows, *.exe* is appended automatically)
 * ``${cloneDir}`` contains the internal directory which the repository was cloned into
 
 #### Deployments
