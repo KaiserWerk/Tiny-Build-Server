@@ -207,7 +207,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 				return
 			}
 		case strings.HasPrefix(step, "go build"):
-			if os.Getenv("GOOS") == "windows" {
+			if strings.ToLower(os.Getenv("GOOS")) == "windows" {
 				artifactPath += ".exe"
 			}
 			parts := strings.Split(step, " ")
