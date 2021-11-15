@@ -519,7 +519,7 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 	// check relevant headers and payload values
 	switch content.Repository.Hoster {
 	case "bitbucket":
-		headers := []string{"X-Event-RegToken", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
+		headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
 		headerValues := make([]string, len(headers))
 		for i := range headers {
 			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
