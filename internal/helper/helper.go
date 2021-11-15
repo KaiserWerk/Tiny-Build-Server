@@ -75,7 +75,7 @@ func SendEmail2(settings map[string]string, body string, subject string, to, att
 	//e.Bcc = []string{"test_bcc@example.com"}
 	//e.Cc = []string{"test_cc@example.com"}
 	e.Subject = subject
-	e.Text = []byte("Text Body is, of course, supported!")
+	//e.Text = []byte("Text Body is, of course, supported!")
 	e.HTML = []byte(body)
 	if attachments != nil && len(attachments) > 0 {
 		for _, v := range attachments {
@@ -95,18 +95,13 @@ func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02 15:04")
 }
 
-// UnmarshalBuildDefinitionContent unmarshals a build definition content, inserts available
-// variables and returns it
-func UnmarshalBuildDefinitionContent(content string, variables []entity.UserVariable) (entity.BuildDefinitionContent, error) {
+// UnmarshalBuildDefinitionContent unmarshals a build definition content
+func UnmarshalBuildDefinitionContent(content string, bdContent *entity.BuildDefinitionContent) error {
+	return yaml.Unmarshal([]byte(content), &bdContent)
+}
+
+func ReplaceVariables(content *string, variables []entity.UserVariable) {
 	for _, v := range variables {
-		content = strings.ReplaceAll(content, fmt.Sprintf("${%s}", v.Variable), v.Value)
+		*content = strings.ReplaceAll(*content, fmt.Sprintf("${%s}", v.Variable), v.Value)
 	}
-
-	var bdContent entity.BuildDefinitionContent
-	err := yaml.Unmarshal([]byte(content), &bdContent)
-	if err != nil {
-		return bdContent, err
-	}
-
-	return bdContent, nil
 }

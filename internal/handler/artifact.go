@@ -99,7 +99,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"artifcatFile": artifact,
+			"artifactFile": artifact,
 		}).Info("could not read artifact file")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
 		return

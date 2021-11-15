@@ -49,14 +49,19 @@ pre_build:
   - setenv GOOS windows
   - setenv GOARCH amd64
 build:
-  - go build -o ${artifact} -ldflags "-s -w" cmd/myapp/main.go
+  - go build -o ${artifact} -ldflags "-s -w" ${cloneDir}/cmd/myapp/main.go
 post_build:
   - minisign -Sm ${artifact} -t 'This comment will be signed as well'
 ```
+Currently, the following default variables are available:
+
+* ``${artifact}`` contains the internal directory and filename to artifact which is about
+to be created (on Windows, *.exe* is appended automatically)
+* ``${cloneDir}`` contains the internal directory which the repository was cloned into
 
 #### Deployments
 
-There are three types of deployment: local deployments, email deployments and remote
+There are three types of deployments: local deployments, email deployments and remote
 deployments.
 Local deployments basically just copy the artifact to a different directory, e.g. a 
 net drive or an external hard drive.
@@ -86,7 +91,7 @@ deployments:
     - enabled: true
       host: somemachine.org
       port: 22 # Port 22 is the usual default
-      connection_type: sftp
+      connection_type: sftp # currently, only sftp is supported
       username: username
       password: 'pass@word'
       working_directory: /opt/myapp

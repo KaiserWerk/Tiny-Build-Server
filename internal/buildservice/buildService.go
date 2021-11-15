@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
+	"github.com/stvp/slug"
 	"io"
 	"io/ioutil"
 	"math"
@@ -18,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildsteps"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
@@ -63,10 +63,12 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 }
 
 // StartBuildProcess start the build process for a given build definition
-func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDefinitionContent) {
+func StartBuildProcess(definition entity.BuildDefinition) {
 	// instantiate tools for build output
 	var (
+		ds            = databaseservice.Get()
 		err           error
+		binaryName    string
 		sb            strings.Builder
 		result        = "failed"
 		logger        = logging.New(logrus.DebugLevel, "StartBuildProcess", true)
@@ -99,6 +101,8 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
 	}()
 
+	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
+
 	err = os.RemoveAll(projectPath)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not remove stale project directory (%s): %s", projectPath, err.Error())
@@ -116,196 +120,161 @@ func StartBuildProcess(definition entity.BuildDefinition, content entity.BuildDe
 		return
 	}
 
-	// clone the repository
-	var withCredentials bool
-	if content.Repository.AccessSecret != "" {
-		withCredentials = true
-		if content.Repository.AccessUser == "" {
-			content.Repository.AccessUser = "nobody"
-		}
+	variables, err := ds.GetAvailableVariablesForUser(definition.CreatedBy)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not determine variables for user: '%s'", err.Error())
+		return
 	}
+	helper.ReplaceVariables(&definition.Content, variables)
+
+	var content entity.BuildDefinitionContent
+	if err = helper.UnmarshalBuildDefinitionContent(definition.Content, &content); err != nil {
+		messageCh <- fmt.Sprintf("could not unmarshal build definition: '%s'", err.Error())
+		return
+	}
+
+	// clone the repository
+	withCredentials := content.Repository.AccessSecret != ""
+	if withCredentials && content.Repository.AccessUser == "" {
+		content.Repository.AccessUser = "nobody"
+	}
+
+	// if no branch is set, use master as the default
+	if content.Repository.Branch == "" {
+		content.Repository.Branch = "master"
+	}
+
 	repositoryUrl, err := getRepositoryUrl(content, withCredentials)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not determine repository url: %s", err.Error())
 		return
 	}
 
-	if content.Repository.Branch == "" {
-		content.Repository.Branch = "master"
+	err = cloneRepository(messageCh, content.Repository.Branch, repositoryUrl, clonePath)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not clone repository: '%s'", err.Error())
+		return
 	}
 
-	commandParts := strings.Split(fmt.Sprintf("git clone --single-branch --branch %s %s %s", content.Repository.Branch, repositoryUrl, clonePath), " ")
-	cmd := exec.Command(commandParts[0], commandParts[1:]...)
+	binaryName = slug.Clean(strings.ToLower(strings.Split(content.Repository.Name, "/")[1]))
+	artifactPath = filepath.Join(artifactPath, binaryName)
+	helper.ReplaceVariables(&definition.Content, []entity.UserVariable{{
+		Variable: "artifact",
+		Value:    artifactPath,
+	}, {
+		Variable: "cloneDir",
+		Value:    clonePath,
+	}})
+
+	// do the unmarshal again with updated variables
+	if err = helper.UnmarshalBuildDefinitionContent(definition.Content, &content); err != nil {
+		messageCh <- fmt.Sprintf("could not unmarshal build definition: '%s'", err.Error())
+		return
+	}
+
+	allSteps := make([]string, 0)
+	allSteps = append(allSteps, content.Setup...)
+	allSteps = append(allSteps, content.Test...)
+	allSteps = append(allSteps, content.PreBuild...)
+	allSteps = append(allSteps, content.Build...)
+	allSteps = append(allSteps, content.PostBuild...)
+
+	for _, step := range allSteps {
+		switch true {
+		case strings.HasPrefix(step, "setenv"):
+			parts := strings.Split(step, " ")
+			if len(parts) != 3 {
+				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
+				return
+			}
+			err = os.Setenv(parts[1], parts[2])
+			if err != nil {
+				messageCh <- fmt.Sprintf("step '%s' was not successful: '%s'", step, err.Error())
+				return
+			}
+		case strings.HasPrefix(step, "unsetenv"):
+			parts := strings.Split(step, " ")
+			if len(parts) != 2 {
+				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
+				return
+			}
+			err = os.Unsetenv(parts[1])
+			if err != nil {
+				messageCh <- fmt.Sprintf("step '%s' was not successful: '%s'", step, err.Error())
+				return
+			}
+		case strings.HasPrefix(step, "go build"):
+			if os.Getenv("GOOS") == "windows" {
+				artifactPath += ".exe"
+			}
+			parts := strings.Split(step, " ")
+			if len(parts) != 3 {
+				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
+				return
+			}
+			cmd := exec.Command("go", "build", "-o", artifactPath, "-ldflags", "-s -w", parts[2])
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
+				return
+			}
+
+			messageCh <- string(b)
+		default:
+			parts := strings.Split(step, " ")
+			var cmd *exec.Cmd
+			if len(parts) <= 0 { // :)
+				messageCh <- "empty step"
+				return
+			} else if len(parts) == 1 {
+				cmd = exec.Command(parts[0])
+			} else {
+				cmd = exec.Command(parts[0], strings.Join(parts[1:], " "))
+			}
+
+			messageCh <- fmt.Sprintf("step: %s", cmd.String())
+
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
+				return
+			}
+
+			messageCh <- string(b)
+		}
+
+	}
+
+	err = deployArtifact(messageCh, content, artifactPath)
+	if err != nil {
+		messageCh <- fmt.Sprintf("could not deploy artifact")
+		return
+	}
+
+	logger.Trace("build succeeded")
+	result = "success"
+}
+
+func cloneRepository(messageCh chan string, branch string, repositoryUrl string, path string) error {
+	//commandParts := strings.Split(fmt.Sprintf("git clone --single-branch --branch %s %s %s", content.Repository.Branch, repositoryUrl, clonePath), " ")
+	cmd := exec.Command("git", "clone", "--single-branch", "--branch", branch, repositoryUrl, path)
 	messageCh <- "clone repository command: " + cmd.String()
 	cmdOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		messageCh <- "could not get command output: " + err.Error()
-		return
-	} else {
-		messageCh <- string(cmdOutput)
+		return err
 	}
-
-	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
-
-	switch content.ProjectType {
-	case "go":
-		fallthrough
-	case "golang":
-		// keine spezeielle build def versenden
-		// schritte der definition unter berücksichtigung der sprache durchführen
-		// erlaubt:
-			// setenv, unsetenv
-			// go
-			// git
-			// download (?)
-		def := buildsteps.GolangBuildDefinition{
-			CloneDir:    clonePath,
-			ArtifactDir: artifactPath,
-			MetaData:    definition,
-			Content:     content,
-		}
-		artifactPath, err = handleGolangProject(def, messageCh, projectPath)
-		if err != nil {
-			messageCh <- fmt.Sprintf("could not build golang project (%s): %s", projectPath, err.Error())
-			return
-		}
-	case "csharp":
-		fallthrough
-	case "fsharp":
-		fallthrough
-	case "vb":
-		fallthrough
-	case "visualbasic":
-		fallthrough
-	case "dotnet":
-		def := buildsteps.DotnetBuildDefinition{
-			CloneDir:    clonePath,
-			ArtifactDir: artifactPath,
-			MetaData:    definition,
-			Content:     content,
-		}
-		err = handleDotnetProject(def, messageCh, projectPath)
-		if err != nil {
-			messageCh <- fmt.Sprintf("could not build dotnet project (%s): %s", projectPath, err.Error())
-			return
-		}
-	case "php":
-		def := buildsteps.PhpBuildDefinition{
-			CloneDir:    clonePath,
-			ArtifactDir: artifactPath,
-			MetaData:    definition,
-			Content:     content,
-		}
-		err = handlePhpProject(def, messageCh, projectPath)
-		if err != nil {
-			messageCh <- fmt.Sprintf("could not build php project (%s): %s", projectPath, err.Error())
-			return
-		}
-	case "rust":
-		def := buildsteps.RustBuildDefinition{
-			CloneDir:    clonePath,
-			ArtifactDir: artifactPath,
-			MetaData:    definition,
-			Content:     content,
-		}
-		err = handleRustProject(def, messageCh, projectPath)
-		if err != nil {
-			messageCh <- fmt.Sprintf("could not build rust project (%s): %s", projectPath, err.Error())
-			return
-		}
-	}
-	logger.Trace("build succeeded")
-	result = "success"
-	fmt.Println("info received!") // TODO: set a proper response
-}
-
-func handleGolangProject(definition buildsteps.GolangBuildDefinition, messageCh chan string, projectDir string) (string, error) {
-	var err error
-
-	//if definition. {
-	//	err = definition.RunTests(messageCh)
-	//	if err != nil {
-	//		//messageCh <- "process cancelled by test run: " + err.Error()
-	//		return "", err
-	//	}
-	//}
-	//
-	//if definition.RunBenchmarkTests {
-	//	err = definition.RunBenchmarkTests(messageCh)
-	//	if err != nil {
-	//		//messageCh <- "process cancelled by benchmark test run: " + err.Error()
-	//		return "", err
-	//	}
-	//}
-
-	artifact, err := definition.BuildArtifact(messageCh)
-	if err != nil {
-		//messageCh <- "build failed: " + err.Error()
-		return "", err
-	}
-
-	//if definition.ApplyMigrations {
-	//	//metaMigrationId := definition.MetaMigrationId
-	//
-	//	//err = definition.applyMigrations(messageCh)
-	//	//if err != nil {
-	//	//	messageCh <- "process cancelled by migration application: " + err.Error()
-	//	//	return err
-	//	//}
-	//}
-
-	//db := global.GetDbConnection()
-	//var depList []entity.DeploymentDefinition
-	//var dep entity.DeploymentDefinition
-	//rows, err := db.Query("SELECT id, build_definition_id, caption, host, username, password, connection_type, "+
-	//	"working_directory, pre_deployment_actions, post_deployment_actions FROM deployment_definition "+
-	//	"WHERE build_definition_id = ?", definition.MetaData.Id)
-	//if err != nil {
-	//	messageCh <- "could not fetch deployment definitions for build definition: " + err.Error()
-	//	return "", err
-	//}
-	//for rows.Next() {
-	//	err = rows.Scan(&dep.Id, &dep.BuildDefinitionId, &dep.Caption, &dep.Host, &dep.Username, &dep.Password,
-	//		&dep.ConnectionType, &dep.WorkingDirectory, &dep.PreDeploymentActions, &dep.PostDeploymentActions)
-	//	if err != nil {
-	//		messageCh <- "could not scan row"
-	//		continue
-	//	}
-	//	depList = append(depList, dep)
-	//	dep = entity.DeploymentDefinition{}
-	//}
-
-	// TODO gehört eigentlich eine Ebene höher
-	//if len(definition.Content.Deployments.EmailDeployments) > 0 || len(definition.Content.Deployments.RemoteDeployments) > 0 {
-	err = deployArtifact(definition.Content, messageCh, artifact)
-	//}
-	// TODO handle err
-
-	return artifact, nil
-}
-
-func handleDotnetProject(definition buildsteps.DotnetBuildDefinition, messageCh chan string, projectDir string) error {
-
+	messageCh <- string(cmdOutput)
 	return nil
 }
 
-func handlePhpProject(definition buildsteps.PhpBuildDefinition, messageCh chan string, projectDir string) error {
-
-	return nil
-}
-
-func handleRustProject(definition buildsteps.RustBuildDefinition, messageCh chan string, projectDir string) error {
-
-	return nil
-}
-
-func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, artifact string) error {
+func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, artifact string) error {
 	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
 	localDeploymentCount := len(cont.Deployments.LocalDeployments)
 	if localDeploymentCount > 0 {
 		messageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
 			if !deployment.Enabled {
+				messageCh <- "skipping disabled deployment"
 				continue
 			}
 
@@ -368,6 +337,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 
 		for _, deployment := range cont.Deployments.EmailDeployments {
 			if !deployment.Enabled {
+				messageCh <- "skipping disabled deployment"
 				continue
 			}
 
@@ -406,6 +376,7 @@ func deployArtifact(cont entity.BuildDefinitionContent, messageCh chan string, a
 		messageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
 			if !deployment.Enabled {
+				messageCh <- "skipping disabled deployment"
 				continue
 			}
 			// first, the pre deployment actions

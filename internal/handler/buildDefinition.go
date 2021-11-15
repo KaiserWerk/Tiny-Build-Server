@@ -353,14 +353,17 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	cont, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
+	helper.ReplaceVariables(&bd.Content, variables)
+
+	var bdContent entity.BuildDefinitionContent
+	err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition content")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
 		return
 	}
 
-	go buildservice.StartBuildProcess(bd, cont)
+	go buildservice.StartBuildProcess(bd)
 
 	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusSeeOther)
 }

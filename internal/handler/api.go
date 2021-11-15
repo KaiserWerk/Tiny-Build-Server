@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/sirupsen/logrus"
 	"net/http"
 
@@ -43,9 +44,11 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	helper.ReplaceVariables(&bd.Content, variables)
+
 	// unmarshal the build definition content
-	bdContent, err := helper.UnmarshalBuildDefinitionContent(bd.Content, variables)
-	if err != nil {
+	var bdContent entity.BuildDefinitionContent
+	if err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent); err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition")
 		http.Error(w, "could not unmarshal build definition content: "+err.Error(), http.StatusNotFound)
 		return
@@ -61,5 +64,5 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// start the actual build process
-	go buildservice.StartBuildProcess(bd, bdContent)
+	go buildservice.StartBuildProcess(bd)
 }

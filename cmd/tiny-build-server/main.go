@@ -17,6 +17,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"github.com/stvp/slug"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,15 +26,16 @@ import (
 )
 
 var (
-	Version     = "0.0.0-dev"
+	Version     = "DEV"
 	VersionDate = "0000-00-00 00:00:00 +00:00"
 	listenPort string
 	configFile string
 	logDir string
-	err error
 )
 
 func main() {
+	slug.Replacement = '-'
+
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
 	flag.StringVar(&logDir, "logs", ".", "The path to place log files in")
