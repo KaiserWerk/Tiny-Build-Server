@@ -71,7 +71,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		binaryName    string
 		sb            strings.Builder
 		result        = "failed"
-		logger        = logging.New(logrus.DebugLevel, "StartBuildProcess", true)
+		logger        = logging.New(logrus.DebugLevel, "buildProc", true)
 		executionTime = time.Now().UnixNano()
 		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
 		artifactPath  = projectPath + "/artifact"
@@ -84,7 +84,10 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 			select {
 			case s, ok := <-messageCh:
 				if ok {
-					sb.WriteString(strings.TrimSpace(s) + "\n")
+					m := strings.TrimSpace(s)
+					if m != "" {
+						sb.WriteString(m + "\n")
+					}
 				} else {
 					return
 				}
@@ -218,7 +221,6 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
 				return
 			}
-
 			messageCh <- string(b)
 		default:
 			parts := strings.Split(step, " ")
