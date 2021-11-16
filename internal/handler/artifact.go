@@ -90,7 +90,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"artifcatPath": be.ArtifactPath,
+			"artifactPath": be.ArtifactPath,
 		}).Info("could not determine absolute path of file")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
