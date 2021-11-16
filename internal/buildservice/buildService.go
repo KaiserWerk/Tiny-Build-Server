@@ -495,23 +495,6 @@ func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) 
 	}
 }
 
-//func GetBuilDefinitionFromRequest(r *http.Request) (entity.BuildDefinition, error) {
-//	buildDefinition := entity.BuildDefinition{}
-//
-//	// get DB connection
-//	ds := databaseService.Get()
-//	buildDefinition, err := ds.FindBuildDefinition("token = ?", token)
-//	if err != nil {
-//		return buildDefinition, fmt.Errorf("build definition cannot be found in database for token %s", token)
-//	}
-//
-//	var cont entity.BuildDefinitionContent
-//	err = yaml.Unmarshal([]byte(buildDefinition.Content), &cont)
-//	if err != nil {
-//		return entity.BuildDefinition{}, fmt.Errorf("could not unmarshal build definition content yaml for token %s", token)
-//	}
-//}
-
 // CheckPayloadHeader checks the existence and values taken from HTTP request headers
 // from the given HTTP request
 func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) error {

@@ -13,6 +13,7 @@ import (
 // PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
 // sent by a Git hoster
 func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err    error
 		logger = h.ContextLogger("PayloadReceiveHandler")

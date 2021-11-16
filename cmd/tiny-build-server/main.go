@@ -191,7 +191,7 @@ func setupRoutes(conf *entity.Configuration) *mux.Router {
 	bdRouter.HandleFunc("/{id}/show", httpHandler.BuildDefinitionShowHandler).Methods(http.MethodGet)
 	bdRouter.HandleFunc("/{id}/edit", httpHandler.BuildDefinitionEditHandler).Methods(http.MethodGet, http.MethodPost)
 	bdRouter.HandleFunc("/{id}/remove", httpHandler.BuildDefinitionRemoveHandler).Methods(http.MethodGet)
-	bdRouter.HandleFunc("/{id}/listexecutions", httpHandler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
+	//bdRouter.HandleFunc("/{id}/listexecutions", httpHandler.BuildDefinitionListExecutionsHandler).Methods(http.MethodGet)
 	bdRouter.HandleFunc("/{id}/restart", httpHandler.BuildDefinitionRestartHandler).Methods(http.MethodGet)
 	bdRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadNewestArtifactHandler).Methods(http.MethodGet)
 

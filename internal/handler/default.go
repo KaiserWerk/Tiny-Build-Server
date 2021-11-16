@@ -11,6 +11,7 @@ import (
 
 // IndexHandler serves the dashboard
 func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger = h.ContextLogger("IndexHandler")
@@ -46,6 +47,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // StaticAssetHandler serves static file. http.FileServer does not work as desired
 func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("StaticAssetHandler")
 		vars = mux.Vars(r)

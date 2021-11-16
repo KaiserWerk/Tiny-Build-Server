@@ -20,6 +20,7 @@ import (
 
 // BuildDefinitionListHandler lists all existing build definitions
 func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionListHandler")
@@ -46,6 +47,7 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 
 // BuildDefinitionAddHandler adds a new build definition
 func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		sessMgr     = h.SessMgr
 		currentUser = r.Context().Value("user").(entity.User)
@@ -102,6 +104,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 
 // BuildDefinitionEditHandler allows for editing an existing build definition
 func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		sessMgr     = h.SessMgr
@@ -171,6 +174,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 
 // BuildDefinitionShowHandler shows details of a build definition
 func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionShowHandler")
@@ -268,6 +272,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 
 // BuildDefinitionRemoveHandler removes an existing build definition
 func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionRemoveHandler")
@@ -311,12 +316,9 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *HttpHandler) BuildDefinitionListExecutionsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: implement or scrap
-}
-
 // BuildDefinitionRestartHandler restarts the build process for a given build definition
 func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionRestartHandler")

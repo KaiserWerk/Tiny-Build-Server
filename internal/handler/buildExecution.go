@@ -13,6 +13,7 @@ import (
 
 // BuildExecutionListHandler lists all build executions in in descending order
 func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger = h.ContextLogger("BuildExecutionListHandler")
@@ -39,6 +40,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 
 // BuildExecutionShowHandler shows details of a specific build execution
 func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger = h.ContextLogger("BuildExecutionShowHandler")

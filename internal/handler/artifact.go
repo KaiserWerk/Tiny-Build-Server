@@ -15,6 +15,7 @@ import (
 // DownloadNewestArtifactHandler downloads the most recently created version
 // of a produced artifact
 func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		vars = mux.Vars(r)
@@ -69,6 +70,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 // DownloadSpecificArtifactHandler downloads a artifact produced by a specific
 // build execution
 func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		vars = mux.Vars(r)
 		logger = logging.New(logrus.InfoLevel, "DownloadNewestArtifactHandler", true)

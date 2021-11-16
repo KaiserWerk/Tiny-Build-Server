@@ -15,6 +15,7 @@ import (
 
 // AdminUserListHandler lists all existing user accounts
 func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("AdminUserListHandler")
 		currentUser = r.Context().Value("user").(entity.User)
@@ -42,6 +43,7 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 
 // AdminUserAddHandler handles adding a new user account
 func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		logger = h.ContextLogger("AdminUserAddHandler")
@@ -132,6 +134,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 
 // AdminUserEditHandler handles edits to an existing user account
 func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		sessMgr = h.SessMgr
@@ -235,6 +238,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 
 // AdminUserRemoveHandler handles removals of user accounts
 func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		sessMgr = h.SessMgr
@@ -290,6 +294,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 
 // AdminSettingsHandler handles editing af administrative settings
 func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		logger = h.ContextLogger("AdminSettingsHandler")

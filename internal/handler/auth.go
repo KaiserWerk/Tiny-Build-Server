@@ -19,6 +19,7 @@ import (
 
 // LoginHandler handles logins
 func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	// TODO: consider enabled 2fa
 	var (
 		logger = h.ContextLogger("LoginHandler")
@@ -87,6 +88,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // LogoutHandler handles logouts
 func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("LogoutHandler")
 		sessMgr = h.SessMgr
@@ -117,11 +119,12 @@ func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 // RequestNewPasswordHandler handles password reset requests
 func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("RequestNewPasswordHandler")
+		sessMgr = h.SessMgr
 	)
 	// TODO: consider disabled pw reset
-	sessMgr := global.GetSessionManager()
 
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
@@ -202,6 +205,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 
 // ResetPasswordHandler handles password resets
 func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("ResetPasswordHandler")
 		sessMgr = h.SessMgr
@@ -297,6 +301,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 
 // RegistrationHandler handles user account registrations
 func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("RegistrationHandler")
 		sessMgr = h.SessMgr
@@ -408,6 +413,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 
 // RegistrationConfirmHandler handles confirmations for newly registered user accounts
 func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		token string
 		logger = h.ContextLogger("RegistrationConfirmHandler")

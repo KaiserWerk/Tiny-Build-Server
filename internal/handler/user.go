@@ -11,6 +11,7 @@ import (
 
 // UserSettingsHandler handles changing a user's own settings
 func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	var (
 		err error
 		currentUser = r.Context().Value("user").(entity.User)

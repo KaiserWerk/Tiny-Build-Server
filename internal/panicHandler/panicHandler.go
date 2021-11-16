@@ -8,7 +8,7 @@ import (
 
 func Handle() {
 	if r := recover(); r != nil {
-		l := logging.New(logrus.TraceLevel, "panicHandler", false)
-		l.Info("panic: %v", r)
+		l := logging.New(logrus.TraceLevel, "panicHandler", true)
+		l.Infof("panic: %v", r)
 	}
 }
