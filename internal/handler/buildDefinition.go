@@ -357,6 +357,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 
 	helper.ReplaceVariables(&bd.Content, variables)
 
+	// NOTE: check if unmarshalling works/if content is valid
 	var bdContent entity.BuildDefinitionContent
 	err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent)
 	if err != nil {
@@ -365,7 +366,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	go buildservice.StartBuildProcess(bd)
+	go buildservice.StartBuildProcess(bd, currentUser.Id)
 
 	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusSeeOther)
 }

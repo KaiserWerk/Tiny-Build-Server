@@ -44,11 +44,12 @@ func init() {
 
 }
 
-func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time) {
+func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId int) {
 	logger := logging.New(logrus.DebugLevel, "saveBuildReport", true)
 	ds := databaseservice.Get()
 	be := entity.BuildExecution{
 		BuildDefinitionId: definition.Id,
+		ManuallyRunBy:     userId,
 		ActionLog:         report,
 		Result:            result,
 		ArtifactPath:      artifactPath,
@@ -63,7 +64,7 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 }
 
 // StartBuildProcess start the build process for a given build definition
-func StartBuildProcess(definition entity.BuildDefinition) {
+func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 	// instantiate tools for build output
 	var (
 		ds            = databaseservice.Get()
@@ -101,7 +102,7 @@ func StartBuildProcess(definition entity.BuildDefinition) {
 		close(messageCh)
 		logger.Trace("writing report")
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
-		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now())
+		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now(), userId)
 	}()
 
 	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
