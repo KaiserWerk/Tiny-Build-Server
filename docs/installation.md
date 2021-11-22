@@ -16,7 +16,7 @@ Start the server with the following exemplary command:
 
 For Windows it would be
 
-``.\tiny-build-server.exe --port=1337 --config="/etc/tiny-build-server/app.yaml"``
+``.\tiny-build-server.exe --port=1337 --config="C:\\TBS\\app.yaml"``
 
 The default port is 8271. The default configuration file location is just ``app.yaml`` 
 relative to the executable.
