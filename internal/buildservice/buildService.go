@@ -10,26 +10,18 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stvp/slug"
-	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -258,7 +250,7 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 
 	}
 
-	err = deployArtifact(messageCh, content, artifactPath)
+	err = deployArtifact(messageCh, content, artifact)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not deploy artifact")
 		return
