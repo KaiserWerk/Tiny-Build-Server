@@ -13,9 +13,9 @@ func (ds DatabaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDe
 
 	var result *gorm.DB
 	if limit > 0 {
-		result = ds.db.Limit(limit).Find(&bdList)
+		result = ds.db.Limit(limit).Find(&bdList, "deleted = 0")
 	} else {
-		result = ds.db.Find(&bdList)
+		result = ds.db.Find(&bdList, "deleted = 0")
 	}
 
 	if result.Error != nil {

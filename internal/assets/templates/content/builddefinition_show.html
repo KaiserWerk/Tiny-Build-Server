@@ -10,18 +10,23 @@
             <div class="card mb-4">
                 <div class="card-header">
                     {{ .BuildDefinition.Caption }}
-                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
-                        <i class="fa fa-edit"></i>
-                        Edit
-                    </a>
-                    <a class="btn btn-sm btn-warning float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/restart">
-                        <i class="fa fa-edit"></i>
-                        Manually run
-                    </a>
-                    <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/artifact">
-                        <i class="fa fa-download"></i>
-                        Download Artifact
-                    </a>
+
+                    {{ if .BuildDefinition.Deleted }}
+                        <span class="badge badge-danger float-right">DELETED</span>
+                    {{ else }}
+                        <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
+                            <i class="fa fa-edit"></i>
+                            Edit
+                        </a>
+                        <a class="btn btn-sm btn-warning float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/restart">
+                            <i class="fa fa-edit"></i>
+                            Manually run
+                        </a>
+                        <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/artifact">
+                            <i class="fa fa-download"></i>
+                            Download Artifact
+                        </a>
+                    {{ end }}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -78,15 +83,6 @@
                                         {{ end }}
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
-
-
-
-                            <div class="row">
-                                <div class="col-xl-12">
-                                    <h5>Deployments</h5>
-                                    coming soon
                                 </div>
                             </div>
 
