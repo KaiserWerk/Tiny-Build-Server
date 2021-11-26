@@ -28,7 +28,7 @@ func (ds DatabaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDe
 // GetAllBuildDefinitions fetches all build definitions
 func (ds DatabaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
 	bds := make([]entity.BuildDefinition, 0)
-	result := ds.db.Find(&bds)
+	result := ds.db.Find(&bds, "deleted = 0")
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -70,7 +70,8 @@ func (ds DatabaseService) GetBuildDefCaption(id int) (string, error) {
 
 // DeleteBuildDefinition removes a build definition
 func (ds DatabaseService) DeleteBuildDefinition(bd *entity.BuildDefinition) error {
-	result := ds.db.Delete(bd)
+	bd.Deleted = true
+	result := ds.db.Updates(bd)
 	if result.Error != nil {
 		return result.Error
 	}
