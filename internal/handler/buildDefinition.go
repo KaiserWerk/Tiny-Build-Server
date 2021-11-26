@@ -72,7 +72,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 			CreatedBy: currentUser.Id,
 		}
 
-		_, err := h.Ds.AddBuildDefinition(bd)
+		_, err := h.Ds.AddBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert build definition")
 			w.WriteHeader(500)
@@ -140,7 +140,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 			},
 		}
 
-		err = h.Ds.UpdateBuildDefinition(bd)
+		err = h.Ds.UpdateBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
 			sessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
@@ -279,11 +279,6 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		vars        = mux.Vars(r)
 	)
 
-	confirm := r.URL.Query().Get("confirm")
-	if confirm == "yes" {
-		// TODO: implement "yes" action for build definition removal
-	}
-
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
@@ -302,6 +297,24 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		http.Error(w, "could not get build definition by ID", http.StatusInternalServerError)
 		return
 	}
+
+	confirm := r.URL.Query().Get("confirm")
+	if confirm == "yes" {
+		err = h.Ds.DeleteBuildDefinition(&buildDefinition)
+		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+				"id":    id,
+			}).Error("could not delete build definition by ID")
+			http.Error(w, "could not delete build definition by ID", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
+		return
+	}
+
+
 
 	data := struct {
 		CurrentUser     entity.User

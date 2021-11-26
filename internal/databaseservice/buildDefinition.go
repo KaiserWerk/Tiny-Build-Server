@@ -69,8 +69,8 @@ func (ds DatabaseService) GetBuildDefCaption(id int) (string, error) {
 }
 
 // DeleteBuildDefinition removes a build definition
-func (ds DatabaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error {
-	result := ds.db.Delete(&bd)
+func (ds DatabaseService) DeleteBuildDefinition(bd *entity.BuildDefinition) error {
+	result := ds.db.Delete(bd)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -78,8 +78,8 @@ func (ds DatabaseService) DeleteBuildDefinition(bd entity.BuildDefinition) error
 }
 
 // AddBuildDefinition adds a new build definition
-func (ds DatabaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, error) {
-	result := ds.db.Create(&bd)
+func (ds DatabaseService) AddBuildDefinition(bd *entity.BuildDefinition) (int, error) {
+	result := ds.db.Create(bd)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -88,8 +88,8 @@ func (ds DatabaseService) AddBuildDefinition(bd entity.BuildDefinition) (int, er
 }
 
 // UpdateBuildDefinition updates a build definition
-func (ds DatabaseService) UpdateBuildDefinition(bd entity.BuildDefinition) error {
-	result := ds.db.Updates(&bd)
+func (ds DatabaseService) UpdateBuildDefinition(bd *entity.BuildDefinition) error {
+	result := ds.db.Updates(bd)
 	if result.Error != nil {
 		return result.Error
 	}
