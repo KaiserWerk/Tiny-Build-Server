@@ -238,6 +238,8 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 				cmd = exec.Command(parts[0], strings.Join(parts[1:], " "))
 			}
 
+			cmd.Dir = clonePath
+
 			b, err := cmd.CombinedOutput()
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
