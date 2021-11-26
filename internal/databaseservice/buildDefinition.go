@@ -39,7 +39,7 @@ func (ds DatabaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, er
 // FindBuildDefinition looks for a specific build definition
 func (ds DatabaseService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
 	var bd entity.BuildDefinition
-	result := ds.db.Where(cond, args...).First(&bd)
+	result := ds.db.Where(cond + " AND deleted = 0", args...).First(&bd)
 	if result.Error != nil {
 		return bd, result.Error
 	}
@@ -80,6 +80,7 @@ func (ds DatabaseService) DeleteBuildDefinition(bd *entity.BuildDefinition) erro
 
 // AddBuildDefinition adds a new build definition
 func (ds DatabaseService) AddBuildDefinition(bd *entity.BuildDefinition) (int, error) {
+	bd.Deleted = false
 	result := ds.db.Create(bd)
 	if result.Error != nil {
 		return 0, result.Error
