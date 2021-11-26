@@ -38,6 +38,14 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if bd.Deleted {
+		logger.WithFields(logrus.Fields{
+			"id": bd.Id,
+		}).Info("requested deleted build definition")
+		http.Error(w, "requested deleted build definition", http.StatusNotFound)
+		return
+	}
+
 	variables, err := h.Ds.GetAvailableVariablesForUser(bd.CreatedBy)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not determine variables for user")
