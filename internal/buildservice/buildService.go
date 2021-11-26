@@ -186,6 +186,7 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 	allSteps = append(allSteps, content.PostBuild...)
 
 	for _, step := range allSteps {
+		messageCh <- fmt.Sprintf("step: %s", step)
 		switch true {
 		case strings.HasPrefix(step, "setenv"):
 			parts := strings.Split(step, " ")
@@ -218,7 +219,7 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
 				return
 			}
-			cmd := exec.Command("go", "build", "-o", artifact.FullPath(), "-ldflags", "-s -w", parts[2])
+			cmd := exec.Command("go", "build", "-v", "-o", artifact.FullPath(), "-ldflags", "-s -w", parts[2])
 			b, err := cmd.CombinedOutput()
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
@@ -236,8 +237,6 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 			} else {
 				cmd = exec.Command(parts[0], strings.Join(parts[1:], " "))
 			}
-
-			messageCh <- fmt.Sprintf("step: %s", cmd.String())
 
 			b, err := cmd.CombinedOutput()
 			if err != nil {
