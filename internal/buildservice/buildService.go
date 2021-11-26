@@ -3,8 +3,10 @@ package buildservice
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stvp/slug"
@@ -17,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
@@ -27,6 +30,7 @@ import (
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 )
 
 var basePath string = "data"
@@ -161,10 +165,16 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 	}
 
 	binaryName = slug.Clean(strings.ToLower(strings.Split(content.Repository.Name, "/")[1]))
-	artifactPath = filepath.Join(artifactPath, binaryName)
+
+	artifact := entity.Artifact{
+		Directory: artifactPath,
+		File:      binaryName,
+		Version:   "",
+	}
+
 	helper.ReplaceVariables(&definition.Content, []entity.UserVariable{{
 		Variable: "artifact",
-		Value:    artifactPath,
+		Value:    artifact.FullPath(),
 	}, {
 		Variable: "cloneDir",
 		Value:    clonePath,
@@ -209,14 +219,14 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 			}
 		case strings.HasPrefix(step, "go build"):
 			if strings.ToLower(os.Getenv("GOOS")) == "windows" {
-				artifactPath += ".exe"
+				artifact.File += ".exe"
 			}
 			parts := strings.Split(step, " ")
 			if len(parts) != 3 {
 				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
 				return
 			}
-			cmd := exec.Command("go", "build", "-o", artifactPath, "-ldflags", "-s -w", parts[2])
+			cmd := exec.Command("go", "build", "-o", artifact.FullPath(), "-ldflags", "-s -w", parts[2])
 			b, err := cmd.CombinedOutput()
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
@@ -270,30 +280,21 @@ func cloneRepository(messageCh chan string, branch string, repositoryUrl string,
 	return nil
 }
 
-func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, artifact string) error {
+func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, artifact entity.Artifact) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Minute)
+	defer cancel()
+	eg, _ := errgroup.WithContext(ctx)
 	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
 	localDeploymentCount := len(cont.Deployments.LocalDeployments)
 	if localDeploymentCount > 0 {
 		messageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
-			if !deployment.Enabled {
-				messageCh <- "skipping disabled deployment"
-				continue
-			}
-
-			fileBytes, err := ioutil.ReadFile(artifact)
-			if err != nil {
-				messageCh <- fmt.Sprintf("could not read artifact (%s): %s", artifact, err.Error())
-				return err
-			}
-
-			_ = os.MkdirAll(filepath.Dir(deployment.Path), 0744)
-
-			err = os.WriteFile(deployment.Path, fileBytes, 0744)
-			if err != nil {
-				messageCh <- fmt.Sprintf("could not write artifact (%s) to target (%s): %s", artifact, deployment.Path, err.Error())
-				return err
-			}
+			eg.Go(func() error {
+				if err := deploymentservice.DoLocalDeployment(&deployment, artifact); err != nil {
+					return err
+				}
+				return nil
+			})
 		}
 	} else {
 		messageCh <- "no local deployments found"
@@ -310,7 +311,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 			return err
 		}
 
-		artifactContent, err := ioutil.ReadFile(artifact)
+		artifactContent, err := ioutil.ReadFile(artifact.FullPath())
 		if err != nil {
 			messageCh <- "could not read artifact file: " + err.Error()
 			return err
@@ -319,7 +320,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 		zipBuffer := bytes.Buffer{}
 		zipWriter := zip.NewWriter(&zipBuffer)
 
-		zipFile, err := zipWriter.Create(filepath.Base(artifact))
+		zipFile, err := zipWriter.Create(artifact.File)
 		if err != nil {
 			messageCh <- "could not create artifact file in zip archive: " + err.Error()
 			return err
@@ -331,7 +332,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 		}
 		_ = zipWriter.Close()
 
-		zipArchiveName := artifact + ".zip"
+		zipArchiveName := artifact.File + ".zip"
 		err = ioutil.WriteFile(zipArchiveName, zipBuffer.Bytes(), 0744)
 		if err != nil {
 			messageCh <- "could not write zip archive bytes to file: " + err.Error()
@@ -339,36 +340,12 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 		}
 
 		for _, deployment := range cont.Deployments.EmailDeployments {
-			if !deployment.Enabled {
-				messageCh <- "skipping disabled deployment"
-				continue
-			}
-
-			data := struct {
-				Version string
-				Title   string
-			}{
-				Version: "n/a", // TODO
-				Title:   cont.Repository.Name,
-			}
-
-			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)
-			if err != nil {
-				messageCh <- fmt.Sprintf("could not parse deployment email template: %s", err.Error())
-				return err
-			}
-			err = helper.SendEmail(
-				settings,
-				emailBody,
-				fixtures.EmailSubjects[fixtures.DeploymentEmail],
-				[]string{deployment.Address},
-				[]string{zipArchiveName},
-			)
-			if err != nil {
-				messageCh <- fmt.Sprintf("could not send out deployment email to %s: %s", deployment.Address, err.Error())
-				return err
-			}
-			messageCh <- fmt.Sprintf("deployment email sent to recipient %s", deployment.Address)
+			eg.Go(func() error {
+				if err := deploymentservice.DoEmailDeployment(&deployment, "artifact", settings, zipArchiveName); err != nil {
+					return err
+				}
+				return nil
+			})
 		}
 	} else {
 		messageCh <- "no email deployments found"
@@ -378,101 +355,19 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 	if remoteDeploymentCount > 0 {
 		messageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
-			if !deployment.Enabled {
-				messageCh <- "skipping disabled deployment"
-				continue
-			}
-			// first, the pre deployment actions
-			sshConfig := &ssh.ClientConfig{
-				//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-				User: deployment.Username,
-				Auth: []ssh.AuthMethod{
-					ssh.Password(deployment.Password),
-				},
-			}
-			sshClient, err := ssh.Dial("tcp", deployment.Host, sshConfig)
-			if err != nil {
-				return err
-			}
-
-			if len(deployment.PreDeploymentSteps) > 0 {
-				for _, action := range deployment.PreDeploymentSteps {
-					session, err := sshClient.NewSession()
-					if err != nil {
-						return err
-					}
-					outp, err := session.Output(action)
-					if err != nil {
-						return err
-					} else {
-						outpDisplay := string(outp)
-						if outpDisplay != "" {
-							messageCh <- "output from pre remote command: " + outpDisplay
-						}
-					}
-					_ = session.Close()
+			eg.Go(func() error {
+				if err := deploymentservice.DoRemoteDeployment(&deployment, artifact); err != nil {
+					return err
 				}
-			}
-
-			session, err := sshClient.NewSession()
-			if err != nil {
-				return err
-			}
-
-			// then, the actual deployment
-			sftpClient, err := sftp.NewClient(sshClient)
-			if err != nil {
-				return err
-			}
-
-			// create destination file
-			// TODO really necessary?
-			dstFile, err := sftpClient.Create(deployment.WorkingDirectory)
-			if err != nil {
-				return err
-			}
-
-			// create source file
-			srcFile, err := os.Open(artifact)
-			if err != nil {
-				return err
-			}
-
-			// copy source file to destination file
-			bytes, err := io.Copy(dstFile, srcFile)
-			if err != nil {
-				return err
-			}
-			_ = dstFile.Close()
-			_ = srcFile.Close()
-			fmt.Printf("%d bytes copied\n", bytes)
-			_ = session.Close()
-
-			// then, the post deployment actions
-			if len(deployment.PostDeploymentSteps) > 0 {
-				for _, action := range deployment.PostDeploymentSteps {
-					session, err := sshClient.NewSession()
-					if err != nil {
-						return err
-					}
-					outp, err := session.Output(action)
-					if err != nil {
-						return err
-					} else {
-						outpDisplay := string(outp)
-						if outpDisplay != "" {
-							messageCh <- "output from post remote command: " + outpDisplay
-						}
-					}
-					_ = session.Close()
-				}
-			}
-
-			_ = sftpClient.Close()
-			_ = sshClient.Close()
+				return nil
+			})
 		}
 	} else {
 		messageCh <- "no remote deplyoments found"
+	}
+
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
 	return nil
