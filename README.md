@@ -14,7 +14,7 @@ a build for another OS/ARCH, refer to section __Custom Build__ below.
 
 ### License
 
-Free to use for any non-commercial purpose; refer to LICENSE.md
+MIT; refer to LICENSE.md
 
 ### Dependencies
 
