@@ -2,6 +2,7 @@ package global
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
+	"github.com/kelseyhightower/envconfig"
 	"io/ioutil"
 	"sync"
 
@@ -64,6 +65,11 @@ func GetConfiguration() *entity.Configuration {
 		err = yaml.Unmarshal(cont, &cfg)
 		if err != nil {
 			panic("could not parse configuration file content: " + err.Error())
+		}
+
+		err = envconfig.Process("tbs", cfg)
+		if err != nil {
+			panic("could not process env vars for configuration: " + err.Error())
 		}
 
 		config = cfg
