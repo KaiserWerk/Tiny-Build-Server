@@ -55,5 +55,5 @@ func New(lvl logrus.Level, path, initialContext string, mode LogMode) (*logrus.E
 
 	l.SetOutput(w)
 
-	return l.WithField("initialContext", initialContext), cf, nil
+	return l.WithField("context", initialContext), cf, nil
 }
