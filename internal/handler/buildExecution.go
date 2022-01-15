@@ -16,7 +16,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildExecutionListHandler")
+		logger      = h.ContextLogger("BuildExecutionListHandler")
 	)
 
 	buildExecutions, err := h.Ds.GetNewestBuildExecutions(0, "")
@@ -33,7 +33,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 		BuildExecutions: buildExecutions,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "buildexecution_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "buildexecution_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -43,16 +43,15 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("BuildExecutionShowHandler")
-		vars = mux.Vars(r)
+		logger      = h.ContextLogger("BuildExecutionShowHandler")
+		vars        = mux.Vars(r)
 	)
-
 
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not parse entry ID")
 		w.WriteHeader(500)
 		return
@@ -61,7 +60,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
-			"id": id,
+			"id":    id,
 		}).Error("could not scan buildExecution")
 		w.WriteHeader(500)
 		return
@@ -70,7 +69,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 	buildDefinition, err := h.Ds.GetBuildDefinitionById(buildExecution.BuildDefinitionId)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":             err.Error(),
 			"buildDefinitionId": buildExecution.BuildDefinitionId,
 		}).Error("could not scan buildDefinition")
 		w.WriteHeader(500)
@@ -87,7 +86,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 		BuildDefinition: buildDefinition,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "buildexecution_show.html", data); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "buildexecution_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }

@@ -4,12 +4,11 @@ package entity
 // YAML configuration file
 type Configuration struct {
 	Database struct {
-		Driver string `yaml:"driver"`
-		DSN    string `yaml:"dsn"`
+		Driver string `yaml:"driver" envconfig:"TBS_DB_DRIVER"`
+		DSN    string `yaml:"dsn" envconfig:"TBS_DB_DSNR"`
 	} `yaml:"database"`
 	Tls struct {
-		Enabled  bool   `yaml:"enabled"`
-		CertFile string `yaml:"certfile"`
-		KeyFile  string `yaml:"keyfile"`
+		CertFile string `yaml:"certfile" envconfig:"TBS_TLS_CERTFILE"`
+		KeyFile  string `yaml:"keyfile" envconfig:"TBS_TLS_KEYFILE"`
 	}
 }

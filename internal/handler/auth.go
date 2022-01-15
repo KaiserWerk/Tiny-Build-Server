@@ -22,7 +22,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	// TODO: consider enabled 2fa
 	var (
-		logger = h.ContextLogger("LoginHandler")
+		logger  = h.ContextLogger("LoginHandler")
 		sessMgr = h.SessMgr
 	)
 
@@ -59,7 +59,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 			err = sessMgr.SetCookie(w, sess.Id)
 			if err != nil {
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":     err.Error(),
 					"sessionId": sess.Id,
 				}).Error("could not set cookie")
 				sessMgr.AddMessage("error", "Session cookie could not be set!")
@@ -81,7 +81,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "login.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "login.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -90,7 +90,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		logger = h.ContextLogger("LogoutHandler")
+		logger  = h.ContextLogger("LogoutHandler")
 		sessMgr = h.SessMgr
 	)
 
@@ -121,7 +121,7 @@ func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		logger = h.ContextLogger("RequestNewPasswordHandler")
+		logger  = h.ContextLogger("RequestNewPasswordHandler")
 		sessMgr = h.SessMgr
 	)
 	// TODO: consider disabled pw reset
@@ -146,7 +146,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 			err = h.Ds.InsertUserAction(u.Id, "password_reset", registrationToken, sql.NullTime{Valid: true, Time: t})
 			if err != nil {
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":  err.Error(),
 					"userId": u.Id,
 				}).Error("could not insert user pw reset action")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -198,7 +198,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "password_request.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "password_request.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -207,10 +207,10 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		logger = h.ContextLogger("ResetPasswordHandler")
+		logger  = h.ContextLogger("ResetPasswordHandler")
 		sessMgr = h.SessMgr
-		email = r.URL.Query().Get("email")
-		token = r.URL.Query().Get("token")
+		email   = r.URL.Query().Get("email")
+		token   = r.URL.Query().Get("token")
 	)
 	// TODO: consider disabled pw reset via setting
 
@@ -294,7 +294,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		Token: token,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "password_reset.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "password_reset.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -303,7 +303,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		logger = h.ContextLogger("RegistrationHandler")
+		logger  = h.ContextLogger("RegistrationHandler")
 		sessMgr = h.SessMgr
 	)
 	// TODO: consider disabled registration
@@ -339,7 +339,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 		_, err = h.Ds.FindUser("displayname = ?", displayName)
 		if err == nil {
 			logger.WithFields(logrus.Fields{
-				"error": err.Error(),
+				"error":       err.Error(),
 				"displayname": displayName,
 			}).Error("this displayname is already in use")
 			sessMgr.AddMessage("error", "This display name is already in use, please select a different one.")
@@ -406,7 +406,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "register.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "register.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -415,7 +415,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		token string
+		token  string
 		logger = h.ContextLogger("RegistrationConfirmHandler")
 	)
 
@@ -444,7 +444,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 
 		if !ua.Validity.Valid || ua.Validity.Time.Before(time.Now()) {
 			logger.WithFields(logrus.Fields{
-				"token": token,
+				"token":    token,
 				"validity": ua.Validity,
 			}).Info("token validity ran out")
 			sessMgr.AddMessage("error", "This token is not valid anymore.")
@@ -483,7 +483,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "confirm_registration.html", nil); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "confirm_registration.html", nil); err != nil {
 		w.WriteHeader(404)
 	}
 }

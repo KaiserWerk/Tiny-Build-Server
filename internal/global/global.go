@@ -22,11 +22,6 @@ var (
 	createSessMgrOnce sync.Once
 )
 
-func Set(version, versionDate string) {
-	Version = version
-	VersionDate = versionDate
-}
-
 // GetSessionManager fetches the current session manager
 func GetSessionManager() *sessionstore.SessionManager {
 	createSessMgrOnce.Do(func() {
@@ -54,7 +49,7 @@ func GetConfiguration() *entity.Configuration {
 			if err != nil {
 				panic("configuration dist file 'app.dist.yaml' could not be read!")
 			}
-			err = ioutil.WriteFile(configFile, content, 0744)
+			err = ioutil.WriteFile(configFile, content, 0600)
 			if err != nil {
 				panic("could not write config file: " + err.Error())
 			}

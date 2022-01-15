@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -17,15 +16,15 @@ import (
 func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
-		vars = mux.Vars(r)
+		err    error
+		vars   = mux.Vars(r)
 		logger = h.ContextLogger("DownloadNewestArtifactHandler")
 	)
 
 	beList, err := h.Ds.GetNewestBuildExecutions(1, "build_definition_id = ?", vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":             err.Error(),
 			"buildDefinitionId": vars["id"],
 		}).Error("could not fetch build executions by definition id")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
@@ -41,7 +40,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 	artifact, err := filepath.Abs(beList[0].ArtifactPath)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":        err.Error(),
 			"artifactPath": beList[0].ArtifactPath,
 		}).Debug("could not determine absolute path of file: ")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
@@ -55,7 +54,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 	cont, err := ioutil.ReadFile(artifact)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":        err.Error(),
 			"artifactFile": artifact,
 		}).Debug("could not read artifact file")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
@@ -72,14 +71,14 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		vars = mux.Vars(r)
-		logger = logging.New(logrus.InfoLevel, "DownloadNewestArtifactHandler", true)
+		vars   = mux.Vars(r)
+		logger = h.ContextLogger("DownloadSpecificArtifactHandler")
 	)
 	id, _ := strconv.Atoi(vars["id"])
 	be, err := h.Ds.GetBuildExecutionById(id)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":            err.Error(),
 			"buildExecutionId": id,
 		}).Error("could not fetch build execution by ID")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -89,7 +88,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 	artifact, err := filepath.Abs(be.ArtifactPath)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":        err.Error(),
 			"artifactPath": be.ArtifactPath,
 		}).Info("could not determine absolute path of file")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -100,7 +99,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 	cont, err := ioutil.ReadFile(artifact)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":        err.Error(),
 			"artifactFile": artifact,
 		}).Info("could not read artifact file")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)

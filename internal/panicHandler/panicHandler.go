@@ -1,14 +1,9 @@
 package panicHandler
 
-import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+import "github.com/sirupsen/logrus"
 
-	"github.com/sirupsen/logrus"
-)
-
-func Handle() {
+func Handle(l *logrus.Entry) {
 	if r := recover(); r != nil {
-		l := logging.New(logrus.TraceLevel, "panicHandler", true)
 		l.Infof("panic: %v", r)
 	}
 }

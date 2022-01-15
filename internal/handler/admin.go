@@ -17,7 +17,7 @@ import (
 func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		logger = h.ContextLogger("AdminUserListHandler")
+		logger      = h.ContextLogger("AdminUserListHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 	)
 
@@ -36,7 +36,7 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 		AllUsers:    userList,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "admin_user_list.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_list.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -45,10 +45,10 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
-		logger = h.ContextLogger("AdminUserAddHandler")
+		err         error
+		logger      = h.ContextLogger("AdminUserAddHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = h.SessMgr
+		sessMgr     = h.SessMgr
 	)
 
 	if r.Method == "POST" {
@@ -127,7 +127,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 		CurrentUser: currentUser,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "admin_user_add.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_add.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -136,11 +136,11 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
-		sessMgr = h.SessMgr
-		logger = h.ContextLogger("AdminUserEditHandler")
+		err         error
+		sessMgr     = h.SessMgr
+		logger      = h.ContextLogger("AdminUserEditHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		vars = mux.Vars(r)
+		vars        = mux.Vars(r)
 	)
 
 	if r.Method == http.MethodPost {
@@ -231,7 +231,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		UserToEdit:  editedUser,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "admin_user_edit.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_edit.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -240,18 +240,17 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
-		sessMgr = h.SessMgr
-		logger = h.ContextLogger("AdminUserRemoveHandler")
+		err         error
+		sessMgr     = h.SessMgr
+		logger      = h.ContextLogger("AdminUserRemoveHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		vars = mux.Vars(r)
+		vars        = mux.Vars(r)
 	)
-
 
 	userId, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
-			"error": err.Error(),
+			"error":  err.Error(),
 			"userId": userId,
 		}).Error("invalid user id")
 		sessMgr.AddMessage("error", "You supplied an invalid user id!")
@@ -287,7 +286,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 		UserToRemove: user,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "admin_user_remove.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_remove.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -296,10 +295,10 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
-		logger = h.ContextLogger("AdminSettingsHandler")
+		err         error
+		logger      = h.ContextLogger("AdminSettingsHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr = h.SessMgr
+		sessMgr     = h.SessMgr
 	)
 
 	if r.Method == http.MethodPost {
@@ -311,7 +310,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "base_datapath",
 				}).Error("could not save setting")
 			}
@@ -320,7 +319,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "base_url",
 				}).Error("could not save setting")
 			}
@@ -333,7 +332,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "security_disable_registration",
 				}).Error("could not save setting")
 			}
@@ -346,7 +345,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "security_disable_password_reset",
 				}).Error("could not save setting")
 			}
@@ -359,7 +358,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "security_email_confirmation_required",
 				}).Error("could not save setting")
 			}
@@ -372,7 +371,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "security_2fa",
 				}).Error("could not save setting")
 			}
@@ -383,7 +382,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "smtp_username",
 				}).Error("could not save setting")
 			}
@@ -393,7 +392,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "smtp_password",
 				}).Error("could not save setting")
 			}
@@ -403,7 +402,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "smtp_host",
 				}).Error("could not save setting")
 			}
@@ -413,7 +412,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "smtp_port",
 				}).Error("could not save setting")
 			}
@@ -423,7 +422,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "smtp_encryption",
 				}).Error("could not save setting")
 			}
@@ -433,7 +432,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "golang_executable",
 				}).Error("could not save setting")
 			}
@@ -443,7 +442,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "dotnet_executable",
 				}).Error("could not save setting")
 			}
@@ -453,7 +452,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
-					"error": err.Error(),
+					"error":   err.Error(),
 					"setting": "rust_executable",
 				}).Error("could not save setting")
 			}
@@ -485,7 +484,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 		AdminSettings: allSettings,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "admin_settings.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "admin_settings.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }

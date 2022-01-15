@@ -1,8 +1,7 @@
 package middleware
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
-	"github.com/sirupsen/logrus"
+	"fmt"
 	"net/http"
 )
 
@@ -10,8 +9,7 @@ func Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
-				l := logging.New(logrus.TraceLevel, "RecMdw", true)
-				l.Errorf("recover handler: %v", r)
+				fmt.Printf("recover handler: %v", r)
 			}
 		}()
 		next.ServeHTTP(w, r)

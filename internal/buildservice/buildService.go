@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/sirupsen/logrus"
 	"github.com/stvp/slug"
 	"io/ioutil"
@@ -40,8 +39,7 @@ func init() {
 
 }
 
-func saveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId int) {
-	logger := logging.New(logrus.DebugLevel, "saveBuildReport", true)
+func saveBuildReport(logger *logrus.Entry, definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId int) {
 	ds := databaseservice.Get()
 	be := entity.BuildExecution{
 		BuildDefinitionId: definition.Id,
@@ -60,15 +58,15 @@ func saveBuildReport(definition entity.BuildDefinition, report, result, artifact
 }
 
 // StartBuildProcess start the build process for a given build definition
-func StartBuildProcess(definition entity.BuildDefinition, userId int) {
+func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, userId int) {
 	// instantiate tools for build output
 	var (
-		ds            = databaseservice.Get()
-		err           error
-		binaryName    string
-		sb            strings.Builder
-		result        = "failed"
-		logger        = logging.New(logrus.DebugLevel, "buildProc", true)
+		ds         = databaseservice.Get()
+		err        error
+		binaryName string
+		sb         strings.Builder
+		result     = "failed"
+		//logger        = logging.New(logrus.DebugLevel, "buildProc", true)
 		executionTime = time.Now().UnixNano()
 		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
 		artifactPath  = projectPath + "/artifact"
@@ -98,7 +96,7 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 		close(messageCh)
 		logger.Trace("writing report")
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
-		saveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now(), userId)
+		saveBuildReport(logger, definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now(), userId)
 	}()
 
 	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
@@ -253,7 +251,7 @@ func StartBuildProcess(definition entity.BuildDefinition, userId int) {
 
 	err = deployArtifact(messageCh, content, artifact)
 	if err != nil {
-		messageCh <- fmt.Sprintf("could not deploy artifact")
+		messageCh <- fmt.Sprintf("could not deploy artifact: " + err.Error())
 		return
 	}
 
@@ -274,7 +272,7 @@ func cloneRepository(messageCh chan string, branch string, repositoryUrl string,
 }
 
 func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, artifact entity.Artifact) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	eg, _ := errgroup.WithContext(ctx)
 	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)

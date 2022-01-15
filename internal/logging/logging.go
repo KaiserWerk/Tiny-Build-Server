@@ -1,45 +1,59 @@
 package logging
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/shutdownManager"
+	"github.com/sirupsen/logrus"
 	"io"
 	"os"
-	"sync"
-
-	"github.com/sirupsen/logrus"
 )
 
-var (
-	err error
-	rotator *Rotator
+type LogMode byte
+
+const (
+	ModeDiscard LogMode = 1 << iota
+	ModeConsole
+	ModeFile
 )
 
-func New(lvl logrus.Level, context string, toConsole bool) *logrus.Entry {
+func New(lvl logrus.Level, path, initialContext string, mode LogMode) (*logrus.Entry, func() error, error) {
 	l := logrus.New()
 	l.SetLevel(lvl)
 	l.SetFormatter(&TbsFormatter{
-		LevelPadding: 7,
+		LevelPadding:   7,
 		ContextPadding: 9,
 	})
 	l.SetReportCaller(false)
-	if toConsole {
-		l.SetOutput(io.MultiWriter(rotator, os.Stdout))
-	} else {
-		l.SetOutput(rotator)
+
+	var (
+		cf = func() error { return nil }
+		w  io.Writer
+	)
+
+	switch true {
+	case mode&ModeDiscard != 0:
+		w = io.Discard
+	case mode&ModeConsole != 0 && mode&ModeFile != 0:
+		rotator, err := newRotator(path, "tbs.log", 3<<20, 0644, 10)
+		if err != nil {
+			return nil, nil, err
+		}
+		cf = func() error {
+			return rotator.Close()
+		}
+		w = io.MultiWriter(rotator, os.Stdout)
+	case mode&ModeFile != 0 && mode&ModeConsole == 0:
+		rotator, err := newRotator(path, "tbs.log", 3<<20, 0644, 10)
+		if err != nil {
+			return nil, nil, err
+		}
+		cf = func() error {
+			return rotator.Close()
+		}
+		w = rotator
+	case mode&ModeConsole != 0 && mode&ModeFile == 0:
+		w = os.Stdout
 	}
 
-	return l.WithField("context", context)
-}
+	l.SetOutput(w)
 
-func Init(dir string) {
-	shutdownManager.Register(CloseFileHandle)
-	rotator, err = NewRotator(dir, "tbs.log", 10 << 20, 0644)
-	if err != nil {
-		panic("cannot create rotator: " + err.Error())
-	}
-}
-
-func CloseFileHandle(wg *sync.WaitGroup) {
-	_ = rotator.Close()
-	wg.Done()
+	return l.WithField("initialContext", initialContext), cf, nil
 }

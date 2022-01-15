@@ -1,6 +1,8 @@
 package assets
 
-import "embed"
+import (
+	"embed"
+)
 
 //go:embed config
 var configFS embed.FS
@@ -8,7 +10,7 @@ var configFS embed.FS
 //go:embed templates/*
 var templateFS embed.FS
 
-//go:embed webasset
+//go:embed webasset/*
 var webAssetFS embed.FS
 
 //go:embed misc
@@ -24,6 +26,10 @@ func GetTemplate(name string) ([]byte, error) {
 
 func GetWebAssetFile(name string) ([]byte, error) {
 	return webAssetFS.ReadFile("webasset/" + name)
+}
+
+func GetWebAssetFS() embed.FS {
+	return webAssetFS
 }
 
 func GetMiscFile(name string) ([]byte, error) {

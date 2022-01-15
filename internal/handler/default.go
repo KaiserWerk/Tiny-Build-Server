@@ -14,7 +14,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("IndexHandler")
+		logger      = h.ContextLogger("IndexHandler")
 	)
 
 	latestBuilds, err := h.Ds.GetNewestBuildExecutions(5, "")
@@ -40,7 +40,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "index.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "index.html", data); err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
@@ -50,9 +50,9 @@ func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request)
 	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("StaticAssetHandler")
-		vars = mux.Vars(r)
-		file = vars["file"]
-		path string
+		vars   = mux.Vars(r)
+		file   = vars["file"]
+		path   string
 	)
 
 	switch true {
@@ -64,7 +64,7 @@ func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request)
 		path = "css"
 	}
 
-	data, err := assets.GetWebAssetFile(path+"/"+file)
+	data, err := assets.GetWebAssetFile(path + "/" + file)
 	if err != nil {
 		logger.WithField("file", file).Warn("could not locate asset file")
 		w.WriteHeader(404)

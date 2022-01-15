@@ -13,9 +13,9 @@ import (
 func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		err error
+		err         error
 		currentUser = r.Context().Value("user").(entity.User)
-		logger = h.ContextLogger("UserSettingsHandler")
+		logger      = h.ContextLogger("UserSettingsHandler")
 	)
 
 	if r.Method == http.MethodPost {
@@ -135,7 +135,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 		CurrentUser: currentUser,
 	}
 
-	if err = templateservice.ExecuteTemplate(w, "user_settings.html", data); err != nil {
+	if err = templateservice.ExecuteTemplate(logger, w, "user_settings.html", data); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

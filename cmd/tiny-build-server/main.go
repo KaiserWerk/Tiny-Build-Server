@@ -3,34 +3,35 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/shutdownManager"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
-	"github.com/stvp/slug"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+	"github.com/stvp/slug"
 )
 
 var (
 	Version     = "DEV"
 	VersionDate = "0000-00-00 00:00:00 +00:00"
-	listenPort string
-	configFile string
-	logDir string
+	listenPort  string
+	configFile  string
+	logPath     string
 )
 
 func main() {
@@ -38,42 +39,50 @@ func main() {
 
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
 	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
-	flag.StringVar(&logDir, "logs", ".", "The path to place log files in")
+	flag.StringVar(&logPath, "logpath", ".", "The path to place log files in")
 	flag.Parse()
 
-	defer panicHandler.Handle()
-	defer shutdownManager.Initiate()
-	global.Set(Version, VersionDate)
-	logging.Init(logDir)
-	logger := logging.New(logrus.DebugLevel, "main", true)
+	logger, cleanup, err := logging.New(logrus.DebugLevel, ".", "main", logging.ModeConsole|logging.ModeFile)
+	if err != nil {
+		panic("could not create new logger: " + err.Error())
+	}
+	defer func() {
+		if err := cleanup(); err != nil {
+			panic("could not execute logger cleanup func: " + err.Error())
+		}
+	}()
+
+	defer panicHandler.Handle(logger)
 
 	if configFile != "" {
 		global.SetConfigurationFile(configFile)
 	}
 
 	logger.WithFields(logrus.Fields{
-		"app": "Tiny Build Server",
-		"version": global.Version,
-		"versionDate": global.VersionDate,
-		"port": listenPort,
-		"configFile": global.GetConfigurationFile(),
+		"app":         "Tiny Build Server",
+		"version":     Version,
+		"versionDate": VersionDate,
+		"port":        listenPort,
+		"configFile":  global.GetConfigurationFile(),
 	}).Info("app information")
 
 	config := global.GetConfiguration()
 
 	ds := databaseservice.Get()
-	err := ds.AutoMigrate()
+	err = ds.AutoMigrate()
 	if err != nil {
 		logger.Panic("AutoMigrate panic: " + err.Error())
 	}
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	logger.Trace("Server starts handling requests")
-	if config.Tls.Enabled {
+	var tlsEnabled bool
+	if config.Tls.CertFile != "" && config.Tls.KeyFile != "" {
 		logger.Debug("  TLS is enabled")
+		tlsEnabled = true
 	}
 
-	router := setupRoutes(config)
+	router := setupRoutes(config, logger)
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
@@ -94,15 +103,13 @@ func main() {
 		ReadHeaderTimeout: 2 * time.Second,
 	}
 
-	if config.Tls.Enabled {
+	if tlsEnabled {
 		server.TLSConfig = tlsConfig
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	//go helper.ReadConsoleInput(quit)
 
 	go func() {
 		<-quit
@@ -117,19 +124,14 @@ func main() {
 		}
 	}()
 
-	if config.Tls.Enabled {
-		if !helper.FileExists(config.Tls.CertFile) || !helper.FileExists(config.Tls.CertFile) {
-			logger.Debug("TLS is enabled, but the certificate file or key file does not exist!")
+	if tlsEnabled {
+		if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.WithField("listenAddr", listenAddr).Error("Could not run HTTPS server: " + err.Error())
 			quit <- os.Interrupt
-		} else {
-			if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && err != http.ErrServerClosed {
-				logger.WithField("listenAddr", listenAddr).Error("Could not listen with TLS: " + err.Error())
-				quit <- os.Interrupt
-			}
 		}
 	} else {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.WithField("listenAddr", listenAddr).Error("Could not listen: " + err.Error())
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.WithField("listenAddr", listenAddr).Error("Could not run HTTP server: " + err.Error())
 			quit <- os.Interrupt
 		}
 	}
@@ -137,24 +139,27 @@ func main() {
 	logger.Trace("Server shutdown complete. Have a nice day!")
 }
 
-func setupRoutes(conf *entity.Configuration) *mux.Router {
+func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
 	router := mux.NewRouter()
 	router.Use(middleware.Recover, middleware.Limit, middleware.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		_ = templateservice.ExecuteTemplate(w, "404.html", r.URL.Path)
+		_ = templateservice.ExecuteTemplate(l, w, "404.html", r.URL.Path)
 	})
 
 	httpHandler := handler.HttpHandler{
-		Ds: databaseservice.Get(),
+		Ds:      databaseservice.Get(),
 		SessMgr: global.GetSessionManager(),
-		Logger: logging.New(logrus.TraceLevel, "HttpHandler", true),
+		Logger:  l,
 	}
 
 	//asset file handlers
 	router.HandleFunc("/assets/{file}", httpHandler.StaticAssetHandler)
 	router.HandleFunc("/js/{file}", httpHandler.StaticAssetHandler)
 	router.HandleFunc("/css/{file}", httpHandler.StaticAssetHandler)
+
+	//fs := http.FileServer(http.FS(assets.GetWebAssetFS()))
+	//router.Handle("/assets", fs)
 
 	//site handlers
 	router.HandleFunc("/login", httpHandler.LoginHandler).Methods(http.MethodGet, http.MethodPost)

@@ -40,7 +40,7 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 		BuildDefinitions: buildDefinitions,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "builddefinition_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -97,7 +97,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 		Skeleton:    string(skeleton),
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "builddefinition_add.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_add.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -167,7 +167,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		BuildDefinition: bdt,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "builddefinition_edit.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_edit.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -265,7 +265,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		Limit:             limit,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "builddefinition_show.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -314,8 +314,6 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-
-
 	data := struct {
 		CurrentUser     entity.User
 		BuildDefinition entity.BuildDefinition
@@ -324,7 +322,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		BuildDefinition: buildDefinition,
 	}
 
-	if err := templateservice.ExecuteTemplate(w, "builddefinition_remove.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_remove.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -379,7 +377,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	go buildservice.StartBuildProcess(bd, currentUser.Id)
+	go buildservice.StartBuildProcess(logger, bd, currentUser.Id)
 
 	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusSeeOther)
 }

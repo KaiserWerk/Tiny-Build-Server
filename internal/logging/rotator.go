@@ -6,37 +6,59 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
+	"sort"
+	"strings"
+	"time"
 )
 
+const (
+	timeFormat = "2006-01-02T15-04-05"
+)
+
+// Rotator represents a struct responsible for writing into a log file while
+// rotating the file when it reached maxSize.
 type Rotator struct {
-	Path     string
-	Filename string
-	MaxSize  uint64
-	writer   *os.File
+	path        string
+	filename    string
+	currentSize uint64
+	maxSize     uint64
+	filesToKeep uint8
+	writer      *os.File
+	permissions os.FileMode
 }
 
-var mut sync.Mutex
-
-func NewRotator(p, filename string, maxSize uint64, perms fs.FileMode) (*Rotator, error) {
+// newRotator returns a new rotator accepting a path to the log directory, a filename (w/o ending),
+// a maximum file size in bytes (e.g. 10 << 20 for 10MB) and file permissions (important for
+// unix systems)
+func newRotator(path, filename string, maxSize uint64, perms fs.FileMode, filesToKeep uint8) (*Rotator, error) {
 	r := Rotator{
-		Path:     p,
-		Filename: filename,
-		MaxSize:  maxSize,
+		path:        path,
+		filename:    filename,
+		maxSize:     maxSize,
+		permissions: perms,
+		filesToKeep: filesToKeep,
 	}
 
-	_ = os.MkdirAll(r.Path, 0755)
+	err := os.MkdirAll(r.path, r.permissions)
+	if err != nil {
+		return nil, err
+	}
 
-	if stat, err := os.Stat(filepath.Join(r.Path, r.Filename)); !errors.Is(err, fs.ErrNotExist) {
-		if stat.Size() > int64(r.MaxSize) {
-			err = os.Rename(filepath.Join(r.Path, r.Filename), filepath.Join(r.Path, r.determineNextFilename()))
+	if stat, err := os.Stat(filepath.Join(r.path, r.filename)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if stat.Size() > int64(r.maxSize) {
+			if r.writer != nil {
+				r.writer.Close()
+			}
+			err = os.Rename(filepath.Join(r.path, r.filename), filepath.Join(r.path, r.determineNextFilename()))
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			r.currentSize = uint64(stat.Size())
 		}
 	}
 
-	fh, err := os.OpenFile(filepath.Join(r.Path, r.Filename), os.O_APPEND|os.O_RDWR|os.O_CREATE, perms)
+	fh, err := os.OpenFile(filepath.Join(r.path, r.filename), os.O_APPEND|os.O_RDWR|os.O_CREATE, perms)
 	if err != nil {
 		return nil, err
 	}
@@ -45,53 +67,84 @@ func NewRotator(p, filename string, maxSize uint64, perms fs.FileMode) (*Rotator
 	return &r, nil
 }
 
+// Write writes the data into the log file and initiates rotation, if necessary
 func (r *Rotator) Write(data []byte) (int, error) {
-	mut.Lock()
-	defer mut.Unlock()
-
-	if stat, err := os.Stat(filepath.Join(r.Path, r.Filename)); !errors.Is(err, fs.ErrNotExist) {
-		if stat.Size() > int64(r.MaxSize) {
-
-			// das geht bestimmt eleganter/performanter
-
-			err = r.writer.Close()
+	if r.currentSize+uint64(len(data)) > r.maxSize {
+		if r.writer != nil {
+			err := r.writer.Close()
 			if err != nil {
-				return 0, fmt.Errorf("could not close writer: %s", err.Error())
+				return 0, err
 			}
-			err = os.Rename(filepath.Join(r.Path, r.Filename), filepath.Join(r.Path, r.determineNextFilename()))
-			if err != nil {
-				return 0, fmt.Errorf("could not rename/move file: %s", err.Error())
-			}
-			fh, err := os.OpenFile(filepath.Join(r.Path, r.Filename), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-			if err != nil {
-				return 0, fmt.Errorf("could not re-open file: %s", err.Error())
-			}
-			r.writer = fh
 		}
+
+		err := r.removeUnnecessaryFiles()
+		if err != nil {
+			return 0, nil
+		}
+
+		err = os.Rename(filepath.Join(r.path, r.filename), filepath.Join(r.path, r.determineNextFilename()))
+		if err != nil {
+			return 0, err
+		}
+		fh, err := os.OpenFile(filepath.Join(r.path, r.filename), os.O_APPEND|os.O_RDWR|os.O_CREATE, r.permissions)
+		if err != nil {
+			return 0, err
+		}
+		r.writer = fh
+		r.currentSize = 0
 	}
 
-	return r.writer.Write(data)
+	n, err := r.writer.Write(data)
+	if err != nil {
+		return 0, err
+	}
+
+	return n, err
 }
 
-func (r *Rotator) Close() error {
-	// mut.Lock()
-	// defer mut.Unlock()
-	return r.writer.Close()
-}
-
-// determineNextFilename
+// determineNextFilename determines the next free filename to be used on rotation
 func (r *Rotator) determineNextFilename() string {
-	var (
-		i        uint64 = 1
-		filename string = fmt.Sprintf("%s.%d", r.Filename, i)
-	)
-	for {
-		if _, err := os.Stat(filepath.Join(r.Path, filename)); err != nil && errors.Is(err, fs.ErrNotExist) {
-			break
-		}
-		i++
-		filename = fmt.Sprintf("%s.%d", r.Filename, i)
+	return filepath.Join(r.path, fmt.Sprintf("%s.%s", r.filename, time.Now().Format(timeFormat)))
+}
+
+// removeUnnecessaryFiles removes old files and keeps r.filesToKeep files
+func (r *Rotator) removeUnnecessaryFiles() error {
+	files, err := filepath.Glob(filepath.Join(r.path, r.filename) + ".*")
+	if err != nil {
+		return err
 	}
 
-	return filename
+	if len(files) == 0 {
+		return nil
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		partsI := strings.Split(files[i], ".")
+		partsJ := strings.Split(files[j], ".")
+		dtI, err := time.Parse(timeFormat, partsI[len(partsI)-1])
+		if err != nil {
+			return false
+		}
+		dtJ, err := time.Parse(timeFormat, partsJ[len(partsJ)-1])
+		if err != nil {
+			return false
+		}
+		return dtI.Before(dtJ)
+	})
+
+	filesToRemove := files[:len(files)-int(r.filesToKeep)]
+
+	for _, f := range filesToRemove {
+		err = os.Remove(filepath.Join(r.path, f))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Close closes the io.Writer of the Rotator.
+func (r *Rotator) Close() error {
+	return r.writer.Close()
 }

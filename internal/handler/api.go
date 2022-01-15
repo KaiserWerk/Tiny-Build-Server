@@ -73,5 +73,5 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// start the actual build process
-	go buildservice.StartBuildProcess(bd, 0)
+	go buildservice.StartBuildProcess(logger, bd, bd.CreatedBy)
 }
