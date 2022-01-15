@@ -7,6 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/pkg/sftp v1.13.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stvp/slug v0.0.0-20150928221549-5ab8191bb1fe
