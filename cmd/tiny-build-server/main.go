@@ -27,11 +27,10 @@ import (
 )
 
 var (
-	Version     = "DEV"
-	VersionDate = "0000-00-00 00:00:00 +00:00"
-	listenPort  string
-	configFile  string
-	logPath     string
+	Version    string = "DEV"
+	listenPort string
+	configFile string
+	logPath    string
 )
 
 func main() {
@@ -59,11 +58,10 @@ func main() {
 	}
 
 	logger.WithFields(logrus.Fields{
-		"app":         "Tiny Build Server",
-		"version":     Version,
-		"versionDate": VersionDate,
-		"port":        listenPort,
-		"configFile":  global.GetConfigurationFile(),
+		"app":        "Tiny Build Server",
+		"version":    Version,
+		"port":       listenPort,
+		"configFile": global.GetConfigurationFile(),
 	}).Info("app information")
 
 	config := global.GetConfiguration()
