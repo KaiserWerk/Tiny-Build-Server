@@ -8,7 +8,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 
 	"gorm.io/driver/mysql"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -18,7 +17,7 @@ type DatabaseService struct {
 }
 
 var (
-	dbs DatabaseService
+	dbs  DatabaseService
 	once sync.Once
 )
 
@@ -27,12 +26,7 @@ func Get() *DatabaseService {
 	once.Do(func() {
 		config := global.GetConfiguration()
 
-		var driver gorm.Dialector = mysql.Open(config.Database.DSN)
-		if config.Database.Driver == "sqlite" {
-			driver = sqlite.Open(config.Database.DSN)
-		}
-
-		db, err := gorm.Open(driver, &gorm.Config{
+		db, err := gorm.Open(mysql.Open(config.Database.DSN), &gorm.Config{
 			PrepareStmt: true,
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: true,
