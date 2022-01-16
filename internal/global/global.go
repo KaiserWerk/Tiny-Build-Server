@@ -2,8 +2,8 @@ package global
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
-	"github.com/kelseyhightower/envconfig"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -61,18 +61,22 @@ func GetConfiguration() *entity.Configuration {
 			panic("Could not write configuration file '" + configFile + "': " + err.Error())
 		}
 
-		var cfg *entity.Configuration
+		var cfg entity.Configuration
 		err = yaml.Unmarshal(cont, &cfg)
 		if err != nil {
 			panic("could not parse configuration file content: " + err.Error())
 		}
 
-		err = envconfig.Process("tbs", cfg)
-		if err != nil {
-			panic("could not process env vars for configuration: " + err.Error())
+		//err = envconfig.Process("tbs", &cfg)
+		//if err != nil {
+		//	panic("could not process env vars for configuration: " + err.Error())
+		//}
+
+		if s := os.Getenv("TBS_DB_DSN"); s != "" {
+			cfg.Database.DSN = s
 		}
 
-		config = cfg
+		config = &cfg
 	})
 
 	return config
