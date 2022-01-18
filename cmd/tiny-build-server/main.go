@@ -72,10 +72,10 @@ func main() {
 	}).Info("app information")
 
 	ds := databaseservice.New(config)
-	if err := ds.AutoMigrate(); err != nil {
-		logger.WithField("error", err.Error()).Error("AutoMigrate panic")
-		return
-	}
+	//if err := ds.AutoMigrate(); err != nil {
+	//	logger.WithField("error", err.Error()).Error("AutoMigrate panic")
+	//	return
+	//}
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	logger.Trace("Server starts handling requests")

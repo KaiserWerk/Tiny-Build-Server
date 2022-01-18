@@ -13,7 +13,7 @@ services:
     depends_on:
       - db
     networks:
-      - local
+      - tbs_net
 
   db:
     image: "mysql:5.7"
@@ -21,16 +21,19 @@ services:
     #command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
+      - MYSQL_ROOT_PASSWORD=Y0oc2uITDWoJjnI
       - MYSQL_DATABASE=tinybuildserver
       - MYSQL_USER=dbo
       - MYSQL_PASSWORD=Znmml2mkNuXaHDp
-      - MYSQL_ROOT_PASSWORD=Y0oc2uITDWoJjnI
+    volumes:
+      - "./sql:/docker-entrypoint-initdb.d"
     networks:
-      - local
+      - tbs_net
 
 
 networks:
-  local:
+  tbs_net:
+    driver: bridge
 
 volumes:
   appdata:
