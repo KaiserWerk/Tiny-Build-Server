@@ -68,7 +68,7 @@
                             {{range .LatestBuildDefs}}
                                 <tr>
                                     <td><a href="/builddefinition/{{ .ID }}/show">{{ .Caption }}</a></td>
-                                    <td>{{ if eq .EditedAt.Valid true }}{{ .EditedBy }}{{ else }}-{{ end }}</td>
+                                    <td>{{ if eq .EditedAt.Valid true }}{{ getUsernameById .EditedBy }}{{ else }}-{{ end }}</td>
                                     <td>{{ if eq .EditedAt.Valid true }}{{ .EditedAt.Time | formatDate }}{{ else }}-{{ end }}</td>
                                 </tr>
                             {{else}}

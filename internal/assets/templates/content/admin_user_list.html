@@ -33,7 +33,7 @@
                         <tbody>
                         {{ range .AllUsers }}
                             <tr>
-                                <td>{{ .Id }}</td>
+                                <td>{{ .ID }}</td>
                                 <td>{{ .DisplayName }}</td>
                                 <td>{{ .Email }}</td>
                                 <td>{{ if eq .Locked true }}<span class="badge-pill badge-info">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
