@@ -1,36 +1,40 @@
 package templateservice
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/sirupsen/logrus"
-	"io"
-)
-
-import (
 	"bytes"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"html/template"
+	"io"
 	"strings"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+
 	"github.com/KaiserWerk/sessionstore"
+	"github.com/sirupsen/logrus"
 )
 
+type Injector struct {
+	Logger  *logrus.Entry
+	SessMgr *sessionstore.SessionManager
+	Ds      *databaseservice.DatabaseService
+}
+
 // ExecuteTemplate executed a template with the supplied data into the io.Writer w
-func ExecuteTemplate(logger *logrus.Entry, w io.Writer, file string, data interface{}) error {
+func ExecuteTemplate(inj *Injector, w io.Writer, file string, data interface{}) error {
 	var (
-		ds      = databaseservice.Get()
 		funcMap = template.FuncMap{
-			"getUsernameById":    GetUsernameById,
-			"getFlashbag":        GetFlashbag(logger, global.GetSessionManager()),
-			"formatDate":         helper.FormatDate,
-			"getBuildDefCaption": ds.GetBuildDefCaption,
+			"getFlashbag": GetFlashbag(inj.Logger, inj.SessMgr),
+			"formatDate":  helper.FormatDate,
+			"getUsernameById": func(id uint) string {
+				return GetUsernameById(inj.Ds, id)
+			},
+			"getBuildDefCaption": inj.Ds.GetBuildDefCaption,
 		}
 	)
 	layoutContent, err := assets.GetTemplate("_layout.html")
 	if err != nil {
-		logger.WithField("error", err.Error()).Error("could not get layout template")
+		inj.Logger.WithField("error", err.Error()).Error("could not get layout template")
 		return err
 	}
 
@@ -38,7 +42,7 @@ func ExecuteTemplate(logger *logrus.Entry, w io.Writer, file string, data interf
 
 	content, err := assets.GetTemplate("content/" + file)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		inj.Logger.WithFields(logrus.Fields{
 			"error": err.Error(),
 			"file":  file,
 		}).Error("could not find template")
@@ -48,13 +52,13 @@ func ExecuteTemplate(logger *logrus.Entry, w io.Writer, file string, data interf
 	tmpl := template.Must(layout.Clone())
 	_, err = tmpl.Parse(string(content))
 	if err != nil {
-		logger.WithField("error", err.Error()).Error("could not parse template into base layout")
+		inj.Logger.WithField("error", err.Error()).Error("could not parse template into base layout")
 		return err
 	}
 
 	err = tmpl.Execute(w, data)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		inj.Logger.WithFields(logrus.Fields{
 			"error": err.Error(),
 			"file":  file,
 		}).Error("could not execute template")
@@ -117,14 +121,11 @@ func GetFlashbag(logger *logrus.Entry, mgr *sessionstore.SessionManager) func() 
 }
 
 // GetUsernameById returns a username by id
-func GetUsernameById(id int) string {
-	ds := databaseservice.Get()
-	//defer ds.Quit()
-
+func GetUsernameById(ds *databaseservice.DatabaseService, id uint) string {
 	u, err := ds.GetUserById(id)
 	if err != nil {
 		return "--"
 	}
 
-	return u.Displayname
+	return u.DisplayName
 }

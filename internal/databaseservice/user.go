@@ -7,7 +7,7 @@ import (
 )
 
 // GetAllUsers fetches a list of all users
-func (ds DatabaseService) GetAllUsers() ([]entity.User, error) {
+func (ds *DatabaseService) GetAllUsers() ([]entity.User, error) {
 	users := make([]entity.User, 0)
 	result := ds.db.Find(&users)
 	if result.Error != nil {
@@ -18,7 +18,7 @@ func (ds DatabaseService) GetAllUsers() ([]entity.User, error) {
 
 // GetUsernameById fetches a username by Id
 // Supposed to be used in templates
-func (ds DatabaseService) GetUsernameById(id int) string {
+func (ds *DatabaseService) GetUsernameById(id int) string {
 	var u entity.User
 
 	result := ds.db.First(&u, id)
@@ -26,11 +26,11 @@ func (ds DatabaseService) GetUsernameById(id int) string {
 		return ""
 	}
 
-	return u.Displayname
+	return u.DisplayName
 }
 
 // GetUserByEmail fetches a user by email address
-func (ds DatabaseService) GetUserByEmail(email string) (entity.User, error) {
+func (ds *DatabaseService) GetUserByEmail(email string) (entity.User, error) {
 	var u entity.User
 	result := ds.db.First(&u, "email = ?", email)
 	if result.Error != nil {
@@ -40,7 +40,7 @@ func (ds DatabaseService) GetUserByEmail(email string) (entity.User, error) {
 }
 
 // GetUserById fetches a user by Id
-func (ds DatabaseService) GetUserById(id int) (entity.User, error) {
+func (ds *DatabaseService) GetUserById(id uint) (entity.User, error) {
 	var u entity.User
 	result := ds.db.First(&u, id)
 	if result.Error != nil {
@@ -51,17 +51,17 @@ func (ds DatabaseService) GetUserById(id int) (entity.User, error) {
 }
 
 // AddUser adds a new user
-func (ds DatabaseService) AddUser(user entity.User) (int, error) {
+func (ds *DatabaseService) AddUser(user entity.User) (uint, error) {
 	result := ds.db.Create(&user)
 	if result.Error != nil {
 		return 0, result.Error
 	}
 
-	return user.Id, nil
+	return user.ID, nil
 }
 
 // UpdateUser alters an existing user
-func (ds DatabaseService) UpdateUser(user entity.User) error {
+func (ds *DatabaseService) UpdateUser(user entity.User) error {
 	result := ds.db.Save(&user)
 	if result.Error != nil {
 		return result.Error
@@ -71,7 +71,7 @@ func (ds DatabaseService) UpdateUser(user entity.User) error {
 }
 
 // FindUser finds a user by the supplied criteria
-func (ds DatabaseService) FindUser(cond string, args ...interface{}) (entity.User, error) {
+func (ds *DatabaseService) FindUser(cond string, args ...interface{}) (entity.User, error) {
 	var user entity.User
 	result := ds.db.Where(cond, args...).Find(&user)
 	if result.Error != nil {
@@ -86,7 +86,7 @@ func (ds DatabaseService) FindUser(cond string, args ...interface{}) (entity.Use
 }
 
 // DeleteUser removes a user by the given Id
-func (ds DatabaseService) DeleteUser(id int) error {
+func (ds *DatabaseService) DeleteUser(id uint) error {
 	result := ds.db.Delete(&entity.User{}, id)
 	if result.Error != nil {
 		return result.Error

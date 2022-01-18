@@ -26,15 +26,15 @@
                         <tbody>
                         {{ range .BuildDefinitions }}
                             <tr>
-                                <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
+                                <td><a href="/builddefinition/{{ .ID }}/show">{{ .Caption }}</a></td>
                                 <td>{{ if eq .EditedAt.Valid true }}{{ getUsernameById .EditedBy }}{{ end }}</td>
                                 <td>{{ if eq .EditedAt.Valid true }}{{ .EditedAt.Time | formatDate }}{{ end }}</td>
                                 <td>{{ getUsernameById .CreatedBy }}</td>
                                 <td>{{ .CreatedAt | formatDate }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a class="btn btn-primary" href="/builddefinition/{{ .Id }}/edit">Edit</a>
-                                        <a class="btn btn-danger" href="/builddefinition/{{ .Id }}/remove">Remove</a>
+                                        <a class="btn btn-primary" href="/builddefinition/{{ .ID }}/edit">Edit</a>
+                                        <a class="btn btn-danger" href="/builddefinition/{{ .ID }}/remove">Remove</a>
                                     </div>
                                 </td>
                             </tr>

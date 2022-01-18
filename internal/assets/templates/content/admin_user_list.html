@@ -34,14 +34,14 @@
                         {{ range .AllUsers }}
                             <tr>
                                 <td>{{ .Id }}</td>
-                                <td>{{ .Displayname }}</td>
+                                <td>{{ .DisplayName }}</td>
                                 <td>{{ .Email }}</td>
                                 <td>{{ if eq .Locked true }}<span class="badge-pill badge-info">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
                                 <td>{{ if eq .Admin true }}<span class="badge-pill badge-info">Yes</span>{{ else }}<span class="badge-pill badge-secondary">No</span>{{ end }}</td>
                                 <td>
-                                    <a class="btn btn-sm btn-primary" href="/admin/user/{{ .Id }}/edit">Edit</a>
-                                    {{ if ne .Id $currentUser.Id }}
-                                        <a class="btn btn-sm btn-danger" href="/admin/user/{{ .Id }}/remove">Remove</a>
+                                    <a class="btn btn-sm btn-primary" href="/admin/user/{{ .ID }}/edit">Edit</a>
+                                    {{ if ne .ID $currentUser.ID }}
+                                        <a class="btn btn-sm btn-danger" href="/admin/user/{{ .ID }}/remove">Remove</a>
                                     {{ end }}
                                 </td>
                             </tr>

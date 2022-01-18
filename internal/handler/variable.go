@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 
@@ -18,7 +19,7 @@ func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request
 		logger      = h.ContextLogger("VariableListHandler")
 	)
 
-	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
+	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.ID)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get variables for user")
 		http.Error(w, "could not get variables for user", http.StatusInternalServerError)
@@ -33,7 +34,7 @@ func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request
 		Variables:   variables,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "variable_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "variable_list.html", data); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
@@ -44,8 +45,6 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("VariableAddHandler")
-		sessMgr     = h.SessMgr
-		ds          = h.Ds
 	)
 
 	if r.Method == http.MethodPost {
@@ -56,28 +55,28 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 			varPublic = true
 		}
 		if varName == "" || varVal == "" {
-			sessMgr.AddMessage("warning", "Please enter both a variable name and a value.")
+			h.SessMgr.AddMessage("warning", "Please enter both a variable name and a value.")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
 
-		_, err := ds.FindVariable("user_entry_id = ? AND variable = ?", currentUser.Id, varName)
+		_, err := h.Ds.FindVariable("user_entry_id = ? AND variable = ?", currentUser.ID, varName)
 		if err == nil {
-			sessMgr.AddMessage("error", "This variable already exists!")
+			h.SessMgr.AddMessage("error", "This variable already exists!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
 
 		uv := entity.UserVariable{
-			UserEntryId: currentUser.Id,
+			UserEntryId: currentUser.ID,
 			Variable:    varName,
 			Value:       varVal,
 			Public:      varPublic,
 		}
 
-		if _, err = ds.AddVariable(uv); err != nil {
+		if _, err = h.Ds.AddVariable(uv); err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert new user variable")
-			sessMgr.AddMessage("error", "The variable could not be added!")
+			h.SessMgr.AddMessage("error", "The variable could not be added!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
@@ -92,7 +91,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 		CurrentUser: currentUser,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "variable_add.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "variable_add.html", data); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
@@ -103,7 +102,6 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("VariableEditHandler")
-		ds          = h.Ds
 		vars        = mux.Vars(r)
 	)
 
@@ -114,14 +112,14 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	variable, err := ds.GetVariable(id)
+	variable, err := h.Ds.GetVariable(id)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get variable")
 		http.Error(w, "could not get variable", http.StatusNotFound)
 		return
 	}
 
-	if variable.UserEntryId != currentUser.Id {
+	if variable.UserEntryId != currentUser.ID {
 		logger.Error("this is not your variable!")
 		http.Error(w, "this is not your variable!", http.StatusForbidden)
 		return
@@ -137,16 +135,16 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		_, err := ds.FindVariable("user_entry_id = ? && variable = ? && id != ?", currentUser.Id, varName, variable.Id)
+		_, err := h.Ds.FindVariable("user_entry_id = ? && variable = ? && id != ?", currentUser.ID, varName, variable.ID)
 		if err == nil {
 			logger.WithField("varName", varName).Error("this variable name is already taken")
 			http.Error(w, "this variable name is already taken", http.StatusInternalServerError)
 			return
 		}
 
-		err = ds.UpdateVariable(entity.UserVariable{
-			Id:          id,
-			UserEntryId: currentUser.Id,
+		err = h.Ds.UpdateVariable(entity.UserVariable{
+			Model:       gorm.Model{ID: uint(id)},
+			UserEntryId: currentUser.ID,
 			Variable:    varName,
 			Value:       varVal,
 			Public:      varPublic,
@@ -169,7 +167,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 		Variable:    variable,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "variable_edit.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "variable_edit.html", data); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }
@@ -183,23 +181,23 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 		vars        = mux.Vars(r)
 	)
 
-	v, err := h.Ds.FindVariable("user_entry_id = ? AND id = ?", currentUser.Id, vars["id"])
+	v, err := h.Ds.FindVariable("user_entry_id = ? AND id = ?", currentUser.ID, vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":      err.Error(),
 			"variableId": vars["id"],
-			"userId":     currentUser.Id,
+			"userId":     currentUser.ID,
 		}).Error("could not find variable")
 		h.SessMgr.AddMessage("error", "The variable could not be found or it is not yours!")
 		http.Redirect(w, r, "/variable/list", http.StatusSeeOther)
 		return
 	}
 
-	if err = h.Ds.DeleteVariable(v.Id); err != nil {
+	if err = h.Ds.DeleteVariable(v.ID); err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":      err.Error(),
 			"variableId": vars["id"],
-			"userId":     currentUser.Id,
+			"userId":     currentUser.ID,
 		}).Error("could not delete variable from DB")
 		h.SessMgr.AddMessage("error", "The variable could not be removed!")
 		// no redirect here

@@ -28,13 +28,13 @@
                             <tr>
                                 <td>{{ .Variable }}</td>
                                 <td>{{ .Value }}</td>
-                                <td>{{ if ne .UserEntryId $userId }}{{ getUsernameById .UserEntryId }}{{ else }}<b>You</b>{{ end }}</td>
+                                <td>{{ if ne .UserEntryID $userId }}{{ .UserEntryID }}{{ else }}<b>You</b>{{ end }}</td>
                                 <td>{{ if eq .Public true }}<span class="badge-pill badge-warning">Yes</span>{{ else }}<span class="badge-pill badge-dark">No</span>{{ end }}</td>
                                 <td>
-                                    {{ if eq .UserEntryId $userId }}
+                                    {{ if eq .UserEntryID $userId }}
                                     <div class="btn-group btn-group-sm">
-                                        <a class="btn btn-primary" href="/variable/{{ .Id }}/edit">Edit</a>
-                                        <a class="btn btn-danger" href="/variable/{{ .Id }}/remove" onclick="return confirm('Really delete?');">Remove</a>
+                                        <a class="btn btn-primary" href="/variable/{{ .ID }}/edit">Edit</a>
+                                        <a class="btn btn-danger" href="/variable/{{ .ID }}/remove" onclick="return confirm('Really delete?');">Remove</a>
                                     </div>
                                     {{ end }}
                                 </td>

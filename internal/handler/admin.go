@@ -2,13 +2,13 @@ package handler
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -36,7 +36,7 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 		AllUsers:    userList,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_list.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_user_list.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -51,7 +51,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 		sessMgr     = h.SessMgr
 	)
 
-	if r.Method == "POST" {
+	if r.Method == http.MethodPost {
 		displayname := r.FormValue("displayname")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
@@ -101,7 +101,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 			}
 
 			userToAdd := entity.User{
-				Displayname: displayname,
+				DisplayName: displayname,
 				Email:       email,
 				Password:    passwordHash,
 				Locked:      locked,
@@ -127,7 +127,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 		CurrentUser: currentUser,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_add.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_user_add.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -180,8 +180,10 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		}
 
 		updateUser := entity.User{
-			Id:          userId,
-			Displayname: displayname,
+			Model: gorm.Model{
+				ID: uint(userId),
+			},
+			DisplayName: displayname,
 			Email:       email,
 			Locked:      locked,
 			Admin:       admin,
@@ -216,7 +218,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
-	editedUser, err := h.Ds.GetUserById(userId)
+	editedUser, err := h.Ds.GetUserById(uint(userId))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
@@ -231,7 +233,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		UserToEdit:  editedUser,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_edit.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_user_edit.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -259,7 +261,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if r.Method == http.MethodPost {
-		err = h.Ds.DeleteUser(userId)
+		err = h.Ds.DeleteUser(uint(userId))
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("error removing user")
 			sessMgr.AddMessage("error", "An unknown error occurred, please try again.")
@@ -271,7 +273,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	user, err := h.Ds.GetUserById(userId)
+	user, err := h.Ds.GetUserById(uint(userId))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
@@ -286,7 +288,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 		UserToRemove: user,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "admin_user_remove.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_user_remove.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -484,7 +486,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 		AdminSettings: allSettings,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "admin_settings.html", contextData); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_settings.html", contextData); err != nil {
 		w.WriteHeader(404)
 	}
 }

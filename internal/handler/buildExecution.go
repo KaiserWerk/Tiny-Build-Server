@@ -33,7 +33,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 		BuildExecutions: buildExecutions,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "buildexecution_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "buildexecution_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -66,11 +66,11 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	buildDefinition, err := h.Ds.GetBuildDefinitionById(buildExecution.BuildDefinitionId)
+	buildDefinition, err := h.Ds.GetBuildDefinitionById(buildExecution.BuildDefinitionID)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":             err.Error(),
-			"buildDefinitionId": buildExecution.BuildDefinitionId,
+			"buildDefinitionId": buildExecution.BuildDefinitionID,
 		}).Error("could not scan buildDefinition")
 		w.WriteHeader(500)
 		return
@@ -86,7 +86,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 		BuildDefinition: buildDefinition,
 	}
 
-	if err = templateservice.ExecuteTemplate(logger, w, "buildexecution_show.html", data); err != nil {
+	if err = templateservice.ExecuteTemplate(h.Injector(), w, "buildexecution_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }

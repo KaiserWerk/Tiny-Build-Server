@@ -32,11 +32,11 @@
                                     {{$label = "FAILED"}}
                                 {{end}}
                             <tr>
-                                <td><a href="/builddefinition/{{ .BuildDefinitionId }}/show">{{ getBuildDefCaption .BuildDefinitionId }}</a></td>
+                                <td><a href="/builddefinition/{{ .BuildDefinitionID }}/show">{{ getBuildDefCaption .BuildDefinitionID }}</a></td>
                                 <td>{{ .ExecutionTime }}s</td>
                                 <td>{{ .ExecutedAt | formatDate }}</td>
                                 <td><span class="badge {{ $class }}">{{ $label }}</span></td>
-                                <td><a class="btn btn-sm btn-info" href="/buildexecution/{{ .Id }}/show">Show</a></td>
+                                <td><a class="btn btn-sm btn-info" href="/buildexecution/{{ .ID }}/show">Show</a></td>
                             </tr>
                             {{else}}
                             <tr>
@@ -58,15 +58,17 @@
                     <div class="card-body">
                         <table class="table table-bordered table-hover table-condensed">
                             <thead>
-                            <th>Build</th>
-                            <th>Altered By</th>
-                            <th>Altered</th>
+                                <tr>
+                                    <th>Build</th>
+                                    <th>Edited By</th>
+                                    <th>Last Edit</th>
+                                </tr>
                             </thead>
                             <tbody>
                             {{range .LatestBuildDefs}}
                                 <tr>
-                                    <td><a href="/builddefinition/{{ .Id }}/show">{{ .Caption }}</a></td>
-                                    <td>{{ if eq .EditedAt.Valid true }}{{ getUsernameById .EditedBy }}{{ else }}-{{ end }}</td>
+                                    <td><a href="/builddefinition/{{ .ID }}/show">{{ .Caption }}</a></td>
+                                    <td>{{ if eq .EditedAt.Valid true }}{{ .EditedBy }}{{ else }}-{{ end }}</td>
                                     <td>{{ if eq .EditedAt.Valid true }}{{ .EditedAt.Time | formatDate }}{{ else }}-{{ end }}</td>
                                 </tr>
                             {{else}}

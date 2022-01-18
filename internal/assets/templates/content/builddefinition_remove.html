@@ -7,7 +7,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     Remove Build Definition &quot;{{ .BuildDefinition.Caption }}&quot;
-                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/show">
+                    <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.ID }}/show">
                         <i class="fa fa-eye"></i>
                         Show
                     </a>
@@ -16,7 +16,7 @@
                     <p>Do you really want to remove the Build Definition &quot;<b>{{ .BuildDefinition.Caption }}</b>&quot;?
                        This can <b>not</b> be undone.</p>
                     <a class="btn btn-primary float-right" href="/builddefinition/list">Cancel</a>
-                    <a class="btn btn-primary float-right mr-2" href="/builddefinition/{{ .BuildDefinition.Id }}/remove?confirm=yes">Confirm removal</a>
+                    <a class="btn btn-primary float-right mr-2" href="/builddefinition/{{ .BuildDefinition.ID }}/remove?confirm=yes">Confirm removal</a>
                 </div>
             </div>
         </div>

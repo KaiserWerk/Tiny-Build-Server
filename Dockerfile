@@ -5,6 +5,7 @@ RUN CGO_ENABLED=0
 
 # Create a directory for the app
 RUN mkdir /app
+RUN mkdir /app/data
 
 # Copy all files from the current directory to the app directory
 COPY . /app
@@ -12,7 +13,7 @@ COPY . /app
 # Set working directory
 WORKDIR /app
 
-ENV TBS_DB_DSN="dbo:Znmml2mkNuXaHDp@tcp(dbservice:3306)/tinybuildserver?charset=utf8&parseTime=true"
+ENV TBS_DB_DSN="dbo:Znmml2mkNuXaHDp@tcp(db:3306)/tinybuildserver?charset=utf8&parseTime=true"
 
 RUN go get -u ./...
 

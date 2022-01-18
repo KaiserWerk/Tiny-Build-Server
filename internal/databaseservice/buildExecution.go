@@ -7,7 +7,7 @@ import (
 )
 
 // GetNewestBuildExecutions fetches the newest build executions
-func (ds DatabaseService) GetNewestBuildExecutions(limit int, query string, args ...interface{}) ([]entity.BuildExecution, error) {
+func (ds *DatabaseService) GetNewestBuildExecutions(limit int, query string, args ...interface{}) ([]entity.BuildExecution, error) {
 	beList := make([]entity.BuildExecution, 0)
 	var result *gorm.DB
 	if limit > 0 {
@@ -31,7 +31,7 @@ func (ds DatabaseService) GetNewestBuildExecutions(limit int, query string, args
 }
 
 // GetBuildExecutionById fetches a specific build execution by id
-func (ds DatabaseService) GetBuildExecutionById(id int) (entity.BuildExecution, error) {
+func (ds *DatabaseService) GetBuildExecutionById(id int) (entity.BuildExecution, error) {
 	var be entity.BuildExecution
 	result := ds.db.First(&be, id)
 	if result.Error != nil {
@@ -41,7 +41,7 @@ func (ds DatabaseService) GetBuildExecutionById(id int) (entity.BuildExecution, 
 }
 
 // FindBuildExecutions finds build executions by criteria
-func (ds DatabaseService) FindBuildExecutions(query interface{}, args ...interface{}) ([]entity.BuildExecution, error) {
+func (ds *DatabaseService) FindBuildExecutions(query interface{}, args ...interface{}) ([]entity.BuildExecution, error) {
 	executions := make([]entity.BuildExecution, 0)
 	result := ds.db.Where(query, args...).Find(&executions)
 	if result.Error != nil {
@@ -51,7 +51,7 @@ func (ds DatabaseService) FindBuildExecutions(query interface{}, args ...interfa
 }
 
 // AddBuildExecution adds a new build execution
-func (ds DatabaseService) AddBuildExecution(be entity.BuildExecution) error {
+func (ds *DatabaseService) AddBuildExecution(be entity.BuildExecution) error {
 	result := ds.db.Create(&be)
 	if result.Error != nil {
 		return result.Error

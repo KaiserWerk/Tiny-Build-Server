@@ -40,7 +40,7 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 
 	if bd.Deleted {
 		logger.WithFields(logrus.Fields{
-			"id": bd.Id,
+			"id": bd.ID,
 		}).Info("requested deleted build definition")
 		http.Error(w, "requested deleted build definition", http.StatusNotFound)
 		return
@@ -73,5 +73,5 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// start the actual build process
-	go buildservice.StartBuildProcess(logger, bd, bd.CreatedBy)
+	go h.Bs.StartBuildProcess(bd, bd.CreatedBy)
 }

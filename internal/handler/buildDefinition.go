@@ -3,19 +3,19 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // BuildDefinitionListHandler lists all existing build definitions
@@ -40,7 +40,7 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 		BuildDefinitions: buildDefinitions,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_list.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "builddefinition_list.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -49,7 +49,6 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
-		sessMgr     = h.SessMgr
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionAddHandler")
 	)
@@ -60,7 +59,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 
 		if caption == "" || content == "" {
 			logger.Info("missing required fields")
-			sessMgr.AddMessage("info", "Fields caption and content cannot be empty")
+			h.SessMgr.AddMessage("info", "Fields caption and content cannot be empty")
 			http.Redirect(w, r, "/builddefinition/add", http.StatusSeeOther)
 			return
 		}
@@ -69,7 +68,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 			Caption:   caption,
 			Token:     security.GenerateToken(20),
 			Content:   content,
-			CreatedBy: currentUser.Id,
+			CreatedBy: currentUser.ID,
 		}
 
 		_, err := h.Ds.AddBuildDefinition(&bd)
@@ -97,7 +96,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 		Skeleton:    string(skeleton),
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_add.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "builddefinition_add.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -107,7 +106,6 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr     = h.SessMgr
 		vars        = mux.Vars(r)
 		logger      = h.ContextLogger("BuildDefinitionEditHandler")
 	)
@@ -124,16 +122,16 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 
 		if caption == "" || content == "" {
 			logger.WithField("error", err.Error()).Error("required fields missing")
-			sessMgr.AddMessage("warning", "Please fill in required fields.")
+			h.SessMgr.AddMessage("warning", "Please fill in required fields.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
 
 		bd := entity.BuildDefinition{
-			Id:       id,
+			Model:    gorm.Model{ID: uint(id)},
 			Caption:  caption,
 			Content:  content,
-			EditedBy: currentUser.Id,
+			EditedBy: currentUser.ID,
 			EditedAt: sql.NullTime{
 				Time:  time.Now(),
 				Valid: true,
@@ -143,7 +141,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		err = h.Ds.UpdateBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
-			sessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
+			h.SessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
@@ -152,7 +150,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	bdt, err := h.Ds.GetBuildDefinitionById(id)
+	bdt, err := h.Ds.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not get buildDefinition: " + err.Error())
 		w.WriteHeader(500)
@@ -167,7 +165,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		BuildDefinition: bdt,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_edit.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "builddefinition_edit.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -192,7 +190,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 
 	baseUrl, ok := settings["base_url"]
 	if !ok {
-		logger.Info("could not get setting base_url; using default")
+		logger.Info("could not get setting base_url; using local default")
 		baseUrl = "http://127.0.0.1:8271"
 	}
 
@@ -201,14 +199,14 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		logger.WithField("error", err.Error()).Error("could not parse build definition id, setting to -1")
 		id = -1
 	}
-	bd, err := h.Ds.GetBuildDefinitionById(id)
+	bd, err := h.Ds.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get buildDefinition")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	beList, err := h.Ds.GetNewestBuildExecutions(limit, "build_definition_id = ?", bd.Id)
+	beList, err := h.Ds.GetNewestBuildExecutions(limit, "build_definition_id = ?", bd.ID)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get newest build executions")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -241,6 +239,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		}
 	}
 
+	// TODO: caching!
 	data := struct {
 		BuildDefinition   entity.BuildDefinition
 		RecentExecutions  []entity.BuildExecution
@@ -265,7 +264,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		Limit:             limit,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_show.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "builddefinition_show.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -288,7 +287,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		w.WriteHeader(500)
 		return
 	}
-	buildDefinition, err := h.Ds.GetBuildDefinitionById(id)
+	buildDefinition, err := h.Ds.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -322,7 +321,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		BuildDefinition: buildDefinition,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "builddefinition_remove.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "builddefinition_remove.html", data); err != nil {
 		w.WriteHeader(404)
 	}
 }
@@ -346,7 +345,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	bd, err := h.Ds.GetBuildDefinitionById(id)
+	bd, err := h.Ds.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -356,13 +355,13 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.Id)
+	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.ID)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":  err.Error(),
-			"userID": currentUser.Id,
+			"userID": currentUser.ID,
 		}).Error("could not get variables")
-		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
+		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusBadRequest)
 		return
 	}
 
@@ -373,11 +372,11 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 	err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition content")
-		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusBadRequest)
+		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusBadRequest)
 		return
 	}
 
-	go buildservice.StartBuildProcess(logger, bd, currentUser.Id)
+	go h.Bs.StartBuildProcess(bd, currentUser.ID)
 
-	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.Id), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusSeeOther)
 }

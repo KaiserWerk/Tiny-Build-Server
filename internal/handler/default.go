@@ -40,7 +40,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		LatestBuildDefs: latestBuildDefs,
 	}
 
-	if err := templateservice.ExecuteTemplate(logger, w, "index.html", data); err != nil {
+	if err := templateservice.ExecuteTemplate(h.Injector(), w, "index.html", data); err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }

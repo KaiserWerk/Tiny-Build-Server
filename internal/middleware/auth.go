@@ -8,14 +8,14 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 )
 
-func Auth(next http.Handler) http.Handler {
+func (h *MWHandler) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := security.CheckLogin(r)
+		session, err := security.CheckLogin(h.SessMgr, r)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		currentUser, err := sessionservice.GetUserFromSession(session)
+		currentUser, err := sessionservice.GetUserFromSession(h.Ds, session)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -26,14 +26,14 @@ func Auth(next http.Handler) http.Handler {
 	})
 }
 
-func AuthWithAdmin(next http.Handler) http.Handler {
+func (h *MWHandler) AuthWithAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := security.CheckLogin(r)
+		session, err := security.CheckLogin(h.SessMgr, r)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
-		currentUser, err := sessionservice.GetUserFromSession(session)
+		currentUser, err := sessionservice.GetUserFromSession(h.Ds, session)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return

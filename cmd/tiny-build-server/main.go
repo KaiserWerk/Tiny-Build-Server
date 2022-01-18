@@ -6,19 +6,21 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/global"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
 	"github.com/gorilla/mux"
@@ -37,7 +39,7 @@ func main() {
 	slug.Replacement = '-'
 
 	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
-	flag.StringVar(&configFile, "config", "", "The location of the configuration file")
+	flag.StringVar(&configFile, "config", "app.yaml", "The location of the configuration file")
 	flag.StringVar(&logPath, "logpath", ".", "The path to place log files in")
 	flag.Parse()
 
@@ -53,34 +55,42 @@ func main() {
 
 	defer panicHandler.Handle(logger)
 
-	if configFile != "" {
-		global.SetConfigurationFile(configFile)
+	config, created, err := configuration.Setup(configFile)
+	if err != nil {
+		logger.WithField("error", err.Error()).Error("An error occurred while setting up configuration")
+		return
+	}
+	if created {
+		logger.Info("Configuration file didn't exist so it was created")
 	}
 
 	logger.WithFields(logrus.Fields{
 		"app":        "Tiny Build Server",
 		"version":    Version,
 		"port":       listenPort,
-		"configFile": global.GetConfigurationFile(),
+		"configFile": configFile,
 	}).Info("app information")
 
-	config := global.GetConfiguration()
-
-	ds := databaseservice.Get()
-	err = ds.AutoMigrate()
-	if err != nil {
-		logger.Panic("AutoMigrate panic: " + err.Error())
+	ds := databaseservice.New(config)
+	if err := ds.AutoMigrate(); err != nil {
+		logger.WithField("error", err.Error()).Error("AutoMigrate panic")
+		return
 	}
 
 	listenAddr := fmt.Sprintf(":%s", listenPort)
 	logger.Trace("Server starts handling requests")
+
 	var tlsEnabled bool
 	if config.Tls.CertFile != "" && config.Tls.KeyFile != "" {
 		logger.Debug("  TLS is enabled")
 		tlsEnabled = true
 	}
 
-	router := setupRoutes(config, logger)
+	router, err := setupRoutes(config, ds, logger)
+	if err != nil {
+		logger.WithField("error", err.Error()).Error("could not set up routes")
+		return
+	}
 
 	tlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
@@ -95,10 +105,10 @@ func main() {
 	server := &http.Server{
 		Addr:              listenAddr,
 		Handler:           router,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       10 * time.Second,
-		ReadHeaderTimeout: 2 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      20 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	if tlsEnabled {
@@ -106,7 +116,7 @@ func main() {
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	go func() {
@@ -137,17 +147,38 @@ func main() {
 	logger.Trace("Server shutdown complete. Have a nice day!")
 }
 
-func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
+func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService, l *logrus.Entry) (*mux.Router, error) {
+	sessMgr := sessionservice.NewSessionManager("tbs_sessid")
+	bs, err := buildservice.New("data", sessMgr, l, ds)
+	if err != nil {
+		return nil, err
+	}
+
+	mwHandler := middleware.MWHandler{
+		Cfg:     cfg,
+		Ds:      ds,
+		SessMgr: sessMgr,
+		Logger:  l,
+	}
+
+	inj := templateservice.Injector{
+		Logger:  l,
+		SessMgr: sessMgr,
+		Ds:      ds,
+	}
+
 	router := mux.NewRouter()
-	router.Use(middleware.Recover, middleware.Limit, middleware.Headers)
+	router.Use(mwHandler.Recover, mwHandler.Limit, mwHandler.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		_ = templateservice.ExecuteTemplate(l, w, "404.html", r.URL.Path)
+		_ = templateservice.ExecuteTemplate(&inj, w, "404.html", r.URL.Path)
 	})
 
 	httpHandler := handler.HttpHandler{
-		Ds:      databaseservice.Get(),
-		SessMgr: global.GetSessionManager(),
+		Cfg:     cfg,
+		Ds:      ds,
+		Bs:      bs,
+		SessMgr: sessMgr,
 		Logger:  l,
 	}
 
@@ -169,17 +200,17 @@ func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
 
 	// Misc
 	miscRouter := router.PathPrefix("").Subrouter()
-	miscRouter.Use(middleware.Auth)
+	miscRouter.Use(mwHandler.Auth)
 	miscRouter.HandleFunc("/", httpHandler.IndexHandler).Methods(http.MethodGet)
 
 	// user routes
 	userRouter := router.PathPrefix("/user").Subrouter()
-	userRouter.Use(middleware.Auth)
+	userRouter.Use(mwHandler.Auth)
 	userRouter.HandleFunc("/settings", httpHandler.UserSettingsHandler).Methods(http.MethodGet, http.MethodPost)
 
 	// admin routes
 	adminRouter := router.PathPrefix("/admin").Subrouter()
-	adminRouter.Use(middleware.AuthWithAdmin)
+	adminRouter.Use(mwHandler.AuthWithAdmin)
 	adminRouter.HandleFunc("/user/list", httpHandler.AdminUserListHandler).Methods(http.MethodGet)
 	adminRouter.HandleFunc("/user/add", httpHandler.AdminUserAddHandler).Methods(http.MethodGet, http.MethodPost)
 	adminRouter.HandleFunc("/user/{id}/edit", httpHandler.AdminUserEditHandler).Methods(http.MethodGet, http.MethodPost)
@@ -188,7 +219,7 @@ func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
 
 	// build definition
 	bdRouter := router.PathPrefix("/builddefinition").Subrouter()
-	bdRouter.Use(middleware.Auth)
+	bdRouter.Use(mwHandler.Auth)
 	bdRouter.HandleFunc("/list", httpHandler.BuildDefinitionListHandler).Methods(http.MethodGet)
 	bdRouter.HandleFunc("/add", httpHandler.BuildDefinitionAddHandler).Methods(http.MethodGet, http.MethodPost)
 	bdRouter.HandleFunc("/{id}/show", httpHandler.BuildDefinitionShowHandler).Methods(http.MethodGet)
@@ -200,14 +231,14 @@ func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
 
 	// build execution
 	beRouter := router.PathPrefix("/buildexecution").Subrouter()
-	beRouter.Use(middleware.Auth)
+	beRouter.Use(mwHandler.Auth)
 	beRouter.HandleFunc("/list", httpHandler.BuildExecutionListHandler).Methods(http.MethodGet)
 	beRouter.HandleFunc("/{id}/show", httpHandler.BuildExecutionShowHandler).Methods(http.MethodGet)
 	beRouter.HandleFunc("/{id}/artifact", httpHandler.DownloadSpecificArtifactHandler).Methods(http.MethodGet)
 
 	// variables
 	varRouter := router.PathPrefix("/variable").Subrouter()
-	varRouter.Use(middleware.Auth)
+	varRouter.Use(mwHandler.Auth)
 	varRouter.HandleFunc("/list", httpHandler.VariableListHandler).Methods(http.MethodGet)
 	varRouter.HandleFunc("/add", httpHandler.VariableAddHandler).Methods(http.MethodGet, http.MethodPost)
 	varRouter.HandleFunc("/{id}/edit", httpHandler.VariableEditHandler).Methods(http.MethodGet, http.MethodPost)
@@ -216,5 +247,5 @@ func setupRoutes(conf *entity.Configuration, l *logrus.Entry) *mux.Router {
 	// API handler
 	router.HandleFunc("/api/v1/receive", httpHandler.PayloadReceiveHandler).Methods(http.MethodPost)
 
-	return router
+	return router, nil
 }

@@ -35,9 +35,9 @@
                           {{ $execLabel = "FAILED" }}
                         {{ end }}
                         <tr>
-                            <td><a href="/buildexecution/{{ .Id }}/show">#{{ .Id }}</a></td>
-                            <td>{{ getBuildDefCaption .BuildDefinitionId }}</td>
-                            <td>{{ if gt .ManuallyRunBy 0 }}User {{ getUsernameById .ManuallyRunBy }}{{ else }}Repository Push{{ end }}</td>
+                            <td><a href="/buildexecution/{{ .ID }}/show">#{{ .Id }}</a></td>
+                            <td>{{ .BuildDefinitionID }}</td>
+                            <td>{{ if gt .ManuallyRunBy 0 }}User {{ .ManuallyRunBy }}{{ else }}Repository Push{{ end }}</td>
                             <td><span class="badge badge-{{ $execClass }}">{{ $execLabel }}</span></td>
                             <td>{{ .ExecutionTime }} s</td>
                             <td>{{ .ExecutedAt | formatDate }}</td>

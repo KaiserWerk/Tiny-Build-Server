@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
+	"github.com/KaiserWerk/sessionstore"
 	"github.com/sirupsen/logrus"
 	"github.com/stvp/slug"
 	"io/ioutil"
@@ -26,23 +27,37 @@ import (
 
 var basePath string = "data"
 
-func init() {
-	ds := databaseservice.Get()
+type BuildService struct {
+	BasePath  string
+	SessMgr   *sessionstore.SessionManager
+	Logger    *logrus.Entry
+	Ds        *databaseservice.DatabaseService
+	MessageCh chan string
+}
+
+func New(basePath string, sessMgr *sessionstore.SessionManager, logger *logrus.Entry, ds *databaseservice.DatabaseService) (*BuildService, error) {
+	bs := BuildService{
+		BasePath:  basePath,
+		SessMgr:   sessMgr,
+		Logger:    logger.WithField("context", "buildSvc"),
+		Ds:        ds,
+		MessageCh: make(chan string, 100),
+	}
 	settings, err := ds.GetAllSettings()
 	if err != nil {
-		panic("could not initate buildservice: " + err.Error())
+		return nil, fmt.Errorf("could not initate buildservice: %s", err.Error())
 	}
 
 	if path, ok := settings["base_datapath"]; ok && path != "" {
-		basePath = path
+		bs.BasePath = path
 	}
 
+	return &bs, nil
 }
 
-func saveBuildReport(logger *logrus.Entry, definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId int) {
-	ds := databaseservice.Get()
+func (bs *BuildService) SaveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId uint) {
 	be := entity.BuildExecution{
-		BuildDefinitionId: definition.Id,
+		BuildDefinitionID: definition.ID,
 		ManuallyRunBy:     userId,
 		ActionLog:         report,
 		Result:            result,
@@ -51,24 +66,22 @@ func saveBuildReport(logger *logrus.Entry, definition entity.BuildDefinition, re
 		ExecutedAt:        executedAt,
 	}
 
-	err := ds.AddBuildExecution(be)
+	err := bs.Ds.AddBuildExecution(be)
 	if err != nil {
-		logger.WithField("error", err.Error()).Error("could not insert new build execution")
+		bs.Logger.WithField("error", err.Error()).Error("could not insert new build execution")
 	}
 }
 
 // StartBuildProcess start the build process for a given build definition
-func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, userId int) {
+func (bs *BuildService) StartBuildProcess(definition entity.BuildDefinition, userId uint) {
 	// instantiate tools for build output
 	var (
-		ds         = databaseservice.Get()
-		err        error
-		binaryName string
-		sb         strings.Builder
-		result     = "failed"
-		//logger        = logging.New(logrus.DebugLevel, "buildProc", true)
+		err           error
+		binaryName    string
+		sb            strings.Builder
+		result        = "failed"
 		executionTime = time.Now().UnixNano()
-		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.Id, executionTime)
+		projectPath   = fmt.Sprintf("%s/%d/%d", basePath, definition.ID, executionTime)
 		artifactPath  = projectPath + "/artifact"
 		clonePath     = projectPath + "/clone"
 	)
@@ -94,9 +107,9 @@ func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, 
 	}()
 	defer func() {
 		close(messageCh)
-		logger.Trace("writing report")
+		bs.Logger.Trace("writing report")
 		//fmt.Println(time.Now().UnixNano(), executionTime, time.Now().UnixNano() - executionTime)
-		saveBuildReport(logger, definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now(), userId)
+		bs.SaveBuildReport(definition, sb.String(), result, artifactPath, time.Now().UnixNano()-executionTime, time.Now(), userId)
 	}()
 
 	messageCh <- fmt.Sprintf("setting basePath to %s", basePath)
@@ -118,7 +131,7 @@ func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, 
 		return
 	}
 
-	variables, err := ds.GetAvailableVariablesForUser(definition.CreatedBy)
+	variables, err := bs.Ds.GetAvailableVariablesForUser(definition.CreatedBy)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not determine variables for user: '%s'", err.Error())
 		return
@@ -142,13 +155,13 @@ func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, 
 		content.Repository.Branch = "master"
 	}
 
-	repositoryUrl, err := getRepositoryUrl(content, withCredentials)
+	repositoryUrl, err := bs.getRepositoryUrl(content, withCredentials)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not determine repository url: %s", err.Error())
 		return
 	}
 
-	err = cloneRepository(messageCh, content.Repository.Branch, repositoryUrl, clonePath)
+	err = bs.CloneRepository(content.Repository.Branch, repositoryUrl, clonePath)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not clone repository: '%s'", err.Error())
 		return
@@ -183,6 +196,9 @@ func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, 
 	allSteps = append(allSteps, content.Build...)
 	allSteps = append(allSteps, content.PostBuild...)
 
+	/*
+	 * TODO: stop using strings.Split(), use github.com/kballard/go-shellquote instead
+	 */
 	for _, step := range allSteps {
 		messageCh <- fmt.Sprintf("step: %s", step)
 		switch true {
@@ -249,36 +265,36 @@ func StartBuildProcess(logger *logrus.Entry, definition entity.BuildDefinition, 
 
 	}
 
-	err = deployArtifact(messageCh, content, artifact)
+	err = bs.DeployArtifact(content, artifact)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not deploy artifact: " + err.Error())
 		return
 	}
 
-	logger.Trace("build succeeded")
+	bs.Logger.Trace("build succeeded")
 	result = "success"
 }
 
-func cloneRepository(messageCh chan string, branch string, repositoryUrl string, path string) error {
+func (bs *BuildService) CloneRepository(branch string, repositoryUrl string, path string) error {
 	//commandParts := strings.Split(fmt.Sprintf("git clone --single-branch --branch %s %s %s", content.Repository.Branch, repositoryUrl, clonePath), " ")
 	cmd := exec.Command("git", "clone", "--single-branch", "--branch", branch, repositoryUrl, path)
-	messageCh <- "clone repository command: " + cmd.String()
+	bs.MessageCh <- "clone repository command: " + cmd.String()
 	cmdOutput, err := cmd.CombinedOutput()
 	if err != nil {
 		return err
 	}
-	messageCh <- string(cmdOutput)
+	bs.MessageCh <- string(cmdOutput)
 	return nil
 }
 
-func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, artifact entity.Artifact) error {
+func (bs *BuildService) DeployArtifact(cont entity.BuildDefinitionContent, artifact entity.Artifact) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	eg, _ := errgroup.WithContext(ctx)
-	messageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
+	bs.MessageCh <- fmt.Sprintf("artifact to be deployed: %s", artifact)
 	localDeploymentCount := len(cont.Deployments.LocalDeployments)
 	if localDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
+		bs.MessageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
 			eg.Go(func() error {
 				if err := deploymentservice.DoLocalDeployment(&deployment, artifact); err != nil {
@@ -288,23 +304,22 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 			})
 		}
 	} else {
-		messageCh <- "no local deployments found"
+		bs.MessageCh <- "no local deployments found"
 	}
 
 	emailDeploymentCount := len(cont.Deployments.EmailDeployments)
 	if emailDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
+		bs.MessageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
 
-		ds := databaseservice.Get()
-		settings, err := ds.GetAllSettings()
+		settings, err := bs.Ds.GetAllSettings()
 		if err != nil {
-			messageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
+			bs.MessageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
 			return err
 		}
 
 		artifactContent, err := ioutil.ReadFile(artifact.FullPath())
 		if err != nil {
-			messageCh <- "could not read artifact file: " + err.Error()
+			bs.MessageCh <- "could not read artifact file: " + err.Error()
 			return err
 		}
 
@@ -313,12 +328,12 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 
 		zipFile, err := zipWriter.Create(artifact.File)
 		if err != nil {
-			messageCh <- "could not create artifact file in zip archive: " + err.Error()
+			bs.MessageCh <- "could not create artifact file in zip archive: " + err.Error()
 			return err
 		}
 		_, err = zipFile.Write(artifactContent)
 		if err != nil {
-			messageCh <- "could not write artifact file to zip archive: " + err.Error()
+			bs.MessageCh <- "could not write artifact file to zip archive: " + err.Error()
 			return err
 		}
 		_ = zipWriter.Close()
@@ -326,7 +341,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 		zipArchiveName := artifact.File + ".zip"
 		err = ioutil.WriteFile(zipArchiveName, zipBuffer.Bytes(), 0744)
 		if err != nil {
-			messageCh <- "could not write zip archive bytes to file: " + err.Error()
+			bs.MessageCh <- "could not write zip archive bytes to file: " + err.Error()
 			return err
 		}
 
@@ -339,12 +354,12 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 			})
 		}
 	} else {
-		messageCh <- "no email deployments found"
+		bs.MessageCh <- "no email deployments found"
 	}
 
 	remoteDeploymentCount := len(cont.Deployments.RemoteDeployments)
 	if remoteDeploymentCount > 0 {
-		messageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
+		bs.MessageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
 			eg.Go(func() error {
 				if err := deploymentservice.DoRemoteDeployment(&deployment, artifact); err != nil {
@@ -354,7 +369,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 			})
 		}
 	} else {
-		messageCh <- "no remote deplyoments found"
+		bs.MessageCh <- "no remote deplyoments found"
 	}
 
 	if err := eg.Wait(); err != nil {
@@ -364,7 +379,7 @@ func deployArtifact(messageCh chan string, cont entity.BuildDefinitionContent, a
 	return nil
 }
 
-func getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) (string, error) {
+func (bs *BuildService) getRepositoryUrl(cont entity.BuildDefinitionContent, withCredentials bool) (string, error) {
 	//var url string
 	switch cont.Repository.Hoster {
 	case "local":

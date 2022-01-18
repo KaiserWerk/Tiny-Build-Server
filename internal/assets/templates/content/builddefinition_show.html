@@ -14,15 +14,15 @@
                     {{ if .BuildDefinition.Deleted }}
                         <span class="badge badge-danger float-right">DELETED</span>
                     {{ else }}
-                        <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.Id }}/edit">
+                        <a class="btn btn-sm btn-info float-right" href="/builddefinition/{{ .BuildDefinition.ID }}/edit">
                             <i class="fa fa-edit"></i>
                             Edit
                         </a>
-                        <a class="btn btn-sm btn-warning float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/restart">
+                        <a class="btn btn-sm btn-warning float-right mx-1" href="/builddefinition/{{ .BuildDefinition.ID }}/restart">
                             <i class="fa fa-edit"></i>
                             Manually run
                         </a>
-                        <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.Id }}/artifact">
+                        <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.ID }}/artifact">
                             <i class="fa fa-download"></i>
                             Download Artifact
                         </a>

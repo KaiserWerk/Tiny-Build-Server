@@ -1,9 +1,11 @@
 package entity
 
+import "gorm.io/gorm"
+
 // User defines a user account
 type User struct {
-	Id          int
-	Displayname string
+	gorm.Model
+	DisplayName string
 	Email       string
 	Password    string
 	Locked      bool

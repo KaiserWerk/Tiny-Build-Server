@@ -7,7 +7,7 @@ import (
 )
 
 // InsertUserAction adds a new user action
-func (ds DatabaseService) InsertUserAction(userId int, purpose, token string, validity sql.NullTime) error {
+func (ds *DatabaseService) InsertUserAction(userId uint, purpose, token string, validity sql.NullTime) error {
 
 	// 1. set all timely invalid actions to a null token
 	result := ds.db.Exec("UPDATE user_actions SET token = NULL WHERE user_id = ? AND validity < NOW()", userId)
@@ -32,7 +32,7 @@ func (ds DatabaseService) InsertUserAction(userId int, purpose, token string, va
 }
 
 // GetUserActionByToken retrieves a specific user action by token
-func (ds DatabaseService) GetUserActionByToken(token string) (entity.UserAction, error) {
+func (ds *DatabaseService) GetUserActionByToken(token string) (entity.UserAction, error) {
 	userAction := entity.UserAction{}
 	result := ds.db.Find(&userAction, "token = ?", token)
 	if result.Error != nil {
@@ -43,7 +43,7 @@ func (ds DatabaseService) GetUserActionByToken(token string) (entity.UserAction,
 }
 
 // InvalidatePasswordResets invalidates all user action of type 'password_reset'
-func (ds DatabaseService) InvalidatePasswordResets(userId int) error {
+func (ds *DatabaseService) InvalidatePasswordResets(userId uint) error {
 	result := ds.db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?",
 		sql.NullTime{}, userId)
 	if result.Error != nil {
@@ -54,7 +54,7 @@ func (ds DatabaseService) InvalidatePasswordResets(userId int) error {
 }
 
 // AddUserAction creates a given user action
-func (ds DatabaseService) AddUserAction(action entity.UserAction) error {
+func (ds *DatabaseService) AddUserAction(action entity.UserAction) error {
 	result := ds.db.Create(&action)
 	if result.Error != nil {
 		return result.Error
@@ -64,7 +64,7 @@ func (ds DatabaseService) AddUserAction(action entity.UserAction) error {
 }
 
 // UpdateUserAction updates a given user action
-func (ds DatabaseService) UpdateUserAction(userAction entity.UserAction) error {
+func (ds *DatabaseService) UpdateUserAction(userAction entity.UserAction) error {
 	result := ds.db.Save(&userAction)
 	if result.Error != nil {
 		return result.Error
