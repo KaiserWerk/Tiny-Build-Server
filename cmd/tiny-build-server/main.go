@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"net/http"
 	"os"
@@ -21,8 +22,6 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/stvp/slug"
@@ -57,11 +56,11 @@ func main() {
 
 	config, created, err := configuration.Setup(configFile)
 	if err != nil {
-		logger.WithField("error", err.Error()).Error("An error occurred while setting up configuration")
+		logger.WithField("error", err.Error()).Error("an error occurred while setting up configuration")
 		return
 	}
 	if created {
-		logger.Info("Configuration file didn't exist so it was created")
+		logger.Info("configuration file didn't exist so it was created")
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -97,8 +96,12 @@ func main() {
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		PreferServerCipherSuites: true,
 		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 		},
 	}
 
@@ -161,17 +164,18 @@ func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService,
 		Logger:  l,
 	}
 
-	inj := templateservice.Injector{
-		Logger:  l,
-		SessMgr: sessMgr,
-		Ds:      ds,
-	}
+	//inj := templateservice.Injector{
+	//	Logger:  l,
+	//	SessMgr: sessMgr,
+	//	Ds:      ds,
+	//}
 
 	router := mux.NewRouter()
+
 	router.Use(mwHandler.Recover, mwHandler.Limit, mwHandler.Headers)
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		_ = templateservice.ExecuteTemplate(&inj, w, "404.html", r.URL.Path)
+		//_ = templateservice.ExecuteTemplate(&inj, w, "404.html", r.URL.Path)
 	})
 
 	httpHandler := handler.HttpHandler{
@@ -182,13 +186,16 @@ func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService,
 		Logger:  l,
 	}
 
-	//asset file handlers
-	router.HandleFunc("/assets/{file}", httpHandler.StaticAssetHandler)
-	router.HandleFunc("/js/{file}", httpHandler.StaticAssetHandler)
-	router.HandleFunc("/css/{file}", httpHandler.StaticAssetHandler)
+	fs := assets.GetWebAssetFS()
+	httpFs := http.FS(fs)
+	fileSrv := http.FileServer(httpFs)
+	fileSrv = http.StripPrefix("/assets", fileSrv)
+	router.PathPrefix("/assets").Handler(fileSrv)
 
-	//fs := http.FileServer(http.FS(assets.GetWebAssetFS()))
-	//router.Handle("/assets", fs)
+	//asset file handlers
+	//router.HandleFunc("/assets/{file}", httpHandler.StaticAssetHandler)
+	//router.HandleFunc("/js/{file}", httpHandler.StaticAssetHandler)
+	//router.HandleFunc("/css/{file}", httpHandler.StaticAssetHandler)
 
 	//site handlers
 	router.HandleFunc("/login", httpHandler.LoginHandler).Methods(http.MethodGet, http.MethodPost)

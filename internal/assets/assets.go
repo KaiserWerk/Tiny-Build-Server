@@ -10,7 +10,7 @@ var configFS embed.FS
 //go:embed templates/*
 var templateFS embed.FS
 
-//go:embed webasset/*
+//go:embed assets
 var webAssetFS embed.FS
 
 //go:embed misc
