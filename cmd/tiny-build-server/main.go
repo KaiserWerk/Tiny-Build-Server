@@ -28,21 +28,18 @@ import (
 )
 
 var (
-	Version    string = "DEV"
-	listenPort string
-	configFile string
-	logPath    string
+	Version string = "DEV"
 )
 
 func main() {
 	slug.Replacement = '-'
 
-	flag.StringVar(&listenPort, "port", "8271", "The port which the build server should listen on")
-	flag.StringVar(&configFile, "config", "app.yaml", "The location of the configuration file")
-	flag.StringVar(&logPath, "logpath", ".", "The path to place log files in")
+	listenPort := flag.Int("port", 8271, "The port which the build server should listen on")
+	configFile := flag.String("config", "app.yaml", "The location of the configuration file")
+	logPath := flag.String("logpath", ".", "The path to place log files in")
 	flag.Parse()
 
-	logger, cleanup, err := logging.New(logrus.DebugLevel, ".", "main", logging.ModeConsole|logging.ModeFile)
+	logger, cleanup, err := logging.New(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile)
 	if err != nil {
 		panic("could not create new logger: " + err.Error())
 	}
@@ -54,7 +51,7 @@ func main() {
 
 	defer panicHandler.Handle(logger)
 
-	config, created, err := configuration.Setup(configFile)
+	config, created, err := configuration.Setup(*configFile)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("an error occurred while setting up configuration")
 		return
@@ -66,8 +63,8 @@ func main() {
 	logger.WithFields(logrus.Fields{
 		"app":        "Tiny Build Server",
 		"version":    Version,
-		"port":       listenPort,
-		"configFile": configFile,
+		"port":       *listenPort,
+		"configFile": *configFile,
 	}).Info("app information")
 
 	ds := databaseservice.New(config)
@@ -76,7 +73,7 @@ func main() {
 	//	return
 	//}
 
-	listenAddr := fmt.Sprintf(":%s", listenPort)
+	listenAddr := fmt.Sprintf(":%d", *listenPort)
 	logger.Trace("Server starts handling requests")
 
 	var tlsEnabled bool
