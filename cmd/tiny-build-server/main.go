@@ -37,6 +37,7 @@ func main() {
 	listenPort := flag.Int("port", 8271, "The port which the build server should listen on")
 	configFile := flag.String("config", "app.yaml", "The location of the configuration file")
 	logPath := flag.String("logpath", ".", "The path to place log files in")
+	automigrate := flag.Bool("automigrate", false, "Whether to create/update database tables automatically on startup")
 	flag.Parse()
 
 	logger, cleanup, err := logging.New(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile)
@@ -68,10 +69,12 @@ func main() {
 	}).Info("app information")
 
 	ds := databaseservice.New(config)
-	//if err := ds.AutoMigrate(); err != nil {
-	//	logger.WithField("error", err.Error()).Error("AutoMigrate panic")
-	//	return
-	//}
+	if *automigrate {
+		if err := ds.AutoMigrate(); err != nil {
+			logger.WithField("error", err.Error()).Error("AutoMigrate failed")
+			return
+		}
+	}
 
 	listenAddr := fmt.Sprintf(":%d", *listenPort)
 	logger.Trace("Server starts handling requests")
