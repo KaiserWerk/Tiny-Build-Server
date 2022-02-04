@@ -28,7 +28,8 @@ import (
 )
 
 var (
-	Version string = "DEV"
+	Version     string = "DEV"
+	VersionDate string = ""
 )
 
 func main() {
@@ -62,10 +63,11 @@ func main() {
 	}
 
 	logger.WithFields(logrus.Fields{
-		"app":        "Tiny Build Server",
-		"version":    Version,
-		"port":       *listenPort,
-		"configFile": *configFile,
+		"app":         "Tiny Build Server",
+		"version":     Version,
+		"versionDate": VersionDate,
+		"port":        *listenPort,
+		"configFile":  *configFile,
 	}).Info("app information")
 
 	ds := databaseservice.New(config)
