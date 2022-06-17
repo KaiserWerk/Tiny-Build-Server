@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/KaiserWerk/sessionstore"
+	"github.com/KaiserWerk/sessionstore/v2"
 )
 
 func TestGenerateToken(t *testing.T) {
@@ -82,6 +82,7 @@ func TestDoesHashMatch(t *testing.T) {
 }
 
 func TestCheckLogin(t *testing.T) {
+	mgr := sessionstore.NewManager("test")
 	type args struct {
 		r *http.Request
 	}
@@ -95,13 +96,13 @@ func TestCheckLogin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CheckLogin(tt.args.r)
+			got, err := CheckLogin(mgr, tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckLogin() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CheckLogin() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(&got, &tt.want) {
+				t.Errorf("CheckLogin() got = %v, want %v", &got, &tt.want)
 			}
 		})
 	}

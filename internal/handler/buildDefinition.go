@@ -59,7 +59,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 
 		if caption == "" || content == "" {
 			logger.Info("missing required fields")
-			h.SessMgr.AddMessage("info", "Fields caption and content cannot be empty")
+			h.SessMgr.AddMessage(w, "info", "Fields caption and content cannot be empty")
 			http.Redirect(w, r, "/builddefinition/add", http.StatusSeeOther)
 			return
 		}
@@ -122,7 +122,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 
 		if caption == "" || content == "" {
 			logger.WithField("error", err.Error()).Error("required fields missing")
-			h.SessMgr.AddMessage("warning", "Please fill in required fields.")
+			h.SessMgr.AddMessage(w, "warning", "Please fill in required fields.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
@@ -141,7 +141,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		err = h.Ds.UpdateBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
-			h.SessMgr.AddMessage("error", "An unknown error occurred! Please try again.")
+			h.SessMgr.AddMessage(w, "error", "An unknown error occurred! Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
@@ -184,7 +184,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 	settings, err := h.Ds.GetAllSettings()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not fetch settings")
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 

@@ -55,14 +55,14 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 			varPublic = true
 		}
 		if varName == "" || varVal == "" {
-			h.SessMgr.AddMessage("warning", "Please enter both a variable name and a value.")
+			h.SessMgr.AddMessage(w, "warning", "Please enter both a variable name and a value.")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
 
 		_, err := h.Ds.FindVariable("user_entry_id = ? AND variable = ?", currentUser.ID, varName)
 		if err == nil {
-			h.SessMgr.AddMessage("error", "This variable already exists!")
+			h.SessMgr.AddMessage(w, "error", "This variable already exists!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
@@ -76,7 +76,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 
 		if _, err = h.Ds.AddVariable(uv); err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert new user variable")
-			h.SessMgr.AddMessage("error", "The variable could not be added!")
+			h.SessMgr.AddMessage(w, "error", "The variable could not be added!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
@@ -188,7 +188,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 			"variableId": vars["id"],
 			"userId":     currentUser.ID,
 		}).Error("could not find variable")
-		h.SessMgr.AddMessage("error", "The variable could not be found or it is not yours!")
+		h.SessMgr.AddMessage(w, "error", "The variable could not be found or it is not yours!")
 		http.Redirect(w, r, "/variable/list", http.StatusSeeOther)
 		return
 	}
@@ -199,7 +199,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 			"variableId": vars["id"],
 			"userId":     currentUser.ID,
 		}).Error("could not delete variable from DB")
-		h.SessMgr.AddMessage("error", "The variable could not be removed!")
+		h.SessMgr.AddMessage(w, "error", "The variable could not be removed!")
 		// no redirect here
 	}
 

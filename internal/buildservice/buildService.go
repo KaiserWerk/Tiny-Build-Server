@@ -6,10 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
-	"github.com/KaiserWerk/sessionstore"
-	"github.com/sirupsen/logrus"
-	"github.com/stvp/slug"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -19,10 +15,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
+	"github.com/KaiserWerk/sessionstore/v2"
+	shellquote "github.com/kballard/go-shellquote"
+	"github.com/sirupsen/logrus"
+	"github.com/stvp/slug"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"golang.org/x/sync/errgroup"
 )
 
 var basePath string = "data"
@@ -196,60 +198,69 @@ func (bs *BuildService) StartBuildProcess(definition entity.BuildDefinition, use
 	allSteps = append(allSteps, content.Build...)
 	allSteps = append(allSteps, content.PostBuild...)
 
-	/*
-	 * TODO: stop using strings.Split(), use github.com/kballard/go-shellquote instead
-	 */
 	for _, step := range allSteps {
 		messageCh <- fmt.Sprintf("step: %s", step)
 		switch true {
 		case strings.HasPrefix(step, "setenv"):
-			parts := strings.Split(step, " ")
+			parts, err := splitCommand(step)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not prepare step command '%s': %s", step, err.Error())
+			}
 			if len(parts) != 3 {
 				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
-				return
+				continue
 			}
-			err = os.Setenv(parts[1], parts[2])
-			if err != nil {
+
+			if err = os.Setenv(parts[1], parts[2]); err != nil {
 				messageCh <- fmt.Sprintf("step '%s' was not successful: '%s'", step, err.Error())
-				return
+				continue
 			}
 		case strings.HasPrefix(step, "unsetenv"):
-			parts := strings.Split(step, " ")
+			parts, err := splitCommand(step)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not prepare step command '%s': %s", step, err.Error())
+			}
 			if len(parts) != 2 {
 				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
-				return
+				continue
 			}
 			err = os.Unsetenv(parts[1])
 			if err != nil {
 				messageCh <- fmt.Sprintf("step '%s' was not successful: '%s'", step, err.Error())
-				return
+				continue
 			}
-		case strings.HasPrefix(step, "go build"):
-			if strings.ToLower(os.Getenv("GOOS")) == "windows" {
-				artifact.File += ".exe"
-			}
-			parts := strings.Split(step, " ")
-			if len(parts) != 3 {
-				messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
-				return
-			}
-			cmd := exec.Command("go", "build", "-v", "-o", artifact.FullPath(), "-ldflags", "-s -w", parts[2])
-			b, err := cmd.CombinedOutput()
-			if err != nil {
-				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
-				return
-			}
-			messageCh <- string(b)
+		//case strings.HasPrefix(step, "go build"):
+		//	if strings.ToLower(os.Getenv("GOOS")) == "windows" {
+		//		artifact.File += ".exe"
+		//	}
+		//	parts, err := splitCommand(step)
+		//	if err != nil {
+		//		messageCh <- fmt.Sprintf("could not prepare step command '%s': %s", step, err.Error())
+		//	}
+		//	if len(parts) != 3 {
+		//		messageCh <- fmt.Sprintf("step '%s' has an invalid format", step)
+		//		return
+		//	}
+		//	cmd := exec.Command("go", "build", "-v", "-o", artifact.FullPath(), "-ldflags", "-s -w", parts[2])
+		//	b, err := cmd.CombinedOutput()
+		//	if err != nil {
+		//		messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
+		//		return
+		//	}
+		//	messageCh <- string(b)
 		default:
-			parts := strings.Split(step, " ")
+			parts, err := splitCommand(step)
+			if err != nil {
+				messageCh <- fmt.Sprintf("could not prepare step command '%s': %s", step, err.Error())
+			}
 			var cmd *exec.Cmd
 			if len(parts) <= 0 { // :)
 				messageCh <- "empty step"
-				return
+				continue
 			} else if len(parts) == 1 {
 				cmd = exec.Command(parts[0])
 			} else {
-				cmd = exec.Command(parts[0], strings.Join(parts[1:], " "))
+				cmd = exec.Command(parts[0], parts[1:]...)
 			}
 
 			cmd.Dir = clonePath
@@ -257,7 +268,7 @@ func (bs *BuildService) StartBuildProcess(definition entity.BuildDefinition, use
 			b, err := cmd.CombinedOutput()
 			if err != nil {
 				messageCh <- fmt.Sprintf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), string(b))
-				return
+				continue
 			}
 
 			messageCh <- string(b)
@@ -499,6 +510,10 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 	}
 
 	return nil
+}
+
+func splitCommand(input string) ([]string, error) {
+	return shellquote.Split(input)
 }
 
 func getCurrentVersionTag() string {

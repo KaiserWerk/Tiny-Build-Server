@@ -74,7 +74,7 @@
                                                 <td>{{ .ExecutedAt | formatDate }}</td>
                                                 <td>{{ .ExecutionTime }} seconds</td>
                                                 <td><span class="badge badge-{{ $execClass }}">{{ $execLabel }}</span></td>
-                                                <td><a href="/buildexecution/{{ .Id }}/show" class="btn btn-xs btn-primary">Show</a></td>
+                                                <td><a href="/buildexecution/{{ .ID }}/show" class="btn btn-xs btn-primary">Show</a></td>
                                             </tr>
                                         {{ else }}
                                             <tr>

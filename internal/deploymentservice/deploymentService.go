@@ -107,7 +107,6 @@ func DoRemoteDeployment(deployment *entity.RemoteDeployment, artifact entity.Art
 	}
 
 	// create destination file
-	// TODO really necessary?
 	dstFile, err := sftpClient.Create(deployment.WorkingDirectory)
 	if err != nil {
 		return err

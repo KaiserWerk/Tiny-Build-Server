@@ -69,7 +69,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 			_, err := ds.FindUser("displayname = ?", displayname)
 			if err == nil {
 				logger.WithField("error", err.Error()).Error("displayname already in use")
-				sessMgr.AddMessage("error", "This display name is already in use!")
+				sessMgr.AddMessage(w, "error", "This display name is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
 			}
@@ -77,7 +77,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 			_, err = ds.FindUser("email = ?", email)
 			if err == nil {
 				logger.WithField("error", err.Error()).Error("email already in use")
-				sessMgr.AddMessage("error", "This email address is already in use!")
+				sessMgr.AddMessage(w, "error", "This email address is already in use!")
 				http.Redirect(w, r, "/admin/user/add", http.StatusSeeOther)
 				return
 			}
@@ -114,11 +114,11 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 				return
 			}
 
-			sessMgr.AddMessage("success", "User account was created successfully!")
+			sessMgr.AddMessage(w, "success", "User account was created successfully!")
 			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 			return
 		}
-		sessMgr.AddMessage("warning", "You need to supply a display name and an email address.")
+		sessMgr.AddMessage(w, "warning", "You need to supply a display name and an email address.")
 	}
 
 	contextData := struct {
@@ -158,7 +158,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		_, err = h.Ds.FindUser("displayname = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
 			logger.WithField("error", err.Error()).Error("display name already in use")
-			sessMgr.AddMessage("error", "This display name is already in use!")
+			sessMgr.AddMessage(w, "error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
 		}
@@ -166,7 +166,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		_, err = h.Ds.FindUser("email = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
 			logger.WithField("error", err.Error()).Error("display name already in use")
-			sessMgr.AddMessage("error", "This display name is already in use!")
+			sessMgr.AddMessage(w, "error", "This display name is already in use!")
 			http.Redirect(w, r, "/admin/user/"+vars["id"]+"/edit", http.StatusSeeOther)
 			return
 		}
@@ -174,7 +174,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		userId, err := strconv.Atoi(vars["id"])
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("invalid user id")
-			sessMgr.AddMessage("error", "You supplied an invalid user id!")
+			sessMgr.AddMessage(w, "error", "You supplied an invalid user id!")
 			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 			return
 		}
@@ -206,7 +206,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		sessMgr.AddMessage("success", "Changes to user account saved!")
+		sessMgr.AddMessage(w, "success", "Changes to user account saved!")
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
@@ -214,7 +214,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 	userId, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("invalid user id")
-		sessMgr.AddMessage("error", "You supplied an invalid user id!")
+		sessMgr.AddMessage(w, "error", "You supplied an invalid user id!")
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
@@ -255,7 +255,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 			"error":  err.Error(),
 			"userId": userId,
 		}).Error("invalid user id")
-		sessMgr.AddMessage("error", "You supplied an invalid user id!")
+		sessMgr.AddMessage(w, "error", "You supplied an invalid user id!")
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
@@ -264,7 +264,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 		err = h.Ds.DeleteUser(uint(userId))
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("error removing user")
-			sessMgr.AddMessage("error", "An unknown error occurred, please try again.")
+			sessMgr.AddMessage(w, "error", "An unknown error occurred, please try again.")
 			http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 			return
 		}
@@ -463,9 +463,9 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 		if errors > 0 {
 			output := fmt.Sprintf("When trying to save admin settings, %d error(s) occurred", errors)
 			logger.Debug(output)
-			sessMgr.AddMessage("error", output)
+			sessMgr.AddMessage(w, "error", output)
 		} else {
-			sessMgr.AddMessage("success", "Settings saved successfully!")
+			sessMgr.AddMessage(w, "success", "Settings saved successfully!")
 		}
 
 		http.Redirect(w, r, "/admin/settings", http.StatusSeeOther)

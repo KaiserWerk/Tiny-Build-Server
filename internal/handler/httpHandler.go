@@ -5,7 +5,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-	"github.com/KaiserWerk/sessionstore"
+	"github.com/KaiserWerk/sessionstore/v2"
 	"github.com/sirupsen/logrus"
 )
 
