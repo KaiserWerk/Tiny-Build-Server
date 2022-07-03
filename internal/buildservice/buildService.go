@@ -33,28 +33,45 @@ type BuildService struct {
 	BasePath  string
 	SessMgr   *sessionstore.SessionManager
 	Logger    *logrus.Entry
-	Ds        *databaseservice.DatabaseService
+	DBSvc     *databaseservice.DatabaseService
+	DeploySvc *deploymentservice.DeploymentService
 	MessageCh chan string
+	Settings  map[string]string
 }
 
-func New(basePath string, sessMgr *sessionstore.SessionManager, logger *logrus.Entry, ds *databaseservice.DatabaseService) (*BuildService, error) {
+func New(basePath string, sessMgr *sessionstore.SessionManager, logger *logrus.Entry,
+	ds *databaseservice.DatabaseService, dpl *deploymentservice.DeploymentService) (*BuildService, error) {
+
 	bs := BuildService{
 		BasePath:  basePath,
 		SessMgr:   sessMgr,
 		Logger:    logger.WithField("context", "buildSvc"),
-		Ds:        ds,
+		DBSvc:     ds,
+		DeploySvc: dpl,
 		MessageCh: make(chan string, 100),
 	}
 	settings, err := ds.GetAllSettings()
 	if err != nil {
 		return nil, fmt.Errorf("could not initate buildservice: %s", err.Error())
 	}
-
+	bs.Settings = settings
 	if path, ok := settings["base_datapath"]; ok && path != "" {
 		bs.BasePath = path
 	}
 
 	return &bs, nil
+}
+
+func (bs *BuildService) getBasePath() string {
+	if bs.BasePath != "" {
+		return bs.BasePath
+	}
+
+	if path, ok := bs.Settings["base_datapath"]; ok && path != "" {
+		return path
+	}
+
+	return ""
 }
 
 func (bs *BuildService) SaveBuildReport(definition entity.BuildDefinition, report, result, artifactPath string, executionTime int64, executedAt time.Time, userId uint) {
@@ -68,7 +85,7 @@ func (bs *BuildService) SaveBuildReport(definition entity.BuildDefinition, repor
 		ExecutedAt:        executedAt,
 	}
 
-	err := bs.Ds.AddBuildExecution(be)
+	err := bs.DBSvc.AddBuildExecution(be)
 	if err != nil {
 		bs.Logger.WithField("error", err.Error()).Error("could not insert new build execution")
 	}
@@ -133,7 +150,7 @@ func (bs *BuildService) StartBuildProcess(definition entity.BuildDefinition, use
 		return
 	}
 
-	variables, err := bs.Ds.GetAvailableVariablesForUser(definition.CreatedBy)
+	variables, err := bs.DBSvc.GetAvailableVariablesForUser(definition.CreatedBy)
 	if err != nil {
 		messageCh <- fmt.Sprintf("could not determine variables for user: '%s'", err.Error())
 		return
@@ -169,7 +186,10 @@ func (bs *BuildService) StartBuildProcess(definition entity.BuildDefinition, use
 		return
 	}
 
-	binaryName = slug.Clean(strings.ToLower(strings.Split(content.Repository.Name, "/")[1]))
+	binaryName = content.Repository.Name
+	if strings.Contains(binaryName, "/") {
+		binaryName = slug.Clean(strings.ToLower(strings.Split(content.Repository.Name, "/")[1]))
+	}
 
 	artifact := entity.Artifact{
 		Directory: artifactPath,
@@ -308,7 +328,7 @@ func (bs *BuildService) DeployArtifact(cont entity.BuildDefinitionContent, artif
 		bs.MessageCh <- fmt.Sprintf("%d local deployment(s) found", localDeploymentCount)
 		for _, deployment := range cont.Deployments.LocalDeployments {
 			eg.Go(func() error {
-				if err := deploymentservice.DoLocalDeployment(&deployment, artifact); err != nil {
+				if err := bs.DeploySvc.DoLocalDeployment(&deployment, artifact); err != nil {
 					return err
 				}
 				return nil
@@ -321,12 +341,6 @@ func (bs *BuildService) DeployArtifact(cont entity.BuildDefinitionContent, artif
 	emailDeploymentCount := len(cont.Deployments.EmailDeployments)
 	if emailDeploymentCount > 0 {
 		bs.MessageCh <- fmt.Sprintf("%d email deployment(s) found", emailDeploymentCount)
-
-		settings, err := bs.Ds.GetAllSettings()
-		if err != nil {
-			bs.MessageCh <- fmt.Sprintf("email deplyoments: could not read settings: %s", err.Error())
-			return err
-		}
 
 		artifactContent, err := ioutil.ReadFile(artifact.FullPath())
 		if err != nil {
@@ -358,7 +372,7 @@ func (bs *BuildService) DeployArtifact(cont entity.BuildDefinitionContent, artif
 
 		for _, deployment := range cont.Deployments.EmailDeployments {
 			eg.Go(func() error {
-				if err := deploymentservice.DoEmailDeployment(&deployment, "artifact", settings, zipArchiveName); err != nil {
+				if err := bs.DeploySvc.DoEmailDeployment(&deployment, "artifact", zipArchiveName); err != nil {
 					return err
 				}
 				return nil
@@ -373,7 +387,7 @@ func (bs *BuildService) DeployArtifact(cont entity.BuildDefinitionContent, artif
 		bs.MessageCh <- fmt.Sprintf("%d remote deployment(s) found", remoteDeploymentCount)
 		for _, deployment := range cont.Deployments.RemoteDeployments {
 			eg.Go(func() error {
-				if err := deploymentservice.DoRemoteDeployment(&deployment, artifact); err != nil {
+				if err := bs.DeploySvc.DoRemoteDeployment(&deployment, artifact); err != nil {
 					return err
 				}
 				return nil
@@ -412,15 +426,13 @@ func (bs *BuildService) getRepositoryUrl(cont entity.BuildDefinitionContent, wit
 // from the given HTTP request
 func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) error {
 	var err error
-	// check relevant headers and payload values
+
 	switch content.Repository.Hoster {
 	case "bitbucket":
-		headers := []string{"X-Event-Key", "X-Hook-UUID", "X-Request-UUID", "X-Attempt-Number"}
-		headerValues := make([]string, len(headers))
-		for i := range headers {
-			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
-			if err != nil {
-				return fmt.Errorf("bitbucket: could not get header %s", headers[i])
+		headers := []string{"X-Event-Key", "X-Hook-Uuid", "X-Request-Uuid", "X-Attempt-Number"}
+		for _, h := range headers {
+			if _, err = helper.GetHeaderIfSet(r, h); err != nil {
+				return fmt.Errorf("bitbucket: could not get header %s", h)
 			}
 		}
 
@@ -438,11 +450,9 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 		}
 	case "github":
 		headers := []string{"X-GitHub-Delivery", "X-GitHub-Event", "X-Hub-Signature"}
-		headerValues := make([]string, len(headers))
-		for i := range headers {
-			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
-			if err != nil {
-				return fmt.Errorf("github: could not get github header %s", headers[i])
+		for _, h := range headers {
+			if _, err = helper.GetHeaderIfSet(r, h); err != nil {
+				return fmt.Errorf("github: could not get header %s", h)
 			}
 		}
 
@@ -460,11 +470,9 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 		}
 	case "gitlab":
 		headers := []string{"X-GitLab-Event"}
-		headerValues := make([]string, len(headers))
-		for i := range headers {
-			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
-			if err != nil {
-				return fmt.Errorf("gitlab: could not get gitlab header " + headers[i])
+		for _, h := range headers {
+			if _, err = helper.GetHeaderIfSet(r, h); err != nil {
+				return fmt.Errorf("gitlab: could not get header %s", h)
 			}
 		}
 
@@ -483,11 +491,9 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 		}
 	case "gitea":
 		headers := []string{"X-Gitea-Delivery", "X-Gitea-Event"}
-		headerValues := make([]string, len(headers))
-		for i := range headers {
-			headerValues[i], err = helper.GetHeaderIfSet(r, headers[i])
-			if err != nil {
-				return fmt.Errorf("gitea: could not get gitea header %s", headers[i])
+		for _, h := range headers {
+			if _, err = helper.GetHeaderIfSet(r, h); err != nil {
+				return fmt.Errorf("gitea: could not get header %s", h)
 			}
 		}
 
@@ -504,6 +510,29 @@ func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) 
 		}
 		if payload.Repository.FullName != content.Repository.Name {
 			return fmt.Errorf("gitea: repository names do not match (from payload: %s, from build definition: %s)"+payload.Repository.FullName, content.Repository.Name)
+		}
+	case "azure_devops":
+		headers := []string{"X-Request-Type"}
+		for _, h := range headers {
+			if _, err = helper.GetHeaderIfSet(r, h); err != nil {
+				return fmt.Errorf("azure devops: could not get header %s", h)
+			}
+		}
+
+		var payload entity.AzurePushPayload
+		err = json.NewDecoder(r.Body).Decode(&payload)
+		if err != nil {
+			return fmt.Errorf("bitbucket: could not decode json payload: %s", err.Error())
+		}
+		_ = r.Body.Close()
+		// the name is supplied  in the form of "refs/heads/<branch>"
+		if payload.Resource.RefUpdates[0].Name != "refs/heads/"+content.Repository.Branch {
+			return fmt.Errorf("bitbucket: branch names do not match (from payload: %s, from build definition: %s)",
+				payload.Resource.RefUpdates[0].Name, "refs/heads/"+content.Repository.Branch)
+		}
+		if payload.Resource.Repository.Name != content.Repository.Name {
+			return fmt.Errorf("bitbucket: repository names do not match (from payload: %s, from build definition: %s)",
+				payload.Resource.Repository.Name, content.Repository.Name)
 		}
 	default:
 		return fmt.Errorf("unrecognized git hoster %s", content.Repository.Hoster)

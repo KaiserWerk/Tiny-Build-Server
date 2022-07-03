@@ -39,7 +39,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			changes := 0
 			displayname := r.FormValue("displayname")
 			if displayname != "" && displayname != currentUser.DisplayName {
-				if h.Ds.RowExists("SELECT id FROM user WHERE displayname = ? AND id != ?", displayname, currentUser.ID) {
+				if h.Ds.RowExists("SELECT id FROM user WHERE display_name = ? AND id != ?", displayname, currentUser.ID) {
 					logger.WithField("displayname", displayname).Info("displayname is already in use")
 					h.SessMgr.AddMessage(w, "error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)

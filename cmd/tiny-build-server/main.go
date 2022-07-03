@@ -6,6 +6,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"net/http"
 	"os"
 	"os/signal"
@@ -77,6 +79,8 @@ func main() {
 			logger.WithField("error", err.Error()).Error("AutoMigrate failed")
 			return
 		}
+		logger.Info("AutoMigrate successful")
+		os.Exit(0)
 	}
 
 	listenAddr := fmt.Sprintf(":%d", *listenPort)
@@ -95,9 +99,8 @@ func main() {
 	}
 
 	tlsConfig := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
+		MinVersion:       tls.VersionTLS12,
+		CurvePreferences: []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		CipherSuites: []uint16{
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
@@ -154,8 +157,18 @@ func main() {
 }
 
 func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService, l *logrus.Entry) (*mux.Router, error) {
+	settings, err := ds.GetAllSettings()
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch settings: %s", err.Error())
+	}
 	sessMgr := sessionservice.NewSessionManager("tbs_sessid")
-	bs, err := buildservice.New("data", sessMgr, l, ds)
+	m := &mailer.Mailer{
+		Settings: settings,
+	}
+	dplSvc := &deploymentservice.DeploymentService{
+		Mailer: m,
+	}
+	bs, err := buildservice.New("data", sessMgr, l, ds, dplSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +179,6 @@ func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService,
 		SessMgr: sessMgr,
 		Logger:  l,
 	}
-
-	//inj := templateservice.Injector{
-	//	Logger:  l,
-	//	SessMgr: sessMgr,
-	//	Ds:      ds,
-	//}
 
 	router := mux.NewRouter()
 

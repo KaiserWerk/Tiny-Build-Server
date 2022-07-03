@@ -2,19 +2,24 @@ package deploymentservice
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
-func DoLocalDeployment(deployment *entity.LocalDeployment, artifact entity.Artifact) error {
+type DeploymentService struct {
+	Mailer *mailer.Mailer
+}
+
+func (dpl *DeploymentService) DoLocalDeployment(deployment *entity.LocalDeployment, artifact entity.Artifact) error {
 	if !deployment.Enabled {
 		return fmt.Errorf("skipping disabled deployment")
 	}
@@ -34,7 +39,7 @@ func DoLocalDeployment(deployment *entity.LocalDeployment, artifact entity.Artif
 	return nil
 }
 
-func DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, settings map[string]string, zipArchiveName string) error {
+func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, zipArchiveName string) error {
 	if !deployment.Enabled {
 		return fmt.Errorf("skipping disabled deployment")
 	}
@@ -47,14 +52,13 @@ func DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, sett
 		Title:   repoName,
 	}
 
-	emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.DeploymentEmail), data)
+	emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjNewDeployment), data)
 	if err != nil {
 		return fmt.Errorf("could not parse deployment email template: %s", err.Error())
 	}
-	err = helper.SendEmail(
-		settings,
+	err = dpl.Mailer.SendEmail(
 		emailBody,
-		fixtures.EmailSubjects[fixtures.DeploymentEmail],
+		string(mailer.SubjNewDeployment),
 		[]string{deployment.Address},
 		[]string{zipArchiveName},
 	)
@@ -65,7 +69,7 @@ func DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, sett
 	return nil
 }
 
-func DoRemoteDeployment(deployment *entity.RemoteDeployment, artifact entity.Artifact) error {
+func (dpl *DeploymentService) DoRemoteDeployment(deployment *entity.RemoteDeployment, artifact entity.Artifact) error {
 	if !deployment.Enabled {
 		return fmt.Errorf("skipping disabled deployment")
 	}

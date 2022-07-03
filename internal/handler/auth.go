@@ -4,13 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/fixtures"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
@@ -159,17 +158,16 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 				Token:   registrationToken,
 			}
 
-			emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.RequestNewPasswordEmail), data)
+			emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjRequestNewPassword), data)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("unable to parse email template")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			err = helper.SendEmail(
-				settings,
+			err = h.Mailer.SendEmail(
 				emailBody,
-				fixtures.EmailSubjects[fixtures.RequestNewPasswordEmail],
+				string(mailer.SubjRequestNewPassword),
 				[]string{u.Email},
 				nil,
 			)
@@ -324,7 +322,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			http.Redirect(w, r, "/register", http.StatusSeeOther)
 			return
 		}
-		_, err = h.Ds.FindUser("displayname = ?", displayName)
+		_, err = h.Ds.FindUser("display_name = ?", displayName)
 		if err == nil {
 			logger.WithFields(logrus.Fields{
 				"error":       err.Error(),
@@ -368,17 +366,16 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			Token:   token,
 		}
 
-		emailBody, err := templateservice.ParseEmailTemplate(string(fixtures.ConfirmRegistrationEmail), data)
+		emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjConfirmRegistration), data)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("unable to parse email template")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		err = helper.SendEmail(
-			settings,
+		err = h.Mailer.SendEmail(
 			emailBody,
-			fixtures.EmailSubjects[fixtures.ConfirmRegistrationEmail],
+			string(mailer.SubjConfirmRegistration),
 			[]string{email},
 			nil,
 		)

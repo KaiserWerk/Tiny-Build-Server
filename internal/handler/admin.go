@@ -66,7 +66,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 		if displayname != "" && email != "" {
 			ds := h.Ds
 
-			_, err := ds.FindUser("displayname = ?", displayname)
+			_, err := ds.FindUser("display_name = ?", displayname)
 			if err == nil {
 				logger.WithField("error", err.Error()).Error("displayname already in use")
 				sessMgr.AddMessage(w, "error", "This display name is already in use!")
@@ -155,7 +155,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 			admin = true
 		}
 
-		_, err = h.Ds.FindUser("displayname = ? AND id != ?", displayname, vars["id"])
+		_, err = h.Ds.FindUser("display_name = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
 			logger.WithField("error", err.Error()).Error("display name already in use")
 			sessMgr.AddMessage(w, "error", "This display name is already in use!")

@@ -1,6 +1,6 @@
 $sourcecode = "cmd/tiny-build-server/main.go"
 $target = "build/tiny-build-server"
-$version = "0.0.2-alpha"
+$version = "0.0.3-alpha"
 $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
 
 # Linux, 64-bit

@@ -4,6 +4,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/KaiserWerk/sessionstore/v2"
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,7 @@ type HttpHandler struct {
 	Bs      *buildservice.BuildService
 	SessMgr *sessionstore.SessionManager
 	Logger  *logrus.Entry
+	Mailer  *mailer.Mailer
 }
 
 func (h *HttpHandler) ContextLogger(context string) *logrus.Entry {

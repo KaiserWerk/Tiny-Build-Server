@@ -68,7 +68,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 		}
 
 		uv := entity.UserVariable{
-			UserEntryId: currentUser.ID,
+			UserEntryID: currentUser.ID,
 			Variable:    varName,
 			Value:       varVal,
 			Public:      varPublic,
@@ -119,7 +119,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if variable.UserEntryId != currentUser.ID {
+	if variable.UserEntryID != currentUser.ID {
 		logger.Error("this is not your variable!")
 		http.Error(w, "this is not your variable!", http.StatusForbidden)
 		return
@@ -144,7 +144,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 
 		err = h.Ds.UpdateVariable(entity.UserVariable{
 			Model:       gorm.Model{ID: uint(id)},
-			UserEntryId: currentUser.ID,
+			UserEntryID: currentUser.ID,
 			Variable:    varName,
 			Value:       varVal,
 			Public:      varPublic,
