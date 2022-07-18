@@ -39,7 +39,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			changes := 0
 			displayname := r.FormValue("displayname")
 			if displayname != "" && displayname != currentUser.DisplayName {
-				if h.Ds.RowExists("SELECT id FROM user WHERE display_name = ? AND id != ?", displayname, currentUser.ID) {
+				if h.DBService.RowExists("SELECT id FROM user WHERE display_name = ? AND id != ?", displayname, currentUser.ID) {
 					logger.WithField("displayname", displayname).Info("displayname is already in use")
 					h.SessMgr.AddMessage(w, "error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -47,7 +47,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 				}
 				changes++
 				currentUser.DisplayName = displayname
-				err = h.Ds.UpdateUser(currentUser)
+				err = h.DBService.UpdateUser(currentUser)
 				if err != nil {
 					logger.WithField("displayname", displayname).Info("displayname is already in use")
 					h.SessMgr.AddMessage(w, "error", "This display name is already in use!")
@@ -58,7 +58,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 
 			email := r.FormValue("email")
 			if email != "" && email != currentUser.Email {
-				if h.Ds.RowExists("SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.ID) {
+				if h.DBService.RowExists("SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.ID) {
 					logger.WithField("email", email).Info("email is already in use")
 					h.SessMgr.AddMessage(w, "error", "This email is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
@@ -66,7 +66,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 				}
 				changes++
 				currentUser.Email = email
-				err = h.Ds.UpdateUser(currentUser)
+				err = h.DBService.UpdateUser(currentUser)
 				if err != nil {
 					logger.WithField("email", email).Info("email is already in use")
 					h.SessMgr.AddMessage(w, "error", "Could not update data!")
@@ -113,7 +113,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			}
 
 			currentUser.Password = hash
-			err = h.Ds.UpdateUser(currentUser)
+			err = h.DBService.UpdateUser(currentUser)
 			if err != nil {
 				logger.Trace("could not set new password")
 				h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")

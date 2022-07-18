@@ -1,13 +1,12 @@
-package databaseservice
+package dbservice
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-
 	"gorm.io/gorm"
 )
 
 // GetNewestBuildDefinitions fetches the most recently edited or added build definitions
-func (ds *DatabaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
+func (ds *DBService) GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error) {
 
 	var bdList []entity.BuildDefinition
 
@@ -26,7 +25,7 @@ func (ds *DatabaseService) GetNewestBuildDefinitions(limit int) ([]entity.BuildD
 }
 
 // GetAllBuildDefinitions fetches all build definitions
-func (ds *DatabaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
+func (ds *DBService) GetAllBuildDefinitions() ([]entity.BuildDefinition, error) {
 	bds := make([]entity.BuildDefinition, 0)
 	result := ds.db.Find(&bds, "deleted = 0")
 	if result.Error != nil {
@@ -37,7 +36,7 @@ func (ds *DatabaseService) GetAllBuildDefinitions() ([]entity.BuildDefinition, e
 }
 
 // FindBuildDefinition looks for a specific build definition
-func (ds *DatabaseService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
+func (ds *DBService) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
 	var bd entity.BuildDefinition
 	result := ds.db.Where(cond+" AND deleted = 0", args...).First(&bd)
 	if result.Error != nil {
@@ -48,7 +47,7 @@ func (ds *DatabaseService) FindBuildDefinition(cond string, args ...interface{})
 }
 
 // GetBuildDefinitionById fetches a build definition by Id
-func (ds *DatabaseService) GetBuildDefinitionById(id uint) (entity.BuildDefinition, error) {
+func (ds *DBService) GetBuildDefinitionById(id uint) (entity.BuildDefinition, error) {
 	var buildDefinition entity.BuildDefinition
 	result := ds.db.First(&buildDefinition, id)
 	if result.Error != nil {
@@ -59,7 +58,7 @@ func (ds *DatabaseService) GetBuildDefinitionById(id uint) (entity.BuildDefiniti
 
 // GetBuildDefCaption fetches the caption of a given build definition id
 // It is to be used in templates
-func (ds *DatabaseService) GetBuildDefCaption(id uint) (string, error) {
+func (ds *DBService) GetBuildDefCaption(id uint) (string, error) {
 	var bd entity.BuildDefinition
 	result := ds.db.First(&bd, id)
 	if result.Error != nil {
@@ -69,7 +68,7 @@ func (ds *DatabaseService) GetBuildDefCaption(id uint) (string, error) {
 }
 
 // DeleteBuildDefinition removes a build definition
-func (ds *DatabaseService) DeleteBuildDefinition(bd *entity.BuildDefinition) error {
+func (ds *DBService) DeleteBuildDefinition(bd *entity.BuildDefinition) error {
 	bd.Deleted = true
 	result := ds.db.Updates(bd)
 	if result.Error != nil {
@@ -79,7 +78,7 @@ func (ds *DatabaseService) DeleteBuildDefinition(bd *entity.BuildDefinition) err
 }
 
 // AddBuildDefinition adds a new build definition
-func (ds *DatabaseService) AddBuildDefinition(bd *entity.BuildDefinition) (uint, error) {
+func (ds *DBService) AddBuildDefinition(bd *entity.BuildDefinition) (uint, error) {
 	bd.Deleted = false
 	result := ds.db.Create(bd)
 	if result.Error != nil {
@@ -90,7 +89,7 @@ func (ds *DatabaseService) AddBuildDefinition(bd *entity.BuildDefinition) (uint,
 }
 
 // UpdateBuildDefinition updates a build definition
-func (ds *DatabaseService) UpdateBuildDefinition(bd *entity.BuildDefinition) error {
+func (ds *DBService) UpdateBuildDefinition(bd *entity.BuildDefinition) error {
 	result := ds.db.Updates(bd)
 	if result.Error != nil {
 		return result.Error

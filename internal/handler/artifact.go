@@ -21,7 +21,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 		logger = h.ContextLogger("DownloadNewestArtifactHandler")
 	)
 
-	beList, err := h.Ds.GetNewestBuildExecutions(1, "build_definition_id = ?", vars["id"])
+	beList, err := h.DBService.GetNewestBuildExecutions(1, "build_definition_id = ?", vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":             err.Error(),
@@ -75,7 +75,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 		logger = h.ContextLogger("DownloadSpecificArtifactHandler")
 	)
 	id, _ := strconv.Atoi(vars["id"])
-	be, err := h.Ds.GetBuildExecutionById(id)
+	be, err := h.DBService.GetBuildExecutionById(id)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":            err.Error(),

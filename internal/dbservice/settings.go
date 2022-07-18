@@ -1,11 +1,11 @@
-package databaseservice
+package dbservice
 
 import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 )
 
 // GetAllSettings fetches all settings
-func (ds *DatabaseService) GetAllSettings() (map[string]string, error) {
+func (ds *DBService) GetAllSettings() (map[string]string, error) {
 	settings := make(map[string]string)
 
 	var s []entity.AdminSetting
@@ -23,7 +23,7 @@ func (ds *DatabaseService) GetAllSettings() (map[string]string, error) {
 }
 
 // SetSetting sets a new value for a given setting
-func (ds *DatabaseService) SetSetting(name, value string) error {
+func (ds *DBService) SetSetting(name, value string) error {
 	//result := ds.db.Model(&entity.AdminSetting{}).Where("name = ?", name).Update("value", value)
 	var setting entity.AdminSetting
 	found := ds.db.Find(&setting, "name = ?", name)

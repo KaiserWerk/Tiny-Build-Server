@@ -26,7 +26,7 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		password := r.FormValue("login_password")
-		u, err := h.Ds.GetUserByEmail(email)
+		u, err := h.DBService.GetUserByEmail(email)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"error": err.Error(),
@@ -117,7 +117,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 	if r.Method == http.MethodPost {
 		email := r.FormValue("login_email")
 		if email != "" {
-			u, err := h.Ds.GetUserByEmail(email)
+			u, err := h.DBService.GetUserByEmail(email)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("could not get user by email")
 				// fake success message
@@ -131,7 +131,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 
 			registrationToken := security.GenerateToken(30)
 			t := time.Now().Add(1 * time.Hour)
-			err = h.Ds.InsertUserAction(u.ID, "password_reset", registrationToken, sql.NullTime{Valid: true, Time: t})
+			err = h.DBService.InsertUserAction(u.ID, "password_reset", registrationToken, sql.NullTime{Valid: true, Time: t})
 			if err != nil {
 				logger.WithFields(logrus.Fields{
 					"error":  err.Error(),
@@ -141,7 +141,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 				return
 			}
 
-			settings, err := h.Ds.GetAllSettings()
+			settings, err := h.DBService.GetAllSettings()
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("could not get all settings")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -203,7 +203,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 	if r.Method == http.MethodPost {
 		email := r.FormValue("email")
 		token := r.FormValue("token")
-		user, err := h.Ds.GetUserByEmail(email)
+		user, err := h.DBService.GetUserByEmail(email)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"error": err.Error(),
@@ -214,7 +214,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		action, err := h.Ds.GetUserActionByToken(token)
+		action, err := h.DBService.GetUserActionByToken(token)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not scan user action")
 			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
@@ -255,7 +255,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		}
 		//_, err = db.Exec("UPDATE user SET password = ? WHERE id = ?", hash, user.Id)
 		user.Password = hash
-		err = h.Ds.UpdateUser(user)
+		err = h.DBService.UpdateUser(user)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not update to new password")
 			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
@@ -263,7 +263,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		//_, err = db.Exec("UPDATE user_action SET validity = ? WHERE purpose = 'password_reset' AND user_id = ?", sql.NullTime{}, user.Id)
-		err = h.Ds.InvalidatePasswordResets(user.ID)
+		err = h.DBService.InvalidatePasswordResets(user.ID)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not update user actions")
 		}
@@ -307,7 +307,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 		// TODO check password strength
-		_, err := h.Ds.GetUserByEmail(email)
+		_, err := h.DBService.GetUserByEmail(email)
 		if err == nil {
 			logger.Info("user already exists")
 			sessMgr.AddMessage(w, "error", "This email address is already in use!")
@@ -322,7 +322,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			http.Redirect(w, r, "/register", http.StatusSeeOther)
 			return
 		}
-		_, err = h.Ds.FindUser("display_name = ?", displayName)
+		_, err = h.DBService.FindUser("display_name = ?", displayName)
 		if err == nil {
 			logger.WithFields(logrus.Fields{
 				"error":       err.Error(),
@@ -333,7 +333,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		lastInsertId, err := h.Ds.AddUser(entity.User{DisplayName: displayName, Email: email, Password: hash, Locked: true})
+		lastInsertId, err := h.DBService.AddUser(entity.User{DisplayName: displayName, Email: email, Password: hash, Locked: true})
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("user could not be inserted")
 			sessMgr.AddMessage(w, "error", "The new account could not be created; please try again!")
@@ -343,7 +343,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 
 		token := security.GenerateToken(30)
 		t := time.Now().Add(24 * time.Hour)
-		err = h.Ds.AddUserAction(entity.UserAction{UserId: lastInsertId, Purpose: "confirm_registration",
+		err = h.DBService.AddUserAction(entity.UserAction{UserId: lastInsertId, Purpose: "confirm_registration",
 			Token: token, Validity: sql.NullTime{Valid: true, Time: t}})
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert user action")
@@ -351,7 +351,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		settings, err := h.Ds.GetAllSettings()
+		settings, err := h.DBService.GetAllSettings()
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not fetch settings")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -411,7 +411,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 	}
 
 	if token != "" {
-		ua, err := h.Ds.GetUserActionByToken(token)
+		ua, err := h.DBService.GetUserActionByToken(token)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not scan")
 			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
@@ -436,7 +436,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 			return
 		}
 
-		user, err := h.Ds.GetUserById(ua.UserId)
+		user, err := h.DBService.GetUserById(ua.UserId)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not get user from DB")
 			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
@@ -445,7 +445,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		}
 
 		user.Locked = false
-		err = h.Ds.UpdateUser(user)
+		err = h.DBService.UpdateUser(user)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not set locked flag in DB")
 			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
@@ -453,7 +453,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 			return
 		}
 		ua.Validity = sql.NullTime{}
-		err = h.Ds.UpdateUserAction(ua)
+		err = h.DBService.UpdateUserAction(ua)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not null token validity in DB")
 			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")

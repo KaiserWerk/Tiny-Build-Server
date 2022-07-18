@@ -2,8 +2,8 @@ package global
 
 import "github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 
-func GetTestConfiguration() *entity.Configuration {
-	return &entity.Configuration{
+func GetTestConfiguration() *entity.AppConfig {
+	return &entity.AppConfig{
 		Database: struct {
 			Driver string `yaml:"driver" envconfig:"db_driver"`
 			DSN    string `yaml:"dsn" envconfig:"db_dsn"`

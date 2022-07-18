@@ -19,7 +19,7 @@ func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request
 		logger      = h.ContextLogger("VariableListHandler")
 	)
 
-	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.ID)
+	variables, err := h.DBService.GetAvailableVariablesForUser(currentUser.ID)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get variables for user")
 		http.Error(w, "could not get variables for user", http.StatusInternalServerError)
@@ -60,7 +60,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		_, err := h.Ds.FindVariable("user_entry_id = ? AND variable = ?", currentUser.ID, varName)
+		_, err := h.DBService.FindVariable("user_entry_id = ? AND variable = ?", currentUser.ID, varName)
 		if err == nil {
 			h.SessMgr.AddMessage(w, "error", "This variable already exists!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
@@ -74,7 +74,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 			Public:      varPublic,
 		}
 
-		if _, err = h.Ds.AddVariable(uv); err != nil {
+		if _, err = h.DBService.AddVariable(uv); err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert new user variable")
 			h.SessMgr.AddMessage(w, "error", "The variable could not be added!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
@@ -112,7 +112,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	variable, err := h.Ds.GetVariable(id)
+	variable, err := h.DBService.GetVariable(id)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get variable")
 		http.Error(w, "could not get variable", http.StatusNotFound)
@@ -135,14 +135,14 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		_, err := h.Ds.FindVariable("user_entry_id = ? && variable = ? && id != ?", currentUser.ID, varName, variable.ID)
+		_, err := h.DBService.FindVariable("user_entry_id = ? && variable = ? && id != ?", currentUser.ID, varName, variable.ID)
 		if err == nil {
 			logger.WithField("varName", varName).Error("this variable name is already taken")
 			http.Error(w, "this variable name is already taken", http.StatusInternalServerError)
 			return
 		}
 
-		err = h.Ds.UpdateVariable(entity.UserVariable{
+		err = h.DBService.UpdateVariable(entity.UserVariable{
 			Model:       gorm.Model{ID: uint(id)},
 			UserEntryID: currentUser.ID,
 			Variable:    varName,
@@ -181,7 +181,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 		vars        = mux.Vars(r)
 	)
 
-	v, err := h.Ds.FindVariable("user_entry_id = ? AND id = ?", currentUser.ID, vars["id"])
+	v, err := h.DBService.FindVariable("user_entry_id = ? AND id = ?", currentUser.ID, vars["id"])
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":      err.Error(),
@@ -193,7 +193,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err = h.Ds.DeleteVariable(v.ID); err != nil {
+	if err = h.DBService.DeleteVariable(v.ID); err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":      err.Error(),
 			"variableId": vars["id"],

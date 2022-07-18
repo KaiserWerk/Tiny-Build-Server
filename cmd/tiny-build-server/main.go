@@ -6,8 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,10 +19,11 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
@@ -73,7 +72,7 @@ func main() {
 		"configFile":  *configFile,
 	}).Info("app information")
 
-	ds := databaseservice.New(config)
+	ds := dbservice.New(config)
 	if *automigrate {
 		if err := ds.AutoMigrate(); err != nil {
 			logger.WithField("error", err.Error()).Error("AutoMigrate failed")
@@ -156,7 +155,7 @@ func main() {
 	logger.Trace("Server shutdown complete. Have a nice day!")
 }
 
-func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService, l *logrus.Entry) (*mux.Router, error) {
+func setupRoutes(cfg *configuration.AppConfig, ds *dbservice.DBService, l *logrus.Entry) (*mux.Router, error) {
 	settings, err := ds.GetAllSettings()
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch settings: %s", err.Error())
@@ -168,10 +167,7 @@ func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService,
 	dplSvc := &deploymentservice.DeploymentService{
 		Mailer: m,
 	}
-	bs, err := buildservice.New("data", sessMgr, l, ds, dplSvc)
-	if err != nil {
-		return nil, err
-	}
+	bs := buildservice.New(cfg, sessMgr, l, ds, dplSvc)
 
 	mwHandler := middleware.MWHandler{
 		Cfg:     cfg,
@@ -189,11 +185,12 @@ func setupRoutes(cfg *entity.Configuration, ds *databaseservice.DatabaseService,
 	})
 
 	httpHandler := handler.HttpHandler{
-		Cfg:     cfg,
-		Ds:      ds,
-		Bs:      bs,
-		SessMgr: sessMgr,
-		Logger:  l,
+		Configuration: cfg,
+		DBService:     ds,
+		BuildService:  bs,
+		DeployService: dplSvc,
+		SessMgr:       sessMgr,
+		Logger:        l,
 	}
 
 	fs := assets.GetWebAssetFS()

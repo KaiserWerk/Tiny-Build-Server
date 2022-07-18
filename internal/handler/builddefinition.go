@@ -3,13 +3,13 @@ package handler
 import (
 	"database/sql"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 
@@ -25,7 +25,7 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 		currentUser = r.Context().Value("user").(entity.User)
 		logger      = h.ContextLogger("BuildDefinitionListHandler")
 	)
-	buildDefinitions, err := h.Ds.GetAllBuildDefinitions()
+	buildDefinitions, err := h.DBService.GetAllBuildDefinitions()
 	if err != nil {
 		http.Error(w, "could not get all build definitions", http.StatusInternalServerError)
 		logger.WithField("error", err.Error()).Error("could not get all build definitions")
@@ -67,11 +67,11 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 		bd := entity.BuildDefinition{
 			Caption:   caption,
 			Token:     security.GenerateToken(20),
-			Content:   content,
+			Raw:       content,
 			CreatedBy: currentUser.ID,
 		}
 
-		_, err := h.Ds.AddBuildDefinition(&bd)
+		_, err := h.DBService.AddBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert build definition")
 			w.WriteHeader(500)
@@ -130,7 +130,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		bd := entity.BuildDefinition{
 			Model:    gorm.Model{ID: uint(id)},
 			Caption:  caption,
-			Content:  content,
+			Raw:      content,
 			EditedBy: currentUser.ID,
 			EditedAt: sql.NullTime{
 				Time:  time.Now(),
@@ -138,7 +138,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 			},
 		}
 
-		err = h.Ds.UpdateBuildDefinition(&bd)
+		err = h.DBService.UpdateBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
 			h.SessMgr.AddMessage(w, "error", "An unknown error occurred! Please try again.")
@@ -150,7 +150,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	bdt, err := h.Ds.GetBuildDefinitionById(uint(id))
+	bdt, err := h.DBService.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not get buildDefinition: " + err.Error())
 		w.WriteHeader(500)
@@ -181,7 +181,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		limit       int = 25
 	)
 
-	settings, err := h.Ds.GetAllSettings()
+	settings, err := h.DBService.GetAllSettings()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not fetch settings")
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -199,14 +199,14 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 		logger.WithField("error", err.Error()).Error("could not parse build definition id, setting to -1")
 		id = -1
 	}
-	bd, err := h.Ds.GetBuildDefinitionById(uint(id))
+	bd, err := h.DBService.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get buildDefinition")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	beList, err := h.Ds.GetNewestBuildExecutions(limit, "build_definition_id = ?", bd.ID)
+	beList, err := h.DBService.GetNewestBuildExecutions(limit, "build_definition_id = ?", bd.ID)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get newest build executions")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -218,10 +218,10 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 	avg := 0.0
 	i := 0
 	for _, v := range beList {
-		if v.Result == "success" {
+		if v.Status == "success" {
 			successBuildCount++
 		}
-		if v.Result == "failed" {
+		if v.Status == "failed" {
 			failedBuildCount++
 		}
 		avg += v.ExecutionTime
@@ -287,7 +287,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 		w.WriteHeader(500)
 		return
 	}
-	buildDefinition, err := h.Ds.GetBuildDefinitionById(uint(id))
+	buildDefinition, err := h.DBService.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -299,7 +299,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 
 	confirm := r.URL.Query().Get("confirm")
 	if confirm == "yes" {
-		err = h.Ds.DeleteBuildDefinition(&buildDefinition)
+		err = h.DBService.DeleteBuildDefinition(&buildDefinition)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"error": err.Error(),
@@ -345,7 +345,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	bd, err := h.Ds.GetBuildDefinitionById(uint(id))
+	bd, err := h.DBService.GetBuildDefinitionById(uint(id))
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -355,7 +355,7 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	variables, err := h.Ds.GetAvailableVariablesForUser(currentUser.ID)
+	variables, err := h.DBService.GetAvailableVariablesForUser(currentUser.ID)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":  err.Error(),
@@ -365,18 +365,24 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	helper.ReplaceVariables(&bd.Content, variables)
-
 	// NOTE: check if unmarshalling works/if content is valid
-	var bdContent entity.BuildDefinitionContent
-	err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent)
+	_, err = common.UnmarshalBuildDefinition([]byte(bd.Raw), variables)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition content")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusBadRequest)
 		return
 	}
 
-	go h.Bs.StartBuildProcess(bd, currentUser.ID)
+	// insert new build execution
+	be := entity.NewBuildExecution(bd.ID, 0)
+	if err := h.DBService.AddBuildExecution(be); err != nil {
+		logger.WithField("error", err.Error()).Error("failed to add build execution")
+		http.Error(w, "failed to add build execution", http.StatusBadRequest)
+		return
+	}
+	be.ManuallyRunBy = currentUser.ID
+
+	go h.InitiateBuildProcess(&bd, be)
 
 	http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusSeeOther)
 }

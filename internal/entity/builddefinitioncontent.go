@@ -5,7 +5,7 @@ package entity
 type BuildDefinitionContent struct {
 	ProjectType string     `yaml:"project_type"`
 	Repository  Repository `yaml:"repository"`
-	Setup       []string   `yaml:"setup,omitempty"`
+	Setup       []string   `yaml:"Setup,omitempty"`
 	Test        []string   `yaml:"test,omitempty"`
 	PreBuild    []string   `yaml:"pre_build,omitempty"`
 	Build       []string   `yaml:"build"`
@@ -46,4 +46,15 @@ type RemoteDeployment struct {
 	WorkingDirectory    string   `yaml:"working_directory"`
 	PreDeploymentSteps  []string `yaml:"pre_deployment_steps"`
 	PostDeploymentSteps []string `yaml:"post_deployment_steps"`
+}
+
+func (bdc *BuildDefinitionContent) GetSteps() []string {
+	allSteps := make([]string, 0)
+	allSteps = append(allSteps, bdc.Setup...)
+	allSteps = append(allSteps, bdc.Test...)
+	allSteps = append(allSteps, bdc.PreBuild...)
+	allSteps = append(allSteps, bdc.Build...)
+	allSteps = append(allSteps, bdc.PostBuild...)
+
+	return allSteps
 }

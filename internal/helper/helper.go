@@ -2,15 +2,9 @@ package helper
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
-
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-
-	"gopkg.in/yaml.v3"
 )
 
 // FileExists checks whether a given file exists or not
@@ -35,15 +29,4 @@ func GetHeaderIfSet(r *http.Request, key string) (string, error) {
 // To be used in templates
 func FormatDate(t time.Time) string {
 	return t.Format("2006-01-02 15:04")
-}
-
-// UnmarshalBuildDefinitionContent unmarshals a build definition content
-func UnmarshalBuildDefinitionContent(content string, bdContent *entity.BuildDefinitionContent) error {
-	return yaml.Unmarshal([]byte(content), &bdContent)
-}
-
-func ReplaceVariables(content *string, variables []entity.UserVariable) {
-	for _, v := range variables {
-		*content = strings.ReplaceAll(*content, fmt.Sprintf("${%s}", v.Variable), v.Value)
-	}
 }

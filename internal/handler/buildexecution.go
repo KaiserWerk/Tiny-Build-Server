@@ -19,7 +19,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 		logger      = h.ContextLogger("BuildExecutionListHandler")
 	)
 
-	buildExecutions, err := h.Ds.GetNewestBuildExecutions(0, "")
+	buildExecutions, err := h.DBService.GetNewestBuildExecutions(0, "")
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get build executions")
 		return
@@ -56,7 +56,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 		w.WriteHeader(500)
 		return
 	}
-	buildExecution, err := h.Ds.GetBuildExecutionById(id)
+	buildExecution, err := h.DBService.GetBuildExecutionById(id)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -66,7 +66,7 @@ func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	buildDefinition, err := h.Ds.GetBuildDefinitionById(buildExecution.BuildDefinitionID)
+	buildDefinition, err := h.DBService.GetBuildDefinitionById(buildExecution.BuildDefinitionID)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":             err.Error(),

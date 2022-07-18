@@ -1,18 +1,19 @@
-package databaseservice
+package dbservice
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
-type DatabaseService struct {
+type DBService struct {
 	db *gorm.DB
 }
 
-func New(cfg *entity.Configuration) *DatabaseService {
+func New(cfg *configuration.AppConfig) *DBService {
 	db, err := gorm.Open(mysql.Open(cfg.Database.DSN), &gorm.Config{
 		PrepareStmt: true,
 		NamingStrategy: schema.NamingStrategy{
@@ -31,40 +32,30 @@ func New(cfg *entity.Configuration) *DatabaseService {
 
 	conn.SetMaxIdleConns(10)
 	conn.SetMaxOpenConns(50)
-	return &DatabaseService{db: db}
+	return &DBService{db: db}
 }
 
 // AutoMigrate makes sure the database tables exist, corresponding
 // to the supplied structs
-func (ds *DatabaseService) AutoMigrate() error {
-	err := ds.db.AutoMigrate(
+func (ds *DBService) AutoMigrate() error {
+	return ds.db.AutoMigrate(
 		&entity.AdminSetting{},
 		&entity.BuildDefinition{},
 		&entity.BuildExecution{},
 		&entity.User{},
 		&entity.UserAction{},
-		&entity.UserVariable{})
-	if err != nil {
-		return err
-	}
-
-	return nil
+		&entity.UserVariable{},
+	)
 }
 
 // Quit ends the database connection
-func (ds *DatabaseService) Quit() {
+func (ds *DBService) Quit() {
 	ds.Quit()
 }
 
 // RowExists takes an SQL query and return true, if at least one entry
 // exists for the given query
-func (ds *DatabaseService) RowExists(query string, args ...interface{}) bool {
-	exists := true
-
+func (ds *DBService) RowExists(query string, args ...interface{}) bool {
 	result := ds.db.Exec(fmt.Sprintf("SELECT exists (%s)", query), args...)
-	if result.Error == nil {
-		exists = false
-	}
-
-	return exists
+	return result.Error == nil
 }

@@ -21,7 +21,7 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 		currentUser = r.Context().Value("user").(entity.User)
 	)
 
-	userList, err := h.Ds.GetAllUsers()
+	userList, err := h.DBService.GetAllUsers()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not query users")
 		w.WriteHeader(500)
@@ -64,7 +64,7 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		if displayname != "" && email != "" {
-			ds := h.Ds
+			ds := h.DBService
 
 			_, err := ds.FindUser("display_name = ?", displayname)
 			if err == nil {
@@ -155,7 +155,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 			admin = true
 		}
 
-		_, err = h.Ds.FindUser("display_name = ? AND id != ?", displayname, vars["id"])
+		_, err = h.DBService.FindUser("display_name = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
 			logger.WithField("error", err.Error()).Error("display name already in use")
 			sessMgr.AddMessage(w, "error", "This display name is already in use!")
@@ -163,7 +163,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		_, err = h.Ds.FindUser("email = ? AND id != ?", displayname, vars["id"])
+		_, err = h.DBService.FindUser("email = ? AND id != ?", displayname, vars["id"])
 		if err == nil {
 			logger.WithField("error", err.Error()).Error("display name already in use")
 			sessMgr.AddMessage(w, "error", "This display name is already in use!")
@@ -199,7 +199,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 
 			updateUser.Password = passwordHash
 		}
-		err = h.Ds.UpdateUser(updateUser)
+		err = h.DBService.UpdateUser(updateUser)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not update user")
 			w.WriteHeader(500)
@@ -218,7 +218,7 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 		http.Redirect(w, r, "/admin/user/list", http.StatusSeeOther)
 		return
 	}
-	editedUser, err := h.Ds.GetUserById(uint(userId))
+	editedUser, err := h.DBService.GetUserById(uint(userId))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
@@ -261,7 +261,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if r.Method == http.MethodPost {
-		err = h.Ds.DeleteUser(uint(userId))
+		err = h.DBService.DeleteUser(uint(userId))
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("error removing user")
 			sessMgr.AddMessage(w, "error", "An unknown error occurred, please try again.")
@@ -273,7 +273,7 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	user, err := h.Ds.GetUserById(uint(userId))
+	user, err := h.DBService.GetUserById(uint(userId))
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not scan user")
 		w.WriteHeader(500)
@@ -308,7 +308,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 		form := r.FormValue("form")
 		if form == "general_settings" {
 			baseDatapath := r.FormValue("base_datapath")
-			err = h.Ds.SetSetting("base_datapath", baseDatapath)
+			err = h.DBService.SetSetting("base_datapath", baseDatapath)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -317,7 +317,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 				}).Error("could not save setting")
 			}
 			baseUrl := r.FormValue("base_url")
-			err = h.Ds.SetSetting("base_url", baseUrl)
+			err = h.DBService.SetSetting("base_url", baseUrl)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -330,7 +330,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if securityDisableRegistration != "1" {
 				securityDisableRegistration = "0"
 			}
-			err = h.Ds.SetSetting("security_disable_registration", securityDisableRegistration)
+			err = h.DBService.SetSetting("security_disable_registration", securityDisableRegistration)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -343,7 +343,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if securityDisablePasswordReset != "1" {
 				securityDisablePasswordReset = "0"
 			}
-			err = h.Ds.SetSetting("security_disable_password_reset", securityDisablePasswordReset)
+			err = h.DBService.SetSetting("security_disable_password_reset", securityDisablePasswordReset)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -356,7 +356,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if securityEmailConfirmationRequired != "1" {
 				securityEmailConfirmationRequired = "0"
 			}
-			err = h.Ds.SetSetting("security_email_confirmation_required", securityEmailConfirmationRequired)
+			err = h.DBService.SetSetting("security_email_confirmation_required", securityEmailConfirmationRequired)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -369,7 +369,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			if security2fa != "none" && security2fa != "email" && security2fa != "sms" {
 				security2fa = "none"
 			}
-			err = h.Ds.SetSetting("security_2fa", security2fa)
+			err = h.DBService.SetSetting("security_2fa", security2fa)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -380,7 +380,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 
 		} else if form == "smtp" {
 			smtpUsername := r.FormValue("smtp_username")
-			err = h.Ds.SetSetting("smtp_username", smtpUsername)
+			err = h.DBService.SetSetting("smtp_username", smtpUsername)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -390,7 +390,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			smtpPassword := r.FormValue("smtp_password")
-			err = h.Ds.SetSetting("smtp_password", smtpPassword)
+			err = h.DBService.SetSetting("smtp_password", smtpPassword)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -400,7 +400,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			smtpHost := r.FormValue("smtp_host")
-			err = h.Ds.SetSetting("smtp_host", smtpHost)
+			err = h.DBService.SetSetting("smtp_host", smtpHost)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -410,7 +410,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			smtpPort := r.FormValue("smtp_port")
-			err = h.Ds.SetSetting("smtp_port", smtpPort)
+			err = h.DBService.SetSetting("smtp_port", smtpPort)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -420,7 +420,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			smtpEncryption := r.FormValue("smtp_encryption")
-			err = h.Ds.SetSetting("smtp_encryption", smtpEncryption)
+			err = h.DBService.SetSetting("smtp_encryption", smtpEncryption)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -430,7 +430,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 		} else if form == "executables" {
 			goExec := r.FormValue("golang_executable")
-			err = h.Ds.SetSetting("golang_executable", goExec)
+			err = h.DBService.SetSetting("golang_executable", goExec)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -440,7 +440,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			dotnetExec := r.FormValue("dotnet_executable")
-			err = h.Ds.SetSetting("dotnet_executable", dotnetExec)
+			err = h.DBService.SetSetting("dotnet_executable", dotnetExec)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -450,7 +450,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 			}
 
 			rustExec := r.FormValue("rust_executable")
-			err = h.Ds.SetSetting("rust_executable", rustExec)
+			err = h.DBService.SetSetting("rust_executable", rustExec)
 			if err != nil {
 				errors++
 				logger.WithFields(logrus.Fields{
@@ -471,7 +471,7 @@ func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Reques
 		http.Redirect(w, r, "/admin/settings", http.StatusSeeOther)
 		return
 	}
-	allSettings, err := h.Ds.GetAllSettings()
+	allSettings, err := h.DBService.GetAllSettings()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get allSettings: " + err.Error())
 		http.Redirect(w, r, "/", http.StatusSeeOther)

@@ -2,9 +2,9 @@ package sessionservice
 
 import (
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"strconv"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 
 	"github.com/KaiserWerk/sessionstore/v2"
@@ -17,7 +17,7 @@ func NewSessionManager(name string) *sessionstore.SessionManager {
 }
 
 // GetUserFromSession returns a user from a given session, if possible
-func GetUserFromSession(ds *databaseservice.DatabaseService, s *sessionstore.Session) (entity.User, error) {
+func GetUserFromSession(ds *dbservice.DBService, s *sessionstore.Session) (entity.User, error) {
 	userIdStr, ok := s.GetVar("user_id")
 	if !ok {
 		return entity.User{}, fmt.Errorf("variable key user_id not found")

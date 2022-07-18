@@ -17,13 +17,13 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		logger      = h.ContextLogger("IndexHandler")
 	)
 
-	latestBuilds, err := h.Ds.GetNewestBuildExecutions(5, "")
+	latestBuilds, err := h.DBService.GetNewestBuildExecutions(5, "")
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not fetch latest build executions")
 		http.Error(w, "could not fetch latest build definitions", http.StatusInternalServerError)
 		return
 	}
-	latestBuildDefs, err := h.Ds.GetNewestBuildDefinitions(5)
+	latestBuildDefs, err := h.DBService.GetNewestBuildDefinitions(5)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not fetch latest build definitions")
 		http.Error(w, "could not fetch latest build definitions", http.StatusInternalServerError)

@@ -2,22 +2,24 @@ package handler
 
 import (
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/sirupsen/logrus"
-	"net/http"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
+	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/network"
 )
 
 // PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
 // sent by a Git hoster
 func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var (
-		err    error
-		logger = h.ContextLogger("PayloadReceiveHandler")
-	)
+	logger := h.ContextLogger("PayloadReceiveHandler")
 
 	// get token
 	token := r.URL.Query().Get("token")
@@ -28,7 +30,7 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// find build definition by token
-	bd, err := h.Ds.FindBuildDefinition("token = ?", token)
+	bd, err := h.DBService.FindBuildDefinition("token = ?", token)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -46,27 +48,25 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	variables, err := h.Ds.GetAvailableVariablesForUser(bd.CreatedBy)
+	variables, err := h.DBService.GetAvailableVariablesForUser(bd.CreatedBy)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not determine variables for user")
 		http.Error(w, fmt.Sprintf("could not determine variables for user: %s", err.Error()), http.StatusNotFound)
 		return
 	}
 
-	helper.ReplaceVariables(&bd.Content, variables)
-
 	// unmarshal the build definition content
-	var bdContent entity.BuildDefinitionContent
-	if err = helper.UnmarshalBuildDefinitionContent(bd.Content, &bdContent); err != nil {
+	bdContent, err := common.UnmarshalBuildDefinition([]byte(bd.Raw), variables)
+	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition")
 		http.Error(w, "could not unmarshal build definition content: "+err.Error(), http.StatusNotFound)
 		return
 	}
+	bd.Data = bdContent
 
 	// check if the correct headers, depending on the hoster, are set and
 	// have the correct values
-	err = buildservice.CheckPayloadHeader(bdContent, r)
-	if err != nil {
+	if err = network.CheckPayloadHeader(bdContent, r); err != nil {
 		logger.WithField("error", err.Error()).Error("request headers are incorrect")
 		http.Error(w, "request headers are incorrect", http.StatusBadRequest)
 		return
@@ -74,6 +74,195 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 
 	logger.Debug("payload received")
 
+	// insert new build execution
+	be := entity.NewBuildExecution(bd.ID, 0)
+	if err := h.DBService.AddBuildExecution(be); err != nil {
+		logger.WithField("error", err.Error()).Error("failed to add build execution")
+		http.Error(w, "failed to add build execution", http.StatusBadRequest)
+		return
+	}
+
 	// start the actual build process
-	go h.Bs.StartBuildProcess(bd, bd.CreatedBy)
+	go h.InitiateBuildProcess(&bd, be)
+}
+
+func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entity.BuildExecution) {
+	logger := h.ContextLogger("InitiateBuildProcess")
+	build := entity.NewBuild(bd, h.BuildService.GetBasePath())
+	defer func() {
+		if err := h.DBService.UpdateBuildExecution(be); err != nil {
+			logger.WithFields(logrus.Fields{
+				"ID":    be.ID,
+				"error": err.Error(),
+			}).Error("failed to update build execution")
+		}
+	}()
+
+	// set up directory structure for build
+	if err := build.Setup(); err != nil {
+		logger.Error("failed to set up build: " + err.Error())
+		build.AddReportEntryf("could not create build directory structure: %s", err.Error())
+		be.Status = entity.StatusFailed
+		return
+	}
+
+	// clone the repository
+	withCredentials := bd.Data.Repository.AccessSecret != ""
+	if withCredentials && bd.Data.Repository.AccessUser == "" {
+		bd.Data.Repository.AccessUser = "nobody"
+	}
+
+	// if no branch is set, use master as the default
+	if bd.Data.Repository.Branch == "" {
+		bd.Data.Repository.Branch = "master"
+	}
+
+	repositoryUrl, err := h.BuildService.GetRepositoryUrl(&(bd.Data), withCredentials)
+	if err != nil {
+		build.AddReportEntryf("could not determine repository url: %s", err.Error())
+		be.Status = entity.StatusFailed
+		return
+	}
+
+	err = h.BuildService.CloneRepository(bd.Data.Repository.Branch, repositoryUrl, build.GetCloneDir())
+	if err != nil {
+		build.AddReportEntryf("could not clone repository: %s", err.Error())
+		be.Status = entity.StatusFailed
+		return
+	}
+
+	// set up special variables
+	vars := []entity.UserVariable{{
+		Variable: "buildDir",
+		Value:    build.GetBuildDir(),
+	}, {
+		Variable: "cloneDir",
+		Value:    build.GetCloneDir(),
+	}}
+
+	// do the unmarshal again with updated variables
+	bdc, err := buildservice.GetPreparedContent(bd, vars)
+	if err != nil {
+		build.AddReportEntryf("could not unmarshal build definition: %s", err.Error())
+		return
+	}
+
+	stepErrors := make([]error, 0)
+
+	steps := bdc.GetSteps()
+	for _, step := range steps {
+		build.AddReportEntryf("step: %s", step)
+		switch true {
+		case strings.HasPrefix(step, "setenv"):
+			parts, err := common.SplitCommand(step)
+			if err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("could not prepare step command '%s': %s", step, err.Error())
+				continue
+			}
+			if len(parts) != 3 {
+				build.AddReportEntryf("step '%s' has an invalid format", step)
+				continue
+			}
+
+			if err = os.Setenv(parts[1], parts[2]); err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("step '%s' was not successful: '%s'", step, err.Error())
+				continue
+			}
+		case strings.HasPrefix(step, "unsetenv"):
+			parts, err := common.SplitCommand(step)
+			if err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("could not prepare step command '%s': %s", step, err.Error())
+				continue
+			}
+			if len(parts) != 2 {
+				build.AddReportEntryf("step '%s' has an invalid format", step)
+				continue
+			}
+			err = os.Unsetenv(parts[1])
+			if err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("step '%s' was not successful: '%s'", step, err.Error())
+				continue
+			}
+		default:
+			parts, err := common.SplitCommand(step)
+			if err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("could not prepare step command '%s': %s", step, err.Error())
+				continue
+			}
+			var cmd *exec.Cmd
+			if len(parts) <= 0 { // :)
+				build.AddReportEntry("empty step; skipping")
+				continue
+			} else if len(parts) == 1 {
+				cmd = exec.Command(parts[0])
+			} else {
+				cmd = exec.Command(parts[0], parts[1:]...)
+			}
+			cmd.Dir = build.GetCloneDir()
+
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				stepErrors = append(stepErrors, err)
+				build.AddReportEntryf("could not execute command '%s': '%s' -> (%s)", cmd.String(), err.Error(), strings.TrimSpace(string(output)))
+				continue
+			}
+
+			build.AddReportEntry(strings.TrimSpace(string(output)))
+		}
+	}
+
+	// build is to be considered successful, if buildDir is not empty
+	if num, err := os.ReadDir(build.GetBuildDir()); err != nil || len(num) == 0 {
+		logger.Error("build did not produce any output")
+		build.AddReportEntryf("build did not produce any output")
+		build.SetStatus(entity.StatusPartiallySucceeded)
+		return
+	}
+
+	//prepare artifact (zip the build folder contents)
+	if err = build.Pack(); err != nil {
+		logger.WithField("error", err.Error()).Error("build could not be packed")
+		build.AddReportEntryf("build could not be packed: " + err.Error())
+		build.SetStatus(entity.StatusFailed)
+		return
+	}
+
+	logger.Trace("build succeeded")
+	build.SetStatus(entity.StatusSucceeded)
+	build.AddReportEntry("build succeeded")
+
+	// Local Deployments
+	for _, ld := range bdc.Deployments.LocalDeployments {
+		go func(l *logrus.Entry, d *entity.LocalDeployment, b *entity.Build) {
+			if err := h.DeployService.DoLocalDeployment(d, b); err != nil {
+				l.WithField("error", err.Error()).Error("failed to do local deployment")
+				build.AddReportEntryf("failed to execute local deployment: %s", err.Error())
+			}
+		}(h.ContextLogger("LocalDeployment"), &ld, build)
+	}
+
+	// Email Deployments
+	for _, ed := range bdc.Deployments.EmailDeployments {
+		go func(l *logrus.Entry, d *entity.EmailDeployment, b *entity.Build, repo string) {
+			if err := h.DeployService.DoEmailDeployment(d, repo, b); err != nil {
+				l.WithField("error", err.Error()).Error("failed to do email deployment")
+				build.AddReportEntryf("failed to execute email deployment: %s", err.Error())
+			}
+		}(h.ContextLogger("EmailDeployment"), &ed, build, bdc.Repository.Name)
+	}
+
+	// Remote Deployments
+	for _, rd := range bdc.Deployments.RemoteDeployments {
+		go func(l *logrus.Entry, d *entity.RemoteDeployment, b *entity.Build) {
+			if err := h.DeployService.DoRemoteDeployment(d, b); err != nil {
+				l.WithField("error", err.Error()).Error("failed to do remote deployment")
+				build.AddReportEntryf("failed to execute remote deployment: %s", err.Error())
+			}
+		}(h.ContextLogger("RemoteDeployment"), &rd, build)
+	}
 }

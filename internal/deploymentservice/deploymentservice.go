@@ -1,6 +1,7 @@
 package deploymentservice
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,33 +16,36 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
+var ErrDisabled = errors.New("deployment is disabled")
+
 type DeploymentService struct {
 	Mailer *mailer.Mailer
 }
 
-func (dpl *DeploymentService) DoLocalDeployment(deployment *entity.LocalDeployment, artifact entity.Artifact) error {
+func (dpl *DeploymentService) DoLocalDeployment(deployment *entity.LocalDeployment, build *entity.Build) error {
 	if !deployment.Enabled {
-		return fmt.Errorf("skipping disabled deployment")
+		return ErrDisabled
 	}
 
-	fileBytes, err := ioutil.ReadFile(artifact.FullPath())
+	fileBytes, err := ioutil.ReadFile(build.GetArtifact())
 	if err != nil {
-		return fmt.Errorf("could not read artifact (%s): %s", artifact, err.Error())
+		return fmt.Errorf("could not read artifact file '%s': %s", build.GetArtifact(), err.Error())
 	}
 
-	_ = os.MkdirAll(filepath.Dir(deployment.Path), 0744)
+	if err := os.MkdirAll(filepath.Dir(deployment.Path), 0744); err != nil {
+		return err
+	}
 
-	err = os.WriteFile(deployment.Path, fileBytes, 0744)
-	if err != nil {
-		return fmt.Errorf("could not write artifact (%s) to target (%s): %s", artifact, deployment.Path, err.Error())
+	if err = os.WriteFile(deployment.Path, fileBytes, 0744); err != nil {
+		return fmt.Errorf("could not write artifact (%s) to target (%s): %s", build.GetArtifact(), deployment.Path, err.Error())
 	}
 
 	return nil
 }
 
-func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, zipArchiveName string) error {
+func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, build *entity.Build) error {
 	if !deployment.Enabled {
-		return fmt.Errorf("skipping disabled deployment")
+		return ErrDisabled
 	}
 
 	data := struct {
@@ -60,7 +64,7 @@ func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployme
 		emailBody,
 		string(mailer.SubjNewDeployment),
 		[]string{deployment.Address},
-		[]string{zipArchiveName},
+		[]string{build.GetArtifact()},
 	)
 	if err != nil {
 		return fmt.Errorf("could not send out deployment email to %s: %s", deployment.Address, err.Error())
@@ -69,9 +73,9 @@ func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployme
 	return nil
 }
 
-func (dpl *DeploymentService) DoRemoteDeployment(deployment *entity.RemoteDeployment, artifact entity.Artifact) error {
+func (dpl *DeploymentService) DoRemoteDeployment(deployment *entity.RemoteDeployment, build *entity.Build) error {
 	if !deployment.Enabled {
-		return fmt.Errorf("skipping disabled deployment")
+		return ErrDisabled
 	}
 	// first, the pre deployment actions
 	sshConfig := &ssh.ClientConfig{
@@ -117,7 +121,7 @@ func (dpl *DeploymentService) DoRemoteDeployment(deployment *entity.RemoteDeploy
 	}
 
 	// create source file
-	srcFile, err := os.Open(artifact.FullPath())
+	srcFile, err := os.Open(build.GetArtifact())
 	if err != nil {
 		return err
 	}

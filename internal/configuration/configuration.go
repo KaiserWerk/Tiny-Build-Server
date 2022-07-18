@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v3"
 )
@@ -16,7 +15,23 @@ const (
 	distFile = "app.dist.yaml"
 )
 
-func Setup(file string) (*entity.Configuration, bool, error) {
+// AppConfig contains the configuration, taken from a
+// YAML configuration file
+type AppConfig struct {
+	Database struct {
+		Driver string `yaml:"driver" envconfig:"db_driver"`
+		DSN    string `yaml:"dsn" envconfig:"db_dsn"`
+	} `yaml:"database"`
+	Tls struct {
+		CertFile string `yaml:"certfile" envconfig:"tls_certfile"`
+		KeyFile  string `yaml:"keyfile" envconfig:"tls_keyfile"`
+	}
+	Build struct {
+		BasePath string `yaml:"basepath" envconfig:"basepath"`
+	}
+}
+
+func Setup(file string) (*AppConfig, bool, error) {
 	var created bool
 	if _, err := os.Stat(file); err != nil && errors.Is(err, os.ErrNotExist) {
 		content, err := assets.GetConfig(distFile)
@@ -33,7 +48,9 @@ func Setup(file string) (*entity.Configuration, bool, error) {
 		return nil, false, fmt.Errorf("could not write configuration file '%s': %s", file, err.Error())
 	}
 
-	var cfg entity.Configuration
+	cfg := AppConfig{}
+	setupDefaultValues(&cfg)
+
 	err = yaml.Unmarshal(cont, &cfg)
 	if err != nil {
 		return nil, false, fmt.Errorf("could not unmarshal configuration file YAML content: %s", err.Error())
@@ -50,3 +67,11 @@ func Setup(file string) (*entity.Configuration, bool, error) {
 
 	return &cfg, created, nil
 }
+
+func setupDefaultValues(a *AppConfig) {
+	a.Database.Driver = "mysql"
+	a.Database.DSN = "root:root@tcp(127.0.0.1:3306)/tinybuildserver?parseTime=true"
+	a.Build.BasePath = "."
+}
+
+type Settings map[string]string

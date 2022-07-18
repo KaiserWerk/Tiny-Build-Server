@@ -1,15 +1,15 @@
 package middleware
 
 import (
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/databaseservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"github.com/KaiserWerk/sessionstore/v2"
 	"github.com/sirupsen/logrus"
 )
 
 type MWHandler struct {
-	Cfg     *entity.Configuration
-	Ds      *databaseservice.DatabaseService
+	Cfg     *configuration.AppConfig
+	Ds      *dbservice.DBService
 	SessMgr *sessionstore.SessionManager
 	Logger  *logrus.Entry
 }
