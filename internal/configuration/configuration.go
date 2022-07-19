@@ -71,7 +71,7 @@ func Setup(file string) (*AppConfig, bool, error) {
 func setupDefaultValues(a *AppConfig) {
 	a.Database.Driver = "mysql"
 	a.Database.DSN = "root:root@tcp(127.0.0.1:3306)/tinybuildserver?parseTime=true"
-	a.Build.BasePath = "."
+	a.Build.BasePath = "data"
 }
 
 type Settings map[string]string

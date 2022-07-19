@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"io"
 	"io/ioutil"
 	"os"
@@ -26,7 +27,7 @@ type DeploymentService struct {
 	Mailer *mailer.Mailer
 }
 
-func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *entity.Build) error {
+func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *builder.Build) error {
 	if ctx.Err() != nil {
 		return ErrCanceled
 	}
@@ -50,7 +51,7 @@ func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment 
 	return nil
 }
 
-func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment *entity.EmailDeployment, repoName string, build *entity.Build) error {
+func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment *entity.EmailDeployment, repoName string, build *builder.Build) error {
 	if ctx.Err() != nil {
 		return ErrCanceled
 	}
@@ -83,7 +84,7 @@ func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment 
 	return nil
 }
 
-func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment *entity.RemoteDeployment, build *entity.Build) error {
+func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment *entity.RemoteDeployment, build *builder.Build) error {
 	if ctx.Err() != nil {
 		return ErrCanceled
 	}

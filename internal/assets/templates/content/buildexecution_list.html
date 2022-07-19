@@ -41,6 +41,9 @@
                         {{else if eq .Status "partially_succeeded"}}
                             {{$class = "badge-warning"}}
                             {{$label = "Partially succeeded"}}
+                        {{else if eq .Status "canceled"}}
+                            {{$class = "badge-light"}}
+                            {{$label = "Canceled"}}
                         {{ end }}
                         <tr>
                             <td><a href="/buildexecution/{{ .ID }}/show">#{{ .ID }}</a></td>

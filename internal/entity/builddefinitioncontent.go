@@ -5,7 +5,7 @@ package entity
 type BuildDefinitionContent struct {
 	ProjectType string     `yaml:"project_type"`
 	Repository  Repository `yaml:"repository"`
-	Setup       []string   `yaml:"Setup,omitempty"`
+	Setup       []string   `yaml:"setup,omitempty"`
 	Test        []string   `yaml:"test,omitempty"`
 	PreBuild    []string   `yaml:"pre_build,omitempty"`
 	Build       []string   `yaml:"build"`

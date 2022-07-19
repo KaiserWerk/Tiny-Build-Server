@@ -1,9 +1,11 @@
-package entity
+package builder
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,19 +19,19 @@ var (
 type (
 	Build struct {
 		initiatedBy   uint
-		definition    *BuildDefinition
+		definition    *entity.BuildDefinition
 		reportWriter  strings.Builder
-		status        BuildStatus
+		status        entity.BuildStatus
 		executionTime time.Time
 		projectPath   string
 		artifact      string
 	}
 )
 
-func NewBuild(definition *BuildDefinition, basePath string) *Build {
+func NewBuild(definition *entity.BuildDefinition, basePath string) *Build {
 	b := Build{
 		definition:    definition,
-		status:        StatusFailed, // can be set later
+		status:        entity.StatusCreated, // can be set later
 		executionTime: time.Now(),
 		projectPath:   ".",
 	}
@@ -49,25 +51,13 @@ func NewBuild(definition *BuildDefinition, basePath string) *Build {
 	return &b
 }
 
-func (b *Build) GetStatus() BuildStatus {
+func (b *Build) GetStatus() entity.BuildStatus {
 	return b.status
 }
 
-func (b *Build) SetStatus(s BuildStatus) {
+func (b *Build) SetStatus(s entity.BuildStatus) {
 	b.status = s
 }
-
-//func (b *Build) PrepareBuildExecution(report string, status BuildStatus, executionTime int64 /*executedAt time.Time,*/, userId uint) BuildExecution {
-//	return BuildExecution{
-//		BuildDefinitionID: b.definition.ID,
-//		ManuallyRunBy:     userId,
-//		ActionLog:         report,
-//		Status:            status,
-//		ArtifactPath:      b.GetArtifact(), // the actual full path to the Zip file
-//		ExecutionTime:     calc.MsToSeconds(executionTime),
-//		//ExecutedAt:        executedAt,
-//	}
-//}
 
 func (b *Build) AddReportEntry(e string) {
 	_, _ = b.reportWriter.WriteString(e + "\n")
@@ -77,7 +67,7 @@ func (b *Build) AddReportEntryf(f string, a ...interface{}) {
 	_, _ = b.reportWriter.WriteString(fmt.Sprintf(f+"\n", a))
 }
 
-func (b *Build) getReport() string {
+func (b *Build) GetReport() string {
 	return b.reportWriter.String()
 }
 
@@ -111,8 +101,26 @@ func (b *Build) Pack(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ErrCanceled
 	}
-	// TODO: implement
-	panic("not implemented")
+
+	files, err := os.ReadDir(b.GetBuildDir())
+	if err != nil {
+		return err
+	}
+
+	fh, err := os.CreateTemp(b.GetArtifactDir(), "artifact-*.zip")
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	b.SetArtifact(filepath.Join(b.GetArtifactDir(), fh.Name()))
+
+	fileList := make([]string, len(files))
+	for i, f := range files {
+		fileList[i] = filepath.Join(b.GetBuildDir(), f.Name())
+	}
+
+	return common.ZipFiles(fh, false, fileList)
 }
 
 func (b *Build) Setup(ctx context.Context) error {
