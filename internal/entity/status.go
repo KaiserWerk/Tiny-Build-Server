@@ -7,6 +7,7 @@ const (
 	StatusFailed             BuildStatus = "failed"
 	StatusRunning            BuildStatus = "running"
 	StatusPartiallySucceeded BuildStatus = "partially_succeeded"
+	StatusCanceled           BuildStatus = "canceled"
 	StatusUnknown            BuildStatus = "unknown"
 )
 

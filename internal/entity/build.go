@@ -1,11 +1,17 @@
 package entity
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+)
+
+var (
+	ErrCanceled = errors.New("build: canceled by context")
 )
 
 type (
@@ -99,13 +105,20 @@ func (b *Build) GetArtifact() string {
 	return b.artifact
 }
 
-// Pack packs the Build (the content from the build folder) into a zip file
-func (b *Build) Pack() error {
+// Pack packs the Build (the content from the build folder) into a zip file and puts the path to
+// the resulting zip file into the artifact field.
+func (b *Build) Pack(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
 	// TODO: implement
 	panic("not implemented")
 }
 
-func (b *Build) Setup() error {
+func (b *Build) Setup(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
 	// create directories
 	for _, d := range []string{b.GetProjectDir(), b.GetCloneDir(), b.GetBuildDir(), b.GetArtifactDir()} {
 		if err := os.MkdirAll(d, 0755); err != nil {

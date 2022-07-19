@@ -44,7 +44,6 @@ func (mailer *Mailer) SendEmail(body string, subject string, to, attachments []s
 	m := gomail.NewMessage()
 	m.SetHeader("From", mailer.Settings["smtp_username"])
 	m.SetHeader("To", to...)
-	//m.SetAddressHeader("Cc", "dan@example.com", "Dan")
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/html", body)
 	if attachments != nil && len(attachments) > 0 {
@@ -52,7 +51,6 @@ func (mailer *Mailer) SendEmail(body string, subject string, to, attachments []s
 			m.Attach(v)
 		}
 	}
-	//m.Attach("/home/Alex/lolcat.jpg")
 
 	port, err := strconv.Atoi(mailer.Settings["smtp_port"])
 	if err != nil {

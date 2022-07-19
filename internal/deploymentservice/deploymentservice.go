@@ -1,6 +1,7 @@
 package deploymentservice
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,13 +17,19 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
-var ErrDisabled = errors.New("deployment is disabled")
+var (
+	ErrDisabled = errors.New("deployment is disabled")
+	ErrCanceled = errors.New("deploymentservice: canceled by context")
+)
 
 type DeploymentService struct {
 	Mailer *mailer.Mailer
 }
 
-func (dpl *DeploymentService) DoLocalDeployment(deployment *entity.LocalDeployment, build *entity.Build) error {
+func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *entity.Build) error {
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
 	if !deployment.Enabled {
 		return ErrDisabled
 	}
@@ -43,7 +50,10 @@ func (dpl *DeploymentService) DoLocalDeployment(deployment *entity.LocalDeployme
 	return nil
 }
 
-func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployment, repoName string, build *entity.Build) error {
+func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment *entity.EmailDeployment, repoName string, build *entity.Build) error {
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
 	if !deployment.Enabled {
 		return ErrDisabled
 	}
@@ -73,7 +83,10 @@ func (dpl *DeploymentService) DoEmailDeployment(deployment *entity.EmailDeployme
 	return nil
 }
 
-func (dpl *DeploymentService) DoRemoteDeployment(deployment *entity.RemoteDeployment, build *entity.Build) error {
+func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment *entity.RemoteDeployment, build *entity.Build) error {
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
 	if !deployment.Enabled {
 		return ErrDisabled
 	}

@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -87,6 +89,9 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entity.BuildExecution) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	logger := h.ContextLogger("InitiateBuildProcess")
 	build := entity.NewBuild(bd, h.BuildService.GetBasePath())
 	defer func() {
@@ -99,7 +104,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	}()
 
 	// set up directory structure for build
-	if err := build.Setup(); err != nil {
+	if err := build.Setup(ctx); err != nil {
 		logger.Error("failed to set up build: " + err.Error())
 		build.AddReportEntryf("could not create build directory structure: %s", err.Error())
 		be.Status = entity.StatusFailed
@@ -117,14 +122,14 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 		bd.Data.Repository.Branch = "master"
 	}
 
-	repositoryUrl, err := h.BuildService.GetRepositoryUrl(&(bd.Data), withCredentials)
+	repositoryUrl, err := h.BuildService.GetRepositoryUrl(ctx, &(bd.Data), withCredentials)
 	if err != nil {
 		build.AddReportEntryf("could not determine repository url: %s", err.Error())
 		be.Status = entity.StatusFailed
 		return
 	}
 
-	err = h.BuildService.CloneRepository(bd.Data.Repository.Branch, repositoryUrl, build.GetCloneDir())
+	err = h.BuildService.CloneRepository(ctx, bd.Data.Repository.Branch, repositoryUrl, build.GetCloneDir())
 	if err != nil {
 		build.AddReportEntryf("could not clone repository: %s", err.Error())
 		be.Status = entity.StatusFailed
@@ -141,7 +146,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	}}
 
 	// do the unmarshal again with updated variables
-	bdc, err := buildservice.GetPreparedContent(bd, vars)
+	bdc, err := buildservice.GetPreparedContent(ctx, bd, vars)
 	if err != nil {
 		build.AddReportEntryf("could not unmarshal build definition: %s", err.Error())
 		return
@@ -199,9 +204,9 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 				build.AddReportEntry("empty step; skipping")
 				continue
 			} else if len(parts) == 1 {
-				cmd = exec.Command(parts[0])
+				cmd = exec.CommandContext(ctx, parts[0])
 			} else {
-				cmd = exec.Command(parts[0], parts[1:]...)
+				cmd = exec.CommandContext(ctx, parts[0], parts[1:]...)
 			}
 			cmd.Dir = build.GetCloneDir()
 
@@ -225,7 +230,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	}
 
 	//prepare artifact (zip the build folder contents)
-	if err = build.Pack(); err != nil {
+	if err = build.Pack(ctx); err != nil {
 		logger.WithField("error", err.Error()).Error("build could not be packed")
 		build.AddReportEntryf("build could not be packed: " + err.Error())
 		build.SetStatus(entity.StatusFailed)
@@ -239,7 +244,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	// Local Deployments
 	for _, ld := range bdc.Deployments.LocalDeployments {
 		go func(l *logrus.Entry, d *entity.LocalDeployment, b *entity.Build) {
-			if err := h.DeployService.DoLocalDeployment(d, b); err != nil {
+			if err := h.DeployService.DoLocalDeployment(ctx, d, b); err != nil {
 				l.WithField("error", err.Error()).Error("failed to do local deployment")
 				build.AddReportEntryf("failed to execute local deployment: %s", err.Error())
 			}
@@ -249,7 +254,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	// Email Deployments
 	for _, ed := range bdc.Deployments.EmailDeployments {
 		go func(l *logrus.Entry, d *entity.EmailDeployment, b *entity.Build, repo string) {
-			if err := h.DeployService.DoEmailDeployment(d, repo, b); err != nil {
+			if err := h.DeployService.DoEmailDeployment(ctx, d, repo, b); err != nil {
 				l.WithField("error", err.Error()).Error("failed to do email deployment")
 				build.AddReportEntryf("failed to execute email deployment: %s", err.Error())
 			}
@@ -259,7 +264,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	// Remote Deployments
 	for _, rd := range bdc.Deployments.RemoteDeployments {
 		go func(l *logrus.Entry, d *entity.RemoteDeployment, b *entity.Build) {
-			if err := h.DeployService.DoRemoteDeployment(d, b); err != nil {
+			if err := h.DeployService.DoRemoteDeployment(ctx, d, b); err != nil {
 				l.WithField("error", err.Error()).Error("failed to do remote deployment")
 				build.AddReportEntryf("failed to execute remote deployment: %s", err.Error())
 			}

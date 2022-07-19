@@ -1,6 +1,8 @@
 package buildservice
 
 import (
+	"context"
+	"errors"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
@@ -11,6 +13,10 @@ import (
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os/exec"
+)
+
+var (
+	ErrCanceled = errors.New("buildservice: canceled by context")
 )
 
 type (
@@ -35,12 +41,15 @@ func New(cfg *configuration.AppConfig, sessMgr *sessionstore.SessionManager, log
 	}
 }
 
-func (bs *BuildService) CloneRepository(branch string, repositoryUrl string, path string) error {
-	cmd := exec.Command("git", "clone", "--single-branch", "--branch", branch, repositoryUrl, path)
+func (bs *BuildService) CloneRepository(ctx context.Context, branch string, repositoryUrl string, path string) error {
+	cmd := exec.CommandContext(ctx, "git", "clone", "--single-branch", "--branch", branch, repositoryUrl, path)
 	return cmd.Run()
 }
 
-func (bs *BuildService) GetRepositoryUrl(cont *entity.BuildDefinitionContent, withCredentials bool) (string, error) {
+func (bs *BuildService) GetRepositoryUrl(ctx context.Context, cont *entity.BuildDefinitionContent, withCredentials bool) (string, error) {
+	if ctx.Err() != nil {
+		return "", ErrCanceled
+	}
 	//var url string
 	switch cont.Repository.Hoster {
 	case "local":
@@ -73,7 +82,11 @@ func (bs *BuildService) GetBasePath() string {
 	return ""
 }
 
-func GetPreparedContent(bd *entity.BuildDefinition, vars []entity.UserVariable) (*entity.BuildDefinitionContent, error) {
+func GetPreparedContent(ctx context.Context, bd *entity.BuildDefinition, vars []entity.UserVariable) (*entity.BuildDefinitionContent, error) {
+	if ctx.Err() != nil {
+		return nil, ErrCanceled
+	}
+
 	common.ReplaceVariables(&bd.Raw, vars)
 
 	var bdc entity.BuildDefinitionContent
