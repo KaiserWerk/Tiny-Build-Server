@@ -22,15 +22,34 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 	buildExecutions, err := h.DBService.GetNewestBuildExecutions(0, "")
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get build executions")
+		h.SessMgr.AddMessage(w, "success", "Failed to fetch build executions")
+		return
+	}
+
+	buildDefinitions, err := h.DBService.GetAllBuildDefinitions()
+	if err != nil {
+		logger.WithField("error", err.Error()).Error("could not get build definition")
+		h.SessMgr.AddMessage(w, "success", "Failed to fetch build definitions")
+		return
+	}
+
+	users, err := h.DBService.GetAllUsers()
+	if err != nil {
+		logger.WithField("error", err.Error()).Error("could not get usersn")
+		h.SessMgr.AddMessage(w, "success", "Failed to fetch user list")
 		return
 	}
 
 	data := struct {
-		CurrentUser     entity.User
-		BuildExecutions []entity.BuildExecution
+		CurrentUser      entity.User
+		BuildExecutions  []entity.BuildExecution
+		BuildDefinitions []entity.BuildDefinition
+		Users            []entity.User
 	}{
-		CurrentUser:     currentUser,
-		BuildExecutions: buildExecutions,
+		CurrentUser:      currentUser,
+		BuildExecutions:  buildExecutions,
+		BuildDefinitions: buildDefinitions,
+		Users:            users,
 	}
 
 	if err := templateservice.ExecuteTemplate(h.Injector(), w, "buildexecution_list.html", data); err != nil {

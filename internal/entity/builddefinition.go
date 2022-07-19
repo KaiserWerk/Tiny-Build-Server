@@ -13,7 +13,7 @@ type (
 		Caption         string
 		Token           string
 		Raw             string
-		Data            BuildDefinitionContent
+		Data            BuildDefinitionContent `gorm:"-"`
 		EditedBy        uint
 		EditedAt        sql.NullTime
 		CreatedBy       uint

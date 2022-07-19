@@ -1,7 +1,9 @@
 {{template "header_default" .}}
 
-{{ $execClass := "" }}
-{{ $execLabel := "" }}
+{{ $class := "badge-default" }}
+{{ $label := "Unknown" }}
+{{ $buildDefinitions := .BuildDefinitions }}
+{{ $users := .Users }}
 <div class="container-fluid">
     <h1 class="mt-4 mb-3 offset-1">Build Executions</h1>
     <div class="row">
@@ -17,7 +19,7 @@
                     <table class="table table-bordered table-condensed">
                         <thead>
                         <tr>
-                            <th>Id</th>
+                            <th>ID</th>
                             <th>Build Definition</th>
                             <th>Initiated by</th>
                             <th>Result</th>
@@ -27,18 +29,41 @@
                         </thead>
                         <tbody>
                         {{ range .BuildExecutions }}
-                        {{ if eq .Result "success" }}
-                          {{ $execClass = "success" }}
-                          {{ $execLabel = "SUCCESS" }}
-                        {{ else }}
-                          {{ $execClass = "danger" }}
-                          {{ $execLabel = "FAILED" }}
+                        {{if eq .Status "succeeded"}}
+                            {{$class = "badge-success"}}
+                            {{$label = "Succeeded"}}
+                        {{else if eq .Status "failed"}}
+                            {{$class = "badge-danger"}}
+                            {{$label = "Failed"}}
+                        {{else if eq .Status "running"}}
+                            {{$class = "badge-secondary"}}
+                            {{$label = "Running"}}
+                        {{else if eq .Status "partially_succeeded"}}
+                            {{$class = "badge-warning"}}
+                            {{$label = "Partially succeeded"}}
                         {{ end }}
                         <tr>
                             <td><a href="/buildexecution/{{ .ID }}/show">#{{ .ID }}</a></td>
-                            <td>{{ .BuildDefinitionID }}</td>
-                            <td>{{ if gt .ManuallyRunBy 0 }}User {{ .ManuallyRunBy }}{{ else }}Repository Push{{ end }}</td>
-                            <td><span class="badge badge-{{ $execClass }}">{{ $execLabel }}</span></td>
+                            <td>
+                                {{ $bdi := .BuildDefinitionID }}
+                                {{ range $buildDefinitions }}
+                                    {{ if eq .ID $bdi }}
+                                        {{ .Caption }} (#{{ .ID }})
+                                    {{ end }}
+                                {{ end }}
+                            </td>
+                            <td>
+                                {{ if gt .ManuallyRunBy 0 }}
+                                    {{ $userID := .ManuallyRunBy }}
+                                    {{ range $users }}
+                                        {{ if eq .ID $userID }}
+                                            User {{ .Email }} ({{ .DisplayName }})
+                                        {{ end }}
+                                    {{ end }}
+                                {{ else }}
+                                Code Push
+                                {{ end }}</td>
+                            <td><span class="badge badge-{{ $class }}">{{ $label }}</span></td>
                             <td>{{ .ExecutionTime }} s</td>
                             <td>{{ .ExecutedAt | formatDate }}</td>
                         </tr>

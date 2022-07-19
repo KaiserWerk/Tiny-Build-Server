@@ -24,12 +24,18 @@
                             {{range .LatestBuilds}}
                                 {{$class := "badge-default"}}
                                 {{$label := "UNKNOWN"}}
-                                {{if eq .Result "success"}}
+                                {{if eq .Status "succeeded"}}
                                     {{$class = "badge-success"}}
-                                    {{$label = "SUCCESS"}}
-                                {{else if eq .Result "failed"}}
+                                    {{$label = "Succeeded"}}
+                                {{else if eq .Status "failed"}}
                                     {{$class = "badge-danger"}}
-                                    {{$label = "FAILED"}}
+                                    {{$label = "Failed"}}
+                                {{else if eq .Status "running"}}
+                                    {{$class = "badge-secondary"}}
+                                    {{$label = "Running"}}
+                                {{else if eq .Status "partially_succeeded"}}
+                                    {{$class = "badge-warning"}}
+                                    {{$label = "Partially succeeded"}}
                                 {{end}}
                             <tr>
                                 <td><a href="/builddefinition/{{ .BuildDefinitionID }}/show">{{ getBuildDefCaption .BuildDefinitionID }}</a></td>

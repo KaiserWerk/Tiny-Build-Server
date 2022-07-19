@@ -27,8 +27,8 @@
                                             <td>{{ if lt .BuildExecution.ManuallyRunBy 1 }}Repository Push{{ else }}User <i><b>{{ .BuildExecution.ManuallyRunBy }}</b></i>{{ end }}</td>
                                         </tr>
                                         <tr>
-                                            <td>Result</td>
-                                            <td>{{ .BuildExecution.Result }}</td>
+                                            <td>Status</td>
+                                            <td>{{ .BuildExecution.Status }}</td>
                                         </tr>
                                         <tr>
                                             <td>Artifact path</td>

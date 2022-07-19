@@ -1,7 +1,7 @@
 {{template "header_default" .}}
 
-{{ $execClass := "" }}
-{{ $execLabel := "" }}
+{{ $execClass := "badge-default" }}
+{{ $execLabel := "Unknown" }}
 <div class="container-fluid">
     <h1 class="mt-4 mb-3 offset-1">Build definition Details</h1>
     <div class="row">
@@ -20,11 +20,11 @@
                         </a>
                         <a class="btn btn-sm btn-warning float-right mx-1" href="/builddefinition/{{ .BuildDefinition.ID }}/restart">
                             <i class="fa fa-edit"></i>
-                            Manually run
+                            Run manually
                         </a>
                         <a class="btn btn-sm btn-success float-right mx-1" href="/builddefinition/{{ .BuildDefinition.ID }}/artifact">
                             <i class="fa fa-download"></i>
-                            Download Artifact
+                            Download artifact
                         </a>
                     {{ end }}
                 </div>
@@ -57,18 +57,25 @@
                                             <tr>
                                                 <th>Started at</th>
                                                 <th>Duration</th>
-                                                <th>Result</th>
+                                                <th>Status</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                         {{ range .RecentExecutions }}
-                                            {{ if eq .Result "success" }}
-                                                {{ $execClass = "success" }}
-                                                {{ $execLabel = "SUCCESS" }}
-                                            {{ else }}
-                                                {{ $execClass = "danger" }}
-                                                {{ $execLabel = "FAILED" }}
+                                            {{ if eq .Status "success" }}
+                                                {{ $execClass = "succeeded" }}
+                                                {{ $execLabel = "Succeeded" }}
+                                            {{ else if eq .Status "failed" }}
+                                                {{ $execClass = "badge-danger" }}
+                                                {{ $execLabel = "Failed" }}
+                                            {{ else if eq .Status "partially_succeeded" }}
+                                                {{ $execClass = "badge-warning" }}
+                                                {{ $execLabel = "Partially succeeded" }}
+                                            {{ else if eq .Status "canceled" }}
+                                                {{ $execClass = "badge-light" }}
+                                                {{ $execLabel = "Partially succeeded" }}
+
                                             {{ end }}
                                             <tr>
                                                 <td>{{ .ExecutedAt | formatDate }}</td>
