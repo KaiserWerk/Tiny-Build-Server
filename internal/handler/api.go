@@ -93,18 +93,18 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	logger := h.ContextLogger("InitiateBuildProcess")
 	build := builder.NewBuild(bd, h.BuildService.GetBasePath())
-	defer func() {
+	defer func(ex *entity.BuildExecution) {
 		cancel()
-		be.ActionLog = build.GetReport()
+		ex.ActionLog = build.GetReport()
 		//be.ExecutionTime = calc.NsToSeconds(time.Now().UnixNano() - be.ExecutedAt.UnixNano())
-		be.ExecutionTime = (time.Now().Sub(be.ExecutedAt)).Seconds()
-		if err := h.DBService.UpdateBuildExecution(be); err != nil {
+		ex.ExecutionTime = (time.Now().Sub(ex.ExecutedAt)).Seconds()
+		if err := h.DBService.UpdateBuildExecution(ex); err != nil {
 			logger.WithFields(logrus.Fields{
-				"ID":    be.ID,
+				"ID":    ex.ID,
 				"error": err.Error(),
 			}).Error("failed to update build execution")
 		}
-	}()
+	}(be)
 
 	// set up directory structure for build
 	if err := build.Setup(ctx); err != nil {
