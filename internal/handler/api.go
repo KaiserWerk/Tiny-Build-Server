@@ -321,6 +321,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	}
 
 	waitGroup.Wait()
+	logger.Trace("deployments finished")
 	h.saveReport(build, be)
 }
 
