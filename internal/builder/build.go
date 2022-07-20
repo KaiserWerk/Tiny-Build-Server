@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,8 @@ type (
 		executionTime time.Time
 		projectPath   string
 		artifact      string
+
+		mut *sync.RWMutex
 	}
 )
 
@@ -34,6 +37,8 @@ func NewBuild(definition *entity.BuildDefinition, basePath string) *Build {
 		status:        entity.StatusCreated, // can be set later
 		executionTime: time.Now(),
 		projectPath:   ".",
+
+		mut: new(sync.RWMutex),
 	}
 
 	// work with absolute path to avoid discrepancies
@@ -60,14 +65,20 @@ func (b *Build) SetStatus(s entity.BuildStatus) {
 }
 
 func (b *Build) AddReportEntry(e string) {
-	_, _ = b.reportWriter.WriteString(e + "\n")
+	b.mut.Lock()
+	_, _ = b.reportWriter.WriteString(strings.TrimSpace(e) + "\n")
+	b.mut.Unlock()
 }
 
 func (b *Build) AddReportEntryf(f string, a ...interface{}) {
-	_, _ = b.reportWriter.WriteString(fmt.Sprintf(f+"\n", a))
+	b.mut.Lock()
+	_, _ = b.reportWriter.WriteString(fmt.Sprintf(strings.TrimSpace(f)+"\n", a))
+	b.mut.Unlock()
 }
 
 func (b *Build) GetReport() string {
+	b.mut.RLock()
+	defer b.mut.RUnlock()
 	return b.reportWriter.String()
 }
 
@@ -113,7 +124,8 @@ func (b *Build) Pack(ctx context.Context) error {
 	}
 	defer fh.Close()
 
-	b.SetArtifact(filepath.Join(b.GetArtifactDir(), fh.Name()))
+	//b.SetArtifact(filepath.Join(b.GetArtifactDir(), fh.Name()))
+	b.SetArtifact(fh.Name())
 
 	fileList := make([]string, len(files))
 	for i, f := range files {
@@ -127,6 +139,7 @@ func (b *Build) Setup(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ErrCanceled
 	}
+
 	// create directories
 	for _, d := range []string{b.GetProjectDir(), b.GetCloneDir(), b.GetBuildDir(), b.GetArtifactDir()} {
 		if err := os.MkdirAll(d, 0755); err != nil {
@@ -136,7 +149,3 @@ func (b *Build) Setup(ctx context.Context) error {
 
 	return nil
 }
-
-//func (b *Build) UpdateBuildExecution(ds *dbservice.DBService, be *BuildExecution) error {
-//	return ds.UpdateBuildExecution(be)
-//}

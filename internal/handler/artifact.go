@@ -31,25 +31,12 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	if len(beList) < 1 {
+	if len(beList) == 0 {
 		logger.WithField("error", err.Error()).Info("could not find any build executions for definition")
 		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
 		return
 	}
-
-	artifact, err := filepath.Abs(beList[0].ArtifactPath)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"error":        err.Error(),
-			"artifactPath": beList[0].ArtifactPath,
-		}).Debug("could not determine absolute path of file: ")
-		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
-		return
-	}
-
-	artifact += ".zip"
-
-	//fmt.Printf("file to serve: %s\n", artifact)
+	artifact := beList[0].ArtifactPath
 
 	cont, err := ioutil.ReadFile(artifact)
 	if err != nil {
@@ -81,32 +68,21 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 			"error":            err.Error(),
 			"buildExecutionId": id,
 		}).Error("could not fetch build execution by ID")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/buildexecution/%d/show", id), http.StatusSeeOther)
 		return
 	}
 
-	artifact, err := filepath.Abs(be.ArtifactPath)
+	cont, err := ioutil.ReadFile(be.ArtifactPath)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":        err.Error(),
-			"artifactPath": be.ArtifactPath,
-		}).Info("could not determine absolute path of file")
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	artifact += ".zip"
-	cont, err := ioutil.ReadFile(artifact)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"error":        err.Error(),
-			"artifactFile": artifact,
+			"artifactFile": be.ArtifactPath,
 		}).Info("could not read artifact file")
-		http.Redirect(w, r, "/builddefinition/list", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/buildexecution/%d/show", id), http.StatusSeeOther)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment;filename=%s", filepath.Base(artifact)))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filepath.Base(be.ArtifactPath)))
 	w.Write(cont)
 }

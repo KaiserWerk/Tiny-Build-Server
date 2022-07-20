@@ -7,6 +7,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -28,11 +29,11 @@ type DeploymentService struct {
 }
 
 func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *builder.Build) error {
-	if ctx.Err() != nil {
-		return ErrCanceled
-	}
 	if !deployment.Enabled {
 		return ErrDisabled
+	}
+	if ctx.Err() != nil {
+		return ErrCanceled
 	}
 
 	fileBytes, err := ioutil.ReadFile(build.GetArtifact())
@@ -52,11 +53,11 @@ func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment 
 }
 
 func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment *entity.EmailDeployment, repoName string, build *builder.Build) error {
-	if ctx.Err() != nil {
-		return ErrCanceled
-	}
 	if !deployment.Enabled {
 		return ErrDisabled
+	}
+	if ctx.Err() != nil {
+		return ErrCanceled
 	}
 
 	data := struct {
@@ -85,12 +86,13 @@ func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment 
 }
 
 func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment *entity.RemoteDeployment, build *builder.Build) error {
-	if ctx.Err() != nil {
-		return ErrCanceled
-	}
 	if !deployment.Enabled {
 		return ErrDisabled
 	}
+	if ctx.Err() != nil {
+		return ErrCanceled
+	}
+
 	// first, the pre deployment actions
 	sshConfig := &ssh.ClientConfig{
 		//HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -99,7 +101,11 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 			ssh.Password(deployment.Password),
 		},
 	}
-	sshClient, err := ssh.Dial("tcp", deployment.Host, sshConfig)
+	sshConfig.HostKeyCallback = func(_ string, _ net.Addr, _ ssh.PublicKey) error {
+		return nil
+	}
+
+	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", deployment.Host, deployment.Port), sshConfig)
 	if err != nil {
 		return err
 	}
@@ -116,7 +122,7 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 			_ = session.Close()
 		}
 	}
-
+	// TODO: für mehrere Dateien/entzippen überarbeiten
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return err
@@ -129,7 +135,7 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 	}
 
 	// create destination file
-	dstFile, err := sftpClient.Create(deployment.WorkingDirectory)
+	dstFile, err := sftpClient.Create(deployment.WorkingDirectory + "/" + filepath.Base(build.GetArtifact()))
 	if err != nil {
 		return err
 	}
@@ -141,13 +147,13 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 	}
 
 	// copy source file to destination file
-	bytes, err := io.Copy(dstFile, srcFile)
+	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
 		return err
 	}
 	_ = dstFile.Close()
 	_ = srcFile.Close()
-	fmt.Printf("%d bytes copied\n", bytes)
+
 	_ = session.Close()
 
 	// then, the post deployment actions

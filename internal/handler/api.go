@@ -2,13 +2,16 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -90,27 +93,18 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entity.BuildExecution) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
 	logger := h.ContextLogger("InitiateBuildProcess")
 	build := builder.NewBuild(bd, h.BuildService.GetBasePath())
-	defer func(ex *entity.BuildExecution) {
-		cancel()
-		ex.ActionLog = build.GetReport()
-		//be.ExecutionTime = calc.NsToSeconds(time.Now().UnixNano() - be.ExecutedAt.UnixNano())
-		ex.ExecutionTime = (time.Now().Sub(ex.ExecutedAt)).Seconds()
-		if err := h.DBService.UpdateBuildExecution(ex); err != nil {
-			logger.WithFields(logrus.Fields{
-				"ID":    ex.ID,
-				"error": err.Error(),
-			}).Error("failed to update build execution")
-		}
-	}(be)
 
 	// set up directory structure for build
 	if err := build.Setup(ctx); err != nil {
 		logger.Error("failed to set up build: " + err.Error())
 		build.AddReportEntryf("could not create build directory structure: %s", err.Error())
 		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
 		return
 	}
 
@@ -124,11 +118,12 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	if bd.Data.Repository.Branch == "" {
 		bd.Data.Repository.Branch = "master"
 	}
-
-	repositoryUrl, err := h.BuildService.GetRepositoryUrl(ctx, &(bd.Data), withCredentials)
+	data := bd.Data
+	repositoryUrl, err := h.BuildService.GetRepositoryUrl(ctx, &data, withCredentials)
 	if err != nil {
 		build.AddReportEntryf("could not determine repository url: %s", err.Error())
 		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
 		return
 	}
 
@@ -136,6 +131,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	if err != nil {
 		build.AddReportEntryf("could not clone repository: %s", err.Error())
 		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
 		return
 	}
 
@@ -152,6 +148,8 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	bdc, err := buildservice.GetPreparedContent(ctx, bd, vars)
 	if err != nil {
 		build.AddReportEntryf("could not unmarshal build definition: %s", err.Error())
+		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
 		return
 	}
 
@@ -221,15 +219,26 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 				continue
 			}
 
-			build.AddReportEntry(strings.TrimSpace(string(output)))
+			build.AddReportEntry(string(output))
 		}
+	}
+
+	if len(stepErrors) > 0 {
+		build.AddReportEntryf("build steps produced %d errors", len(stepErrors))
+		logger.Errorf("build steps produced %d errors", len(stepErrors))
+		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
+		return
+	} else {
+		build.AddReportEntry("build steps produced no errors")
 	}
 
 	// build is to be considered successful, if buildDir is not empty
 	if num, err := os.ReadDir(build.GetBuildDir()); err != nil || len(num) == 0 {
 		logger.Error("build did not produce any output")
 		build.AddReportEntryf("build did not produce any output")
-		build.SetStatus(entity.StatusPartiallySucceeded)
+		be.Status = entity.StatusPartiallySucceeded
+		h.saveReport(build, be)
 		return
 	}
 
@@ -237,43 +246,91 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	if err = build.Pack(ctx); err != nil {
 		logger.WithField("error", err.Error()).Error("build could not be packed")
 		build.AddReportEntryf("build could not be packed: " + err.Error())
-		build.SetStatus(entity.StatusFailed)
+		be.Status = entity.StatusFailed
+		h.saveReport(build, be)
 		return
 	}
 
 	be.ArtifactPath = build.GetArtifact()
 
 	logger.Trace("build succeeded")
-	build.SetStatus(entity.StatusSucceeded)
 	build.AddReportEntry("build succeeded")
+	be.Status = entity.StatusSucceeded
+	h.saveReport(build, be)
+
+	waitGroup := new(sync.WaitGroup)
 
 	// Local Deployments
+	waitGroup.Add(len(bdc.Deployments.LocalDeployments))
 	for _, ld := range bdc.Deployments.LocalDeployments {
-		go func(l *logrus.Entry, d *entity.LocalDeployment, b *builder.Build) {
+		go func(l *logrus.Entry, d *entity.LocalDeployment, b *builder.Build, wg *sync.WaitGroup) {
+			defer wg.Done()
 			if err := h.DeployService.DoLocalDeployment(ctx, d, b); err != nil {
-				l.WithField("error", err.Error()).Error("failed to do local deployment")
-				build.AddReportEntryf("failed to execute local deployment: %s", err.Error())
+				if errors.Is(err, deploymentservice.ErrDisabled) {
+					l.Debug("skipping disabled local deployment")
+					build.AddReportEntry("skipping disabled local deployment")
+				} else {
+					l.WithField("error", err.Error()).Error("failed to do local deployment")
+					build.AddReportEntryf("failed to execute local deployment: %s", err.Error())
+				}
+			} else {
+				b.AddReportEntry("local deployment successful")
 			}
-		}(h.ContextLogger("LocalDeployment"), &ld, build)
+
+		}(h.ContextLogger("LocalDeployment"), &ld, build, waitGroup)
 	}
 
 	// Email Deployments
+	waitGroup.Add(len(bdc.Deployments.EmailDeployments))
 	for _, ed := range bdc.Deployments.EmailDeployments {
-		go func(l *logrus.Entry, d *entity.EmailDeployment, b *builder.Build, repo string) {
+		go func(l *logrus.Entry, d *entity.EmailDeployment, b *builder.Build, repo string, wg *sync.WaitGroup) {
+			defer wg.Done()
 			if err := h.DeployService.DoEmailDeployment(ctx, d, repo, b); err != nil {
-				l.WithField("error", err.Error()).Error("failed to do email deployment")
-				build.AddReportEntryf("failed to execute email deployment: %s", err.Error())
+				if errors.Is(err, deploymentservice.ErrDisabled) {
+					l.Debug("skipping disabled email deployment")
+					build.AddReportEntry("skipping disabled email deployment")
+				} else {
+					l.WithField("error", err.Error()).Error("failed to do email deployment")
+					build.AddReportEntryf("failed to execute email deployment: %s", err.Error())
+				}
+			} else {
+				b.AddReportEntry("email deployment successful")
 			}
-		}(h.ContextLogger("EmailDeployment"), &ed, build, bdc.Repository.Name)
+
+		}(h.ContextLogger("EmailDeployment"), &ed, build, bdc.Repository.Name, waitGroup)
 	}
 
 	// Remote Deployments
+	waitGroup.Add(len(bdc.Deployments.RemoteDeployments))
 	for _, rd := range bdc.Deployments.RemoteDeployments {
-		go func(l *logrus.Entry, d *entity.RemoteDeployment, b *builder.Build) {
+		go func(l *logrus.Entry, d *entity.RemoteDeployment, b *builder.Build, wg *sync.WaitGroup) {
+			defer wg.Done()
 			if err := h.DeployService.DoRemoteDeployment(ctx, d, b); err != nil {
-				l.WithField("error", err.Error()).Error("failed to do remote deployment")
-				build.AddReportEntryf("failed to execute remote deployment: %s", err.Error())
+				if errors.Is(err, deploymentservice.ErrDisabled) {
+					l.Debug("skipping disabled remote deployment")
+					build.AddReportEntry("skipping disabled remote deployment")
+				} else {
+					l.WithField("error", err.Error()).Error("failed to do remote deployment")
+					build.AddReportEntryf("failed to execute remote deployment: %s", err.Error())
+				}
+			} else {
+				b.AddReportEntry("remote deployment successful")
 			}
-		}(h.ContextLogger("RemoteDeployment"), &rd, build)
+
+		}(h.ContextLogger("RemoteDeployment"), &rd, build, waitGroup)
+	}
+
+	waitGroup.Wait()
+	h.saveReport(build, be)
+}
+
+func (h *HttpHandler) saveReport(build *builder.Build, be *entity.BuildExecution) {
+	be.ActionLog = build.GetReport()
+	be.ExecutionTime = (time.Now().Sub(be.ExecutedAt)).Seconds()
+	if err := h.DBService.UpdateBuildExecution(be); err != nil {
+		h.Logger.WithFields(logrus.Fields{
+			"ID":    be.ID,
+			"error": err.Error(),
+		}).Error("failed to update build execution")
 	}
 }

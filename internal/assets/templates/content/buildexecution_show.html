@@ -9,7 +9,7 @@
                     <b>Execution #{{ .BuildExecution.ID }}</b> for build definition
                     <b>{{ .BuildDefinition.Caption }}</b>
 
-                    <a class="btn btn-sm btn-success float-right mx-1" href="/buildexecution/{{ .BuildExecution.ID }}/artifact">
+                    <a{{ if ne .BuildExecution.ArtifactPath "" }} disabled{{ end }} class="btn btn-sm btn-success float-right mx-1" href="/buildexecution/{{ .BuildExecution.ID }}/artifact">
                         <i class="fa fa-download"></i>
                         Download Artifact
                     </a>
@@ -24,7 +24,7 @@
                                     <table class="table table-borderless table-condensed">
                                         <tr>
                                             <td style="width: 15%;">Initiated by</td>
-                                            <td>{{ if lt .BuildExecution.ManuallyRunBy 1 }}Repository Push{{ else }}User <i><b>{{ .BuildExecution.ManuallyRunBy }}</b></i>{{ end }}</td>
+                                            <td>{{ if lt .BuildExecution.ManuallyRunBy 1 }}Code Push{{ else }}User <i><b>{{ .BuildExecution.ManuallyRunBy }}</b></i>{{ end }}</td>
                                         </tr>
                                         <tr>
                                             <td>Status</td>

@@ -366,12 +366,13 @@ func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *ht
 	}
 
 	// NOTE: check if unmarshalling works/if content is valid
-	_, err = common.UnmarshalBuildDefinition([]byte(bd.Raw), variables)
+	bdContent, err := common.UnmarshalBuildDefinition([]byte(bd.Raw), variables)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not unmarshal build definition content")
 		http.Redirect(w, r, fmt.Sprintf("/builddefinition/%d/show", bd.ID), http.StatusBadRequest)
 		return
 	}
+	bd.Data = bdContent
 
 	// insert new build execution
 	be := entity.NewBuildExecution(bd.ID, 0)
