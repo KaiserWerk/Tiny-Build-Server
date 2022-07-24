@@ -69,12 +69,12 @@ func ExecuteTemplate(inj *Injector, w io.Writer, file string, data interface{}) 
 }
 
 // ParseEmailTemplate parses and email template with the given data
-func ParseEmailTemplate(messageType string, data interface{}) (string, error) {
-	cont, err := assets.GetTemplate("email/" + messageType + ".html")
+func ParseEmailTemplate(tmpl string, data interface{}) (string, error) {
+	cont, err := assets.GetTemplate("email/" + tmpl + ".html")
 	if err != nil {
 		return "", err
 	}
-	t, err := template.New(messageType).Parse(string(cont))
+	t, err := template.New(tmpl).Parse(string(cont))
 	if err != nil {
 		return "", err
 	}
