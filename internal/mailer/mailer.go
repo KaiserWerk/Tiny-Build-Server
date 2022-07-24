@@ -16,11 +16,11 @@ type EmailSubject string
 const (
 	SubjAccountCreated        EmailSubject = "Tiny Build Server: Your account was created"
 	SubjAccountLocked         EmailSubject = "Tiny Build Server: Your account has been locked"
-	SubjConfirmRegistration   EmailSubject = "Tiny Build Server: Please confirm your registration"
-	SubjRequestNewPassword    EmailSubject = "Tiny Build Server: Instructions on how to reset your password"
-	SubjRegistrationConfirmed EmailSubject = "Tiny Build Server: Your registration was successfully confirmed"
 	SubjConfirmPasswordReset  EmailSubject = "Tiny Build Server: Your password has been reset"
+	SubjConfirmRegistration   EmailSubject = "Tiny Build Server: Please confirm your registration"
 	SubjNewDeployment         EmailSubject = "Tiny Build Server: New email deployment"
+	SubjRegistrationConfirmed EmailSubject = "Tiny Build Server: Your registration was successfully confirmed"
+	SubjRequestNewPassword    EmailSubject = "Tiny Build Server: Instructions on how to reset your password"
 )
 
 var (
@@ -58,11 +58,7 @@ func (mailer *Mailer) SendEmail(body string, subject string, to, attachments []s
 	}
 	d := gomail.NewDialer(mailer.Settings["smtp_host"], port, mailer.Settings["smtp_username"], mailer.Settings["smtp_password"])
 	//d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	if err := d.DialAndSend(m); err != nil {
-		return err
-	}
-
-	return nil
+	return d.DialAndSend(m)
 }
 
 // SendEmail2 sends and email, as well
@@ -85,4 +81,25 @@ func SendEmail2(settings map[string]string, body string, subject string, to, att
 	}
 	fmt.Println("settings:", settings)
 	return e.Send(fmt.Sprintf("%s:%s", settings["smtp_host"], settings["smtp_port"]), smtp.PlainAuth("", settings["smtp_username"], settings["smtp_password"], settings["smtp_host"]))
+}
+
+func GetTemplateFromSubject(subj EmailSubject) string {
+	switch subj {
+	case SubjAccountCreated:
+		return "account_created"
+	case SubjAccountLocked:
+		return "account_locked"
+	case SubjConfirmRegistration:
+		return "confirm_registration"
+	case SubjConfirmPasswordReset:
+		return "confirm_password_reset"
+	case SubjNewDeployment:
+		return "deployment"
+	case SubjRegistrationConfirmed:
+		return "registration_confirmed"
+	case SubjRequestNewPassword:
+		return "request_new_password"
+	}
+
+	return ""
 }

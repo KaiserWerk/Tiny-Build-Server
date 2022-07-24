@@ -158,7 +158,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 				Token:   registrationToken,
 			}
 
-			emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjRequestNewPassword), data)
+			emailBody, err := templateservice.ParseEmailTemplate(mailer.GetTemplateFromSubject(mailer.SubjRequestNewPassword), data)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("unable to parse email template")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -366,7 +366,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 			Token:   token,
 		}
 
-		emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjConfirmRegistration), data)
+		emailBody, err := templateservice.ParseEmailTemplate(mailer.GetTemplateFromSubject(mailer.SubjConfirmRegistration), data)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("unable to parse email template")
 			w.WriteHeader(http.StatusInternalServerError)
