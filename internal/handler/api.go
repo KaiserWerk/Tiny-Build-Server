@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -20,6 +19,19 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/network"
 )
+
+type job struct {
+	local  *entity.LocalDeployment
+	email  *entity.EmailDeployment
+	remote *entity.RemoteDeployment
+	err    error
+}
+
+func (j job) nil() bool {
+	return j.local == nil && j.email == nil && j.remote == nil
+}
+
+const errMsg = "failed %s deployment: %s"
 
 // PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
 // sent by a Git hoster
@@ -157,6 +169,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 
 	steps := bdc.GetSteps()
 	for _, step := range steps {
+		step = strings.Trim(step, "[]")
 		build.AddReportEntryf("step: %s", step)
 		switch true {
 		case strings.HasPrefix(step, "setenv"):
@@ -258,70 +271,74 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	be.Status = entity.StatusSucceeded
 	h.saveReport(build, be)
 
-	waitGroup := new(sync.WaitGroup)
+	var numJobs = len(bdc.Deployments.LocalDeployments) + len(bdc.Deployments.EmailDeployments) + len(bdc.Deployments.RemoteDeployments)
 
-	// Local Deployments
-	waitGroup.Add(len(bdc.Deployments.LocalDeployments))
-	for _, ld := range bdc.Deployments.LocalDeployments {
-		go func(l *logrus.Entry, d *entity.LocalDeployment, b *builder.Build, wg *sync.WaitGroup) {
-			defer wg.Done()
-			if err := h.DeployService.DoLocalDeployment(ctx, d, b); err != nil {
-				if errors.Is(err, deploymentservice.ErrDisabled) {
-					l.Debug("skipping disabled local deployment")
-					build.AddReportEntry("skipping disabled local deployment")
-				} else {
-					l.WithField("error", err.Error()).Error("failed to do local deployment")
-					build.AddReportEntryf("failed to execute local deployment: %s", err.Error())
+	jobs := make(chan job, numJobs)
+	results := make(chan job, numJobs)
+	for i := 0; i < 3; i++ { // 3 workers
+		go func(jobs <-chan job, results chan<- job, l *logrus.Entry, b *builder.Build) {
+			for j := range jobs {
+				if j.local != nil {
+					l.Trace("processing local deployment")
+					if err := h.DeployService.DoLocalDeployment(ctx, j.local, b); err != nil && !errors.Is(err, deploymentservice.ErrDisabled) {
+						j.err = err
+					}
+				} else if j.email != nil {
+					l.Trace("processing email deployment")
+					if err := h.DeployService.DoEmailDeployment(ctx, j.email, bdc.Repository.Name, b); err != nil && !errors.Is(err, deploymentservice.ErrDisabled) {
+						j.err = err
+					}
+				} else if j.remote != nil {
+					l.Trace("processing remote deployment")
+					if err := h.DeployService.DoRemoteDeployment(ctx, j.remote, b); err != nil && !errors.Is(err, deploymentservice.ErrDisabled) {
+						j.err = err
+					}
 				}
-			} else {
-				b.AddReportEntry("local deployment successful")
+				// process job and put it into the result channel
+				results <- j
 			}
-
-		}(h.ContextLogger("LocalDeployment"), &ld, build, waitGroup)
+		}(jobs, results, h.ContextLogger("deployWorkerPool"), build)
 	}
 
-	// Email Deployments
-	waitGroup.Add(len(bdc.Deployments.EmailDeployments))
-	for _, ed := range bdc.Deployments.EmailDeployments {
-		go func(l *logrus.Entry, d *entity.EmailDeployment, b *builder.Build, repo string, wg *sync.WaitGroup) {
-			defer wg.Done()
-			if err := h.DeployService.DoEmailDeployment(ctx, d, repo, b); err != nil {
-				if errors.Is(err, deploymentservice.ErrDisabled) {
-					l.Debug("skipping disabled email deployment")
-					build.AddReportEntry("skipping disabled email deployment")
-				} else {
-					l.WithField("error", err.Error()).Error("failed to do email deployment")
-					build.AddReportEntryf("failed to execute email deployment: %s", err.Error())
-				}
-			} else {
-				b.AddReportEntry("email deployment successful")
-			}
+	for _, l := range bdc.Deployments.LocalDeployments {
+		jobs <- job{local: &l}
+		logger.Trace("adding local deployment")
+	}
+	for _, e := range bdc.Deployments.EmailDeployments {
+		jobs <- job{email: &e}
+		logger.Trace("adding email deployment")
+	}
+	for _, r := range bdc.Deployments.RemoteDeployments {
+		jobs <- job{remote: &r}
+		logger.Trace("adding remote deployment")
+	}
+	close(jobs)
 
-		}(h.ContextLogger("EmailDeployment"), &ed, build, bdc.Repository.Name, waitGroup)
+	for i := 0; i < numJobs; i++ {
+		r, ok := <-results
+		if !ok {
+			continue
+		}
+		if r.nil() {
+			continue
+		}
+		if r.err != nil {
+			var msg string
+			if r.local != nil {
+				logger.Trace("local deployment failed")
+				msg = fmt.Sprintf(errMsg, "local", r.err)
+			} else if r.email != nil {
+				logger.Trace("email deployment failed")
+				msg = fmt.Sprintf(errMsg, "email", r.err)
+			} else if r.remote != nil {
+				logger.Trace("remote deployment failed")
+				msg = fmt.Sprintf(errMsg, "remote", r.err)
+			}
+			build.AddReportEntry(msg)
+		}
 	}
 
-	// Remote Deployments
-	waitGroup.Add(len(bdc.Deployments.RemoteDeployments))
-	for _, rd := range bdc.Deployments.RemoteDeployments {
-		go func(l *logrus.Entry, d *entity.RemoteDeployment, b *builder.Build, wg *sync.WaitGroup) {
-			defer wg.Done()
-			if err := h.DeployService.DoRemoteDeployment(ctx, d, b); err != nil {
-				if errors.Is(err, deploymentservice.ErrDisabled) {
-					l.Debug("skipping disabled remote deployment")
-					build.AddReportEntry("skipping disabled remote deployment")
-				} else {
-					l.WithField("error", err.Error()).Error("failed to do remote deployment")
-					build.AddReportEntryf("failed to execute remote deployment: %s", err.Error())
-				}
-			} else {
-				b.AddReportEntry("remote deployment successful")
-			}
-
-		}(h.ContextLogger("RemoteDeployment"), &rd, build, waitGroup)
-	}
-
-	waitGroup.Wait()
-	logger.Trace("deployments finished")
+	build.AddReportEntry("all deployments finished")
 	h.saveReport(build, be)
 }
 
