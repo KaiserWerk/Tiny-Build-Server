@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"io"
 	"io/ioutil"
 	"net"
@@ -14,6 +13,7 @@ import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
@@ -122,7 +122,14 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 			_ = session.Close()
 		}
 	}
-	// TODO: für mehrere Dateien/entzippen überarbeiten
+
+	srcDir := build.GetBuildDir()
+	targetDir := deployment.WorkingDirectory
+	elements, err := os.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+
 	session, err := sshClient.NewSession()
 	if err != nil {
 		return err
@@ -134,25 +141,33 @@ func (dpl *DeploymentService) DoRemoteDeployment(ctx context.Context, deployment
 		return err
 	}
 
-	// create destination file
-	dstFile, err := sftpClient.Create(deployment.WorkingDirectory + "/" + filepath.Base(build.GetArtifact()))
-	if err != nil {
-		return err
-	}
+	for _, elem := range elements {
+		if elem.IsDir() {
+			if err = sftpClient.MkdirAll(targetDir + "/" + elem.Name()); err != nil {
+				build.AddReportEntryf("failed to create directory '%s': %s", elem, err.Error())
+			}
+			continue
+		}
+		// create destination file
+		dstFile, err := sftpClient.Create(targetDir + "/" + elem.Name())
+		if err != nil {
+			return err
+		}
 
-	// create source file
-	srcFile, err := os.Open(build.GetArtifact())
-	if err != nil {
-		return err
-	}
+		// create source file
+		srcFile, err := os.Open(filepath.Join(srcDir, elem.Name()))
+		if err != nil {
+			return err
+		}
 
-	// copy source file to destination file
-	_, err = io.Copy(dstFile, srcFile)
-	if err != nil {
-		return err
+		// copy source file to destination file
+		_, err = io.Copy(dstFile, srcFile)
+		if err != nil {
+			return err
+		}
+		_ = dstFile.Close()
+		_ = srcFile.Close()
 	}
-	_ = dstFile.Close()
-	_ = srcFile.Close()
 
 	_ = session.Close()
 
