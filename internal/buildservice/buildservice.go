@@ -19,15 +19,13 @@ var (
 	ErrCanceled = errors.New("buildservice: canceled by context")
 )
 
-type (
-	BuildService struct {
-		Cfg       *configuration.AppConfig
-		SessMgr   *sessionstore.SessionManager
-		Logger    *logrus.Entry
-		DBSvc     *dbservice.DBService
-		DeploySvc *deploymentservice.DeploymentService
-	}
-)
+type BuildService struct {
+	Cfg       *configuration.AppConfig
+	SessMgr   *sessionstore.SessionManager
+	Logger    *logrus.Entry
+	DBSvc     *dbservice.DBService
+	DeploySvc *deploymentservice.DeploymentService
+}
 
 func New(cfg *configuration.AppConfig, sessMgr *sessionstore.SessionManager, logger *logrus.Entry,
 	ds *dbservice.DBService, dpl *deploymentservice.DeploymentService) *BuildService {
