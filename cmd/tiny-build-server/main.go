@@ -61,7 +61,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 		}
 	}()
 
-	defer panicHandler.Handle(logger)
+	defer panichandler.Handle(logger)
 
 	config, created, err := configuration.Setup(*configFile)
 	if err != nil {
