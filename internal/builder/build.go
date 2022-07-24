@@ -13,23 +13,25 @@ import (
 	"time"
 )
 
+const (
+	buildReportFormat = "2006-01-02 15:04:05.000"
+)
+
 var (
 	ErrCanceled = errors.New("build: canceled by context")
 )
 
-type (
-	Build struct {
-		initiatedBy   uint
-		definition    *entity.BuildDefinition
-		reportWriter  strings.Builder
-		status        entity.BuildStatus
-		executionTime time.Time
-		projectPath   string
-		artifact      string
+type Build struct {
+	initiatedBy   uint
+	definition    *entity.BuildDefinition
+	reportWriter  strings.Builder
+	status        entity.BuildStatus
+	executionTime time.Time
+	projectPath   string
+	artifact      string
 
-		mut *sync.RWMutex
-	}
-)
+	mut *sync.RWMutex
+}
 
 func NewBuild(definition *entity.BuildDefinition, basePath string) *Build {
 	b := Build{
@@ -66,13 +68,20 @@ func (b *Build) SetStatus(s entity.BuildStatus) {
 
 func (b *Build) AddReportEntry(e string) {
 	b.mut.Lock()
-	_, _ = b.reportWriter.WriteString(strings.TrimSpace(e) + "\n")
+	in := strings.TrimSpace(e)
+	if in != "" {
+		_, _ = b.reportWriter.WriteString(time.Now().Format(buildReportFormat) + ": " + in + "\n")
+	}
 	b.mut.Unlock()
 }
 
 func (b *Build) AddReportEntryf(f string, a ...interface{}) {
 	b.mut.Lock()
-	_, _ = b.reportWriter.WriteString(fmt.Sprintf(strings.TrimSpace(f)+"\n", a))
+	in := strings.TrimSpace(f)
+	if in != "" {
+		m := fmt.Sprintf(in, strings.Trim(fmt.Sprintf("%v", a), "][")) + "\n"
+		_, _ = b.reportWriter.WriteString(time.Now().Format(buildReportFormat) + ": " + m)
+	}
 	b.mut.Unlock()
 }
 
