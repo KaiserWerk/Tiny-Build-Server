@@ -6,9 +6,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/cron"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -37,6 +40,11 @@ var (
 func main() {
 	slug.Replacement = '-'
 
+	exitCode := run(os.Args, os.Stdin, os.Stdout, os.Stderr)
+	os.Exit(exitCode)
+}
+
+func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int {
 	listenPort := flag.Int("port", 8271, "The port which the build server should listen on")
 	configFile := flag.String("config", "app.yaml", "The location of the configuration file")
 	logPath := flag.String("logpath", ".", "The path to place log files in")
@@ -58,10 +66,11 @@ func main() {
 	config, created, err := configuration.Setup(*configFile)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("an error occurred while setting up configuration")
-		return
+		return 1
 	}
 	if created {
 		logger.Info("configuration file didn't exist so it was created")
+		return 0
 	}
 
 	logger.WithFields(logrus.Fields{
@@ -76,11 +85,15 @@ func main() {
 	if *automigrate {
 		if err := ds.AutoMigrate(); err != nil {
 			logger.WithField("error", err.Error()).Error("AutoMigrate failed")
-			return
+			return 2
 		}
 		logger.Info("AutoMigrate successful")
-		os.Exit(0)
+		return 0
 	}
+
+	cronjob := cron.New(logger.WithField("context", "Cron"))
+	setupCronjobs(cronjob, ds)
+	cronjob.Run()
 
 	listenAddr := fmt.Sprintf(":%d", *listenPort)
 	logger.Trace("Server starts handling requests")
@@ -94,7 +107,7 @@ func main() {
 	router, err := setupRoutes(config, ds, logger)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not set up routes")
-		return
+		return 3
 	}
 
 	tlsConfig := &tls.Config{
@@ -129,6 +142,7 @@ func main() {
 
 	go func() {
 		<-quit
+		cronjob.Stop()
 		logger.Debug("Server is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -153,6 +167,53 @@ func main() {
 	}
 
 	logger.Trace("Server shutdown complete. Have a nice day!")
+
+	return 0
+}
+
+func setupCronjobs(cronjob *cron.Cron, ds *dbservice.DBService) {
+	basePath := "."
+	settings, err := ds.GetAllSettings()
+	if err == nil {
+		if path, ok := settings["base_datapath"]; ok && path != "" {
+			basePath = path
+		}
+	}
+
+	absPath, err := filepath.Abs(basePath)
+	if err == nil {
+		basePath = absPath
+	}
+
+	cronjob.AddDaily(cron.NewJob("Clean up old cloned data", true, func() error {
+		// NOTE: removes the '/clone' directory of builds older than 7 days
+		elements, err := os.ReadDir(basePath)
+		if err != nil {
+			return err
+		}
+		var errReturn error = nil
+		for _, element := range elements {
+			if !element.IsDir() {
+				continue
+			}
+
+			info, err := element.Info()
+			if err != nil {
+				errReturn = err
+				continue
+			}
+
+			if !info.ModTime().Add(7 * 24 * time.Hour).Before(time.Now()) { // !!!
+				continue
+			}
+
+			if err := os.RemoveAll(filepath.Join(basePath, "clone")); err != nil {
+				errReturn = err
+			}
+		}
+
+		return errReturn
+	}))
 }
 
 func setupRoutes(cfg *configuration.AppConfig, ds *dbservice.DBService, l *logrus.Entry) (*mux.Router, error) {
