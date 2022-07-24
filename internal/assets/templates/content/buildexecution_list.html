@@ -29,22 +29,22 @@
                         </thead>
                         <tbody>
                         {{ range .BuildExecutions }}
-                        {{if eq .Status "succeeded"}}
-                            {{$class = "badge-success"}}
-                            {{$label = "Succeeded"}}
-                        {{else if eq .Status "failed"}}
-                            {{$class = "badge-danger"}}
-                            {{$label = "Failed"}}
-                        {{else if eq .Status "running"}}
-                            {{$class = "badge-secondary"}}
-                            {{$label = "Running"}}
-                        {{else if eq .Status "partially_succeeded"}}
-                            {{$class = "badge-warning"}}
-                            {{$label = "Partially succeeded"}}
-                        {{else if eq .Status "canceled"}}
-                            {{$class = "badge-light"}}
-                            {{$label = "Canceled"}}
-                        {{ end }}
+                            {{if eq .Status "succeeded"}}
+                                {{$class = "badge-success"}}
+                                {{$label = "Succeeded"}}
+                            {{else if eq .Status "failed"}}
+                                {{$class = "badge-danger"}}
+                                {{$label = "Failed"}}
+                            {{else if eq .Status "running"}}
+                                {{$class = "badge-secondary"}}
+                                {{$label = "Running"}}
+                            {{else if eq .Status "partially_succeeded"}}
+                                {{$class = "badge-warning"}}
+                                {{$label = "Partially succeeded"}}
+                            {{else if eq .Status "canceled"}}
+                                {{$class = "badge-warning"}}
+                                {{$label = "Canceled (Timeout)"}}
+                            {{ end }}
                         <tr>
                             <td><a href="/buildexecution/{{ .ID }}/show">#{{ .ID }}</a></td>
                             <td>
@@ -66,7 +66,7 @@
                                 {{ else }}
                                 Code Push
                                 {{ end }}</td>
-                            <td><span class="badge badge-{{ $class }}">{{ $label }}</span></td>
+                            <td><span class="badge {{ $class }}">{{ $label }}</span></td>
                             <td>{{ .ExecutionTime }} s</td>
                             <td>{{ .ExecutedAt | formatDate }}</td>
                         </tr>

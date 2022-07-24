@@ -1,4 +1,6 @@
 {{template "header_default" .}}
+{{$class := "badge-default"}}
+{{$label := "Unknown"}}
     <div class="container-fluid">
         <h1 class="mt-4">Dashboard</h1>
         {{ getFlashbag }}
@@ -22,8 +24,6 @@
                             </thead>
                             <tbody>
                             {{range .LatestBuilds}}
-                                {{$class := "badge-default"}}
-                                {{$label := "UNKNOWN"}}
                                 {{if eq .Status "succeeded"}}
                                     {{$class = "badge-success"}}
                                     {{$label = "Succeeded"}}
@@ -36,6 +36,9 @@
                                 {{else if eq .Status "partially_succeeded"}}
                                     {{$class = "badge-warning"}}
                                     {{$label = "Partially succeeded"}}
+                                {{else if eq .Status "canceled"}}
+                                    {{$class = "badge-warning"}}
+                                    {{$label = "Canceled (Timeout)"}}
                                 {{end}}
                             <tr>
                                 <td><a href="/builddefinition/{{ .BuildDefinitionID }}/show">{{ getBuildDefCaption .BuildDefinitionID }}</a></td>

@@ -1,4 +1,6 @@
 {{ template "header_default" . }}
+{{ $class := "badge-default" }}
+{{ $label := "Unknown" }}
 <div class="container-fluid">
     <h1 class="mt-4 mb-3 offset-1">Build Execution Details</h1>
     <div class="row">
@@ -27,8 +29,24 @@
                                             <td>{{ if lt .BuildExecution.ManuallyRunBy 1 }}Code Push{{ else }}User <i><b>{{ .BuildExecution.ManuallyRunBy }}</b></i>{{ end }}</td>
                                         </tr>
                                         <tr>
+                                            {{if eq .BuildExecution.Status "succeeded"}}
+                                                {{$class = "badge-success"}}
+                                                {{$label = "Succeeded"}}
+                                            {{else if eq .BuildExecution.Status "failed"}}
+                                                {{$class = "badge-danger"}}
+                                                {{$label = "Failed"}}
+                                            {{else if eq .BuildExecution.Status "running"}}
+                                                {{$class = "badge-secondary"}}
+                                                {{$label = "Running"}}
+                                            {{else if eq .BuildExecution.Status "partially_succeeded"}}
+                                                {{$class = "badge-warning"}}
+                                                {{$label = "Partially succeeded"}}
+                                            {{else if eq .BuildExecution.Status "canceled"}}
+                                                {{$class = "badge-warning"}}
+                                                {{$label = "Canceled (Timeout)"}}
+                                            {{ end }}
                                             <td>Status</td>
-                                            <td>{{ .BuildExecution.Status }}</td>
+                                            <td><span class="badge {{ $class }}">{{ $label }}</span></td>
                                         </tr>
                                         <tr>
                                             <td>Artifact path</td>
