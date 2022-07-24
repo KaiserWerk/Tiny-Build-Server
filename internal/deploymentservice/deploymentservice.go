@@ -68,7 +68,7 @@ func (dpl *DeploymentService) DoEmailDeployment(ctx context.Context, deployment 
 		Title:   repoName,
 	}
 
-	emailBody, err := templateservice.ParseEmailTemplate(string(mailer.SubjNewDeployment), data)
+	emailBody, err := templateservice.ParseEmailTemplate(mailer.GetTemplateFromSubject(mailer.SubjNewDeployment), data)
 	if err != nil {
 		return fmt.Errorf("could not parse deployment email template: %s", err.Error())
 	}
