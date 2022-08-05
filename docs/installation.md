@@ -2,7 +2,7 @@
 
 Installing the **TinyBuildServer** is quite easy. 
 
-* Start your MySQL server, create a new database (and you would usually set up a MySQL user). 
+* Start your MySQL/PostgreSQL server, create a new database (and you would usually set up a dedicated user) (or declare an SQLite file). 
 * Place the binary at an appropriate location, e.g. upload to any server.
 * Start the binary once to create the ``app.yaml`` configuration file, 
 set the configuration values according to your needs (mainly the database driver and DSN).
