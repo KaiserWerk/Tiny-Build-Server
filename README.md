@@ -26,7 +26,7 @@ MIT; refer to LICENSE.md
 
 * [Custom build](docs/custom-build.md)
 * [Installation](docs/installation.md)
-* Docker (coming soon)
+* Docker (when I have the time)
 * [Create a build definition](docs/create-a-build-definition.md)
 * [Create a webhook](docs/create-a-webhook.md)
 * [Admin Settings](docs/admin-settings.md)
