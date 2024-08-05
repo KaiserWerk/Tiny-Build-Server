@@ -6,7 +6,7 @@
 
 This project aims to be a functioning, minimal build server for Go, .NET and (probably) PHP projects.
 
-It can be used in conjunction with *BitBucket*, *GitHub*, *GitLab*, *Azure DevOps* and *Gitea* and it runs on 
+It can be used with *BitBucket*, *GitHub*, *GitLab*, *Azure DevOps* and *Gitea* and it runs on 
 whatever platform you compile it for, be it *Windows*, *Linux* or *macOS*, even on a RaspberryPi.
 Built artifacts can be deployed via SFTP (FTP via SSH) and via mail.
 Releases will deliver standalone binaries for the popular operating systems. If you need
