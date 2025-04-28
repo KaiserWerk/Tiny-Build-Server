@@ -2,6 +2,7 @@ package dbservice
 
 import (
 	"fmt"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"gorm.io/driver/mysql"
@@ -9,11 +10,19 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type IDBService interface {
+	AutoMigrate() error
+	Quit()
+	RowExists(query string, args ...interface{}) bool
+	FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error)
+	GetAvailableVariablesForUser(userId uint) ([]entity.UserVariable, error)
+}
+
 type DBService struct {
 	db *gorm.DB
 }
 
-func New(cfg *configuration.AppConfig) *DBService {
+func New(cfg *configuration.AppConfig) IDBService {
 	db, err := gorm.Open(mysql.Open(cfg.Database.DSN), &gorm.Config{
 		PrepareStmt: true,
 		NamingStrategy: schema.NamingStrategy{

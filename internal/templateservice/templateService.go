@@ -2,10 +2,11 @@ package templateservice
 
 import (
 	"bytes"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"html/template"
 	"io"
 	"strings"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
@@ -17,7 +18,7 @@ import (
 type Injector struct {
 	Logger  *logrus.Entry
 	SessMgr *sessionstore.SessionManager
-	Ds      *dbservice.DBService
+	Ds      *dbservice.IDBService
 }
 
 // ExecuteTemplate executed a template with the supplied data into the io.Writer w
@@ -121,7 +122,7 @@ func GetFlashbag(logger *logrus.Entry, mgr *sessionstore.SessionManager) func() 
 }
 
 // GetUsernameById returns a username by id
-func GetUsernameById(ds *dbservice.DBService, id uint) string {
+func GetUsernameById(ds *dbservice.IDBService, id uint) string {
 	u, err := ds.GetUserById(id)
 	if err != nil {
 		return "--"

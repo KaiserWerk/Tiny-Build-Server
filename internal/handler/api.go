@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 
 	"github.com/sirupsen/logrus"
 

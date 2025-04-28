@@ -14,7 +14,7 @@ import (
 
 type HttpHandler struct {
 	Configuration *configuration.AppConfig
-	DBService     *dbservice.DBService
+	DBService     dbservice.IDBService
 	BuildService  *buildservice.BuildService
 	DeployService *deploymentservice.DeploymentService
 	SessMgr       *sessionstore.SessionManager
