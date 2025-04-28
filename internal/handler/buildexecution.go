@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
@@ -12,7 +13,7 @@ import (
 )
 
 // BuildExecutionListHandler lists all build executions in in descending order
-func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -22,21 +23,21 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 	buildExecutions, err := h.DBService.GetNewestBuildExecutions(0, "")
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get build executions")
-		h.SessMgr.AddMessage(w, "success", "Failed to fetch build executions")
+		h.SessionService.AddMessage(w, "success", "Failed to fetch build executions")
 		return
 	}
 
 	buildDefinitions, err := h.DBService.GetAllBuildDefinitions()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get build definition")
-		h.SessMgr.AddMessage(w, "success", "Failed to fetch build definitions")
+		h.SessionService.AddMessage(w, "success", "Failed to fetch build definitions")
 		return
 	}
 
 	users, err := h.DBService.GetAllUsers()
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("could not get usersn")
-		h.SessMgr.AddMessage(w, "success", "Failed to fetch user list")
+		h.SessionService.AddMessage(w, "success", "Failed to fetch user list")
 		return
 	}
 
@@ -58,7 +59,7 @@ func (h *HttpHandler) BuildExecutionListHandler(w http.ResponseWriter, r *http.R
 }
 
 // BuildExecutionShowHandler shows details of a specific build execution
-func (h *HttpHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildExecutionShowHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)

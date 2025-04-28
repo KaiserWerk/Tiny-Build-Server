@@ -13,6 +13,7 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/builder"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 
 	"github.com/sirupsen/logrus"
 
@@ -36,7 +37,7 @@ const errMsg = "failed %s deployment: %s"
 
 // PayloadReceiveHandler takes care of accepting the payload from the webhook HTTP call
 // sent by a Git hoster
-func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	logger := h.ContextLogger("PayloadReceiveHandler")
 
@@ -105,7 +106,7 @@ func (h *HttpHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 	go h.InitiateBuildProcess(&bd, be)
 }
 
-func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entity.BuildExecution) {
+func (h *HTTPHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entity.BuildExecution) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -277,7 +278,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	jobs := make(chan job, numJobs)
 	results := make(chan job, numJobs)
 	for i := 0; i < 3; i++ { // 3 workers
-		go func(jobs <-chan job, results chan<- job, l *logrus.Entry, b *builder.Build) {
+		go func(jobs <-chan job, results chan<- job, l logging.ILogger, b *builder.Build) {
 			for j := range jobs {
 				if j.local != nil {
 					l.Trace("processing local deployment")
@@ -343,7 +344,7 @@ func (h *HttpHandler) InitiateBuildProcess(bd *entity.BuildDefinition, be *entit
 	h.saveReport(build, be)
 }
 
-func (h *HttpHandler) saveReport(build *builder.Build, be *entity.BuildExecution) {
+func (h *HTTPHandler) saveReport(build *builder.Build, be *entity.BuildExecution) {
 	be.ActionLog = build.GetReport()
 	be.ExecutionTime = (time.Now().Sub(be.ExecutedAt)).Seconds()
 	if err := h.DBService.UpdateBuildExecution(be); err != nil {

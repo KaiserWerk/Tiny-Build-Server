@@ -3,10 +3,11 @@ package handler
 import (
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
@@ -19,7 +20,7 @@ import (
 )
 
 // BuildDefinitionListHandler lists all existing build definitions
-func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -46,7 +47,7 @@ func (h *HttpHandler) BuildDefinitionListHandler(w http.ResponseWriter, r *http.
 }
 
 // BuildDefinitionAddHandler adds a new build definition
-func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -59,7 +60,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 
 		if caption == "" || content == "" {
 			logger.Info("missing required fields")
-			h.SessMgr.AddMessage(w, "info", "Fields caption and content cannot be empty")
+			h.SessionService.AddMessage(w, "info", "Fields caption and content cannot be empty")
 			http.Redirect(w, r, "/builddefinition/add", http.StatusSeeOther)
 			return
 		}
@@ -102,7 +103,7 @@ func (h *HttpHandler) BuildDefinitionAddHandler(w http.ResponseWriter, r *http.R
 }
 
 // BuildDefinitionEditHandler allows for editing an existing build definition
-func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -122,7 +123,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 
 		if caption == "" || content == "" {
 			logger.WithField("error", err.Error()).Error("required fields missing")
-			h.SessMgr.AddMessage(w, "warning", "Please fill in required fields.")
+			h.SessionService.AddMessage(w, "warning", "Please fill in required fields.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
@@ -141,7 +142,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 		err = h.DBService.UpdateBuildDefinition(&bd)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("BuildDefinitionEditHandler: could not save updated build definition: " + err.Error())
-			h.SessMgr.AddMessage(w, "error", "An unknown error occurred! Please try again.")
+			h.SessionService.AddMessage(w, "error", "An unknown error occurred! Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/builddefinition/%s/edit", vars["id"]), http.StatusSeeOther)
 			return
 		}
@@ -171,7 +172,7 @@ func (h *HttpHandler) BuildDefinitionEditHandler(w http.ResponseWriter, r *http.
 }
 
 // BuildDefinitionShowHandler shows details of a build definition
-func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -270,7 +271,7 @@ func (h *HttpHandler) BuildDefinitionShowHandler(w http.ResponseWriter, r *http.
 }
 
 // BuildDefinitionRemoveHandler removes an existing build definition
-func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -327,7 +328,7 @@ func (h *HttpHandler) BuildDefinitionRemoveHandler(w http.ResponseWriter, r *htt
 }
 
 // BuildDefinitionRestartHandler restarts the build process for a given build definition
-func (h *HttpHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) BuildDefinitionRestartHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)

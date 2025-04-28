@@ -28,6 +28,12 @@ type DeploymentService struct {
 	Mailer *mailer.Mailer
 }
 
+type IDeploymentService interface {
+	DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *builder.Build) error
+	DoEmailDeployment(ctx context.Context, deployment *entity.EmailDeployment, repoName string, build *builder.Build) error
+	DoRemoteDeployment(ctx context.Context, deployment *entity.RemoteDeployment, build *builder.Build) error
+}
+
 func (dpl *DeploymentService) DoLocalDeployment(ctx context.Context, deployment *entity.LocalDeployment, build *builder.Build) error {
 	if !deployment.Enabled {
 		return ErrDisabled

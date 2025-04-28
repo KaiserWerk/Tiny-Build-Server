@@ -51,7 +51,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 	automigrate := flag.Bool("automigrate", false, "Whether to create/update database tables automatically on startup")
 	flag.Parse()
 
-	logger, cleanup, err := logging.New(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile)
+	logger, cleanup, err := logging.NewLogger(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile, "tbs.log")
 	if err != nil {
 		panic("could not create new logger: " + err.Error())
 	}
@@ -171,7 +171,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 	return 0
 }
 
-func setupCronjobs(cronjob *cron.Cron, ds *dbservice.DBService) {
+func setupCronjobs(cronjob *cron.Cron, ds dbservice.IDBService) {
 	basePath := "."
 	settings, err := ds.GetAllSettings()
 	if err == nil {
@@ -216,24 +216,24 @@ func setupCronjobs(cronjob *cron.Cron, ds *dbservice.DBService) {
 	}))
 }
 
-func setupRoutes(cfg *configuration.AppConfig, ds *dbservice.DBService, l *logrus.Entry) (*mux.Router, error) {
+func setupRoutes(cfg *configuration.AppConfig, ds dbservice.IDBService, l logging.ILogger) (*mux.Router, error) {
 	settings, err := ds.GetAllSettings()
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch settings: %s", err.Error())
 	}
-	sessMgr := sessionservice.NewSessionManager("tbs_sessid")
+	sessionService := sessionservice.NewSessionService("tbs_sessid")
 	m := &mailer.Mailer{
 		Settings: settings,
 	}
 	dplSvc := &deploymentservice.DeploymentService{
 		Mailer: m,
 	}
-	bs := buildservice.New(cfg, sessMgr, l, ds, dplSvc)
+	bs := buildservice.New(cfg, sessionService, l, ds, dplSvc)
 
 	mwHandler := middleware.MWHandler{
 		Cfg:     cfg,
 		Ds:      ds,
-		SessMgr: sessMgr,
+		SessSvc: sessionService,
 		Logger:  l,
 	}
 
@@ -245,13 +245,13 @@ func setupRoutes(cfg *configuration.AppConfig, ds *dbservice.DBService, l *logru
 		//_ = templateservice.ExecuteTemplate(&inj, w, "404.html", r.URL.Path)
 	})
 
-	httpHandler := handler.HttpHandler{
-		Configuration: cfg,
-		DBService:     ds,
-		BuildService:  bs,
-		DeployService: dplSvc,
-		SessMgr:       sessMgr,
-		Logger:        l,
+	httpHandler := handler.HTTPHandler{
+		Configuration:  cfg,
+		DBService:      ds,
+		BuildService:   bs,
+		DeployService:  dplSvc,
+		SessionService: sessionService,
+		Logger:         l,
 	}
 
 	fs := assets.GetWebAssetFS()

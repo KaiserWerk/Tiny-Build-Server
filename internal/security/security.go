@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/sessionstore/v2"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,13 +33,13 @@ func DoesHashMatch(password string, hash string) bool {
 }
 
 // CheckLogin checks if a valid sessions exists in an *http.Request
-func CheckLogin(sessMgr *sessionstore.SessionManager, r *http.Request) (*sessionstore.Session, error) {
-	sessId, err := sessMgr.GetCookieValue(r)
+func CheckLogin(sessSvc sessionservice.ISessionService, r *http.Request) (*sessionstore.Session, error) {
+	sessId, err := sessSvc.GetCookieValue(r)
 	if err != nil {
 		return nil, fmt.Errorf("could not get cookie: %s", err.Error())
 	}
 
-	session, err := sessMgr.GetSession(sessId)
+	session, err := sessSvc.GetSession(sessId)
 	if err != nil {
 		return nil, fmt.Errorf("could not get session: %s", err.Error())
 	}

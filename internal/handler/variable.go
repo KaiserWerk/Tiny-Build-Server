@@ -1,18 +1,19 @@
 package handler
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
 // VariableListHandler lists all variables available to the logged-in user
-func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) VariableListHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -40,7 +41,7 @@ func (h *HttpHandler) VariableListHandler(w http.ResponseWriter, r *http.Request
 }
 
 // VariableAddHandler adds a new variable
-func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -55,14 +56,14 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 			varPublic = true
 		}
 		if varName == "" || varVal == "" {
-			h.SessMgr.AddMessage(w, "warning", "Please enter both a variable name and a value.")
+			h.SessionService.AddMessage(w, "warning", "Please enter both a variable name and a value.")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
 
 		_, err := h.DBService.FindVariable("user_entry_id = ? AND variable = ?", currentUser.ID, varName)
 		if err == nil {
-			h.SessMgr.AddMessage(w, "error", "This variable already exists!")
+			h.SessionService.AddMessage(w, "error", "This variable already exists!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
@@ -76,7 +77,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 
 		if _, err = h.DBService.AddVariable(uv); err != nil {
 			logger.WithField("error", err.Error()).Error("could not insert new user variable")
-			h.SessMgr.AddMessage(w, "error", "The variable could not be added!")
+			h.SessionService.AddMessage(w, "error", "The variable could not be added!")
 			http.Redirect(w, r, "/variable/add", http.StatusSeeOther)
 			return
 		}
@@ -97,7 +98,7 @@ func (h *HttpHandler) VariableAddHandler(w http.ResponseWriter, r *http.Request)
 }
 
 // VariableEditHandler edits a variable
-func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -173,7 +174,7 @@ func (h *HttpHandler) VariableEditHandler(w http.ResponseWriter, r *http.Request
 }
 
 // VariableRemoveHandler removes a variable
-func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -188,7 +189,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 			"variableId": vars["id"],
 			"userId":     currentUser.ID,
 		}).Error("could not find variable")
-		h.SessMgr.AddMessage(w, "error", "The variable could not be found or it is not yours!")
+		h.SessionService.AddMessage(w, "error", "The variable could not be found or it is not yours!")
 		http.Redirect(w, r, "/variable/list", http.StatusSeeOther)
 		return
 	}
@@ -199,7 +200,7 @@ func (h *HttpHandler) VariableRemoveHandler(w http.ResponseWriter, r *http.Reque
 			"variableId": vars["id"],
 			"userId":     currentUser.ID,
 		}).Error("could not delete variable from DB")
-		h.SessMgr.AddMessage(w, "error", "The variable could not be removed!")
+		h.SessionService.AddMessage(w, "error", "The variable could not be removed!")
 		// no redirect here
 	}
 

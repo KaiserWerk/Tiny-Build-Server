@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
+	"github.com/sirupsen/logrus"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
@@ -15,12 +16,12 @@ import (
 )
 
 // LoginHandler handles logins
-func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	// TODO: consider enabled 2fa
 	var (
 		logger  = h.ContextLogger("LoginHandler")
-		sessMgr = h.SessMgr
+		sessMgr = h.SessionService
 	)
 
 	if r.Method == http.MethodPost {
@@ -75,11 +76,11 @@ func (h *HttpHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // LogoutHandler handles logouts
-func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger  = h.ContextLogger("LogoutHandler")
-		sessMgr = h.SessMgr
+		sessMgr = h.SessionService
 	)
 
 	sessId, err := sessMgr.GetCookieValue(r)
@@ -106,11 +107,11 @@ func (h *HttpHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // RequestNewPasswordHandler handles password reset requests
-func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger  = h.ContextLogger("RequestNewPasswordHandler")
-		sessMgr = h.SessMgr
+		sessMgr = h.SessionService
 	)
 	// TODO: consider disabled pw reset
 
@@ -191,7 +192,7 @@ func (h *HttpHandler) RequestNewPasswordHandler(w http.ResponseWriter, r *http.R
 }
 
 // ResetPasswordHandler handles password resets
-func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("ResetPasswordHandler")
@@ -209,7 +210,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 				"error": err.Error(),
 				"email": email,
 			}).Error("could not fetch user by email")
-			h.SessMgr.AddMessage(w, "error", "A user with the supplied email address does not exist.")
+			h.SessionService.AddMessage(w, "error", "A user with the supplied email address does not exist.")
 			http.Redirect(w, r, "/password/reset?token="+token, http.StatusSeeOther)
 			return
 		}
@@ -217,21 +218,21 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		action, err := h.DBService.GetUserActionByToken(token)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not scan user action")
-			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
+			h.SessionService.AddMessage(w, "error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
 
 		if !action.Validity.Valid || action.Validity.Time.Before(time.Now()) {
 			logger.Debug("validity of token ran out")
-			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
+			h.SessionService.AddMessage(w, "error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
 
 		if action.Purpose != "password_reset" {
 			logger.WithField("purpose", action.Purpose).Warn("token was for other purpose")
-			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
+			h.SessionService.AddMessage(w, "error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
@@ -240,7 +241,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		pw2 := r.FormValue("password2")
 		if pw1 != pw2 {
 			logger.Debug("passwords don't match")
-			h.SessMgr.AddMessage(w, "error", "Your entered passwords don't match.")
+			h.SessionService.AddMessage(w, "error", "Your entered passwords don't match.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
@@ -249,7 +250,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		hash, err := security.HashString(pw1)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not hash password")
-			h.SessMgr.AddMessage(w, "error", "An error occurred. Please try again.")
+			h.SessionService.AddMessage(w, "error", "An error occurred. Please try again.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
@@ -258,7 +259,7 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 		err = h.DBService.UpdateUser(user)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not update to new password")
-			h.SessMgr.AddMessage(w, "error", "The supplied reset token is invalid.")
+			h.SessionService.AddMessage(w, "error", "The supplied reset token is invalid.")
 			http.Redirect(w, r, fmt.Sprintf("/password/reset?email=%s&token=%s", email, token), http.StatusSeeOther)
 			return
 		}
@@ -286,11 +287,11 @@ func (h *HttpHandler) ResetPasswordHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // RegistrationHandler handles user account registrations
-func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger  = h.ContextLogger("RegistrationHandler")
-		sessMgr = h.SessMgr
+		sessMgr = h.SessionService
 	)
 	// TODO: consider disabled registration
 
@@ -397,7 +398,7 @@ func (h *HttpHandler) RegistrationHandler(w http.ResponseWriter, r *http.Request
 }
 
 // RegistrationConfirmHandler handles confirmations for newly registered user accounts
-func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		token  string
@@ -414,14 +415,14 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		ua, err := h.DBService.GetUserActionByToken(token)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not scan")
-			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+			h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
 
 		if ua.Purpose != "confirm_registration" {
 			logger.WithField("token", token).Warn("wrong token purpose")
-			h.SessMgr.AddMessage(w, "error", "This token is for a different purpose!")
+			h.SessionService.AddMessage(w, "error", "This token is for a different purpose!")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -431,7 +432,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 				"token":    token,
 				"validity": ua.Validity,
 			}).Info("token validity ran out")
-			h.SessMgr.AddMessage(w, "error", "This token is not valid anymore.")
+			h.SessionService.AddMessage(w, "error", "This token is not valid anymore.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -439,7 +440,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		user, err := h.DBService.GetUserById(ua.UserId)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not get user from DB")
-			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+			h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -448,7 +449,7 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		err = h.DBService.UpdateUser(user)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not set locked flag in DB")
-			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+			h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
@@ -456,13 +457,13 @@ func (h *HttpHandler) RegistrationConfirmHandler(w http.ResponseWriter, r *http.
 		err = h.DBService.UpdateUserAction(ua)
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("could not null token validity in DB")
-			h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+			h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 			http.Redirect(w, r, "/register/confirm", http.StatusSeeOther)
 			return
 		}
 
 		logger.Trace("confirm registration: successful")
-		h.SessMgr.AddMessage(w, "success", "Your account was successfully confirmed! You can now log in.")
+		h.SessionService.AddMessage(w, "success", "Your account was successfully confirmed! You can now log in.")
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 // UserSettingsHandler handles changing a user's own settings
-func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err         error
@@ -21,14 +21,14 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 		password := r.FormValue("password")
 		if password == "" {
 			logger.Info("change user settings: password is empty")
-			h.SessMgr.AddMessage(w, "error", "Please enter your current password!")
+			h.SessionService.AddMessage(w, "error", "Please enter your current password!")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 			return
 		}
 
 		if !security.DoesHashMatch(password, currentUser.Password) {
 			logger.Info("change user settings: entered password incorrect")
-			h.SessMgr.AddMessage(w, "error", "You entered an incorrect password!")
+			h.SessionService.AddMessage(w, "error", "You entered an incorrect password!")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 			return
 		}
@@ -41,7 +41,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			if displayname != "" && displayname != currentUser.DisplayName {
 				if h.DBService.RowExists("SELECT id FROM user WHERE display_name = ? AND id != ?", displayname, currentUser.ID) {
 					logger.WithField("displayname", displayname).Info("displayname is already in use")
-					h.SessMgr.AddMessage(w, "error", "This display name is already in use!")
+					h.SessionService.AddMessage(w, "error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
@@ -50,7 +50,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 				err = h.DBService.UpdateUser(currentUser)
 				if err != nil {
 					logger.WithField("displayname", displayname).Info("displayname is already in use")
-					h.SessMgr.AddMessage(w, "error", "This display name is already in use!")
+					h.SessionService.AddMessage(w, "error", "This display name is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
@@ -60,7 +60,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			if email != "" && email != currentUser.Email {
 				if h.DBService.RowExists("SELECT id FROM user WHERE email = ? AND id != ?", email, currentUser.ID) {
 					logger.WithField("email", email).Info("email is already in use")
-					h.SessMgr.AddMessage(w, "error", "This email is already in use!")
+					h.SessionService.AddMessage(w, "error", "This email is already in use!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
@@ -69,7 +69,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 				err = h.DBService.UpdateUser(currentUser)
 				if err != nil {
 					logger.WithField("email", email).Info("email is already in use")
-					h.SessMgr.AddMessage(w, "error", "Could not update data!")
+					h.SessionService.AddMessage(w, "error", "Could not update data!")
 					http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 					return
 				}
@@ -77,12 +77,12 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 
 			if changes > 0 {
 				logger.Trace("change user settings: update successful")
-				h.SessMgr.AddMessage(w, "success", "Your changes have been saved.")
+				h.SessionService.AddMessage(w, "success", "Your changes have been saved.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			} else {
 				logger.Trace("change user settings: no changes")
-				h.SessMgr.AddMessage(w, "info", "No changes were made.")
+				h.SessionService.AddMessage(w, "info", "No changes were made.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			}
@@ -92,14 +92,14 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 
 			if newPassword1 == "" || newPassword2 == "" {
 				logger.Trace("no new password supplied")
-				h.SessMgr.AddMessage(w, "warning", "No new password supplied.")
+				h.SessionService.AddMessage(w, "warning", "No new password supplied.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			}
 
 			if newPassword1 != newPassword2 {
 				logger.Trace("new passwords do not match")
-				h.SessMgr.AddMessage(w, "error", "New passwords do not match!")
+				h.SessionService.AddMessage(w, "error", "New passwords do not match!")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			}
@@ -107,7 +107,7 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			hash, err := security.HashString(newPassword1)
 			if err != nil {
 				logger.Trace("could not hash new password")
-				h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+				h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			}
@@ -116,12 +116,12 @@ func (h *HttpHandler) UserSettingsHandler(w http.ResponseWriter, r *http.Request
 			err = h.DBService.UpdateUser(currentUser)
 			if err != nil {
 				logger.Trace("could not set new password")
-				h.SessMgr.AddMessage(w, "error", "An unknown error occurred.")
+				h.SessionService.AddMessage(w, "error", "An unknown error occurred.")
 				http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 				return
 			}
 
-			h.SessMgr.AddMessage(w, "success", "Your new password hast been set. Please use it for future logins.")
+			h.SessionService.AddMessage(w, "success", "Your new password hast been set. Please use it for future logins.")
 			http.Redirect(w, r, "/user/settings", http.StatusSeeOther)
 			return
 		}

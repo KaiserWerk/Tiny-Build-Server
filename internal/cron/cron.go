@@ -2,27 +2,28 @@ package cron
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"time"
+
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 )
 
 type Cron struct {
 	fDaily []Job
 	f4Hour []Job
-	logger *logrus.Entry
+	logger logging.ILogger
 	ctx    context.Context
 	cf     func()
 }
 
-func New(l *logrus.Entry) *Cron {
-	c := Cron{
+func New(logger logging.ILogger) *Cron {
+	cron := Cron{
 		fDaily: make([]Job, 0),
 		f4Hour: make([]Job, 0),
-		logger: l,
+		logger: logger,
 	}
-	c.ctx, c.cf = context.WithCancel(context.Background())
+	cron.ctx, cron.cf = context.WithCancel(context.Background())
 
-	return &c
+	return &cron
 }
 
 func (c *Cron) AddDaily(j Job) {
@@ -39,7 +40,7 @@ func (c *Cron) runDailyJobs() {
 		return
 	}
 	for _, j := range c.fDaily {
-		go func(job Job, fLogger *logrus.Entry) {
+		go func(job Job, fLogger logging.ILogger) {
 			if !job.Enabled {
 				fLogger.Tracef("job '%s' is not Enabled, skipping", job.Name)
 				return
@@ -60,7 +61,7 @@ func (c *Cron) run4HourJobs() {
 		return
 	}
 	for _, j := range c.f4Hour {
-		go func(job Job, fLogger *logrus.Entry) {
+		go func(job Job, fLogger logging.ILogger) {
 			if !job.Enabled {
 				fLogger.Tracef("job '%s' is not Enabled, skipping", job.Name)
 				return

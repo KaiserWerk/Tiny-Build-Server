@@ -1,6 +1,7 @@
 package dbservice
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
@@ -13,9 +14,46 @@ import (
 type IDBService interface {
 	AutoMigrate() error
 	Quit()
-	RowExists(query string, args ...interface{}) bool
-	FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error)
+	RowExists(query string, args ...any) bool
+	GetNewestBuildDefinitions(limit int) ([]entity.BuildDefinition, error)
+	GetAllBuildDefinitions() ([]entity.BuildDefinition, error)
+	FindBuildDefinition(cond string, args ...any) (entity.BuildDefinition, error)
+	GetBuildDefinitionById(id uint) (entity.BuildDefinition, error)
+	GetBuildDefCaption(id uint) (string, error)
+	DeleteBuildDefinition(bd *entity.BuildDefinition) error
+	AddBuildDefinition(bd *entity.BuildDefinition) (uint, error)
+	UpdateBuildDefinition(bd *entity.BuildDefinition) error
+
+	GetNewestBuildExecutions(limit int, query string, args ...any) ([]entity.BuildExecution, error)
+	GetBuildExecutionById(id int) (entity.BuildExecution, error)
+	FindBuildExecutions(query any, args ...any) ([]entity.BuildExecution, error)
+	AddBuildExecution(be *entity.BuildExecution) error
+	UpdateBuildExecution(be *entity.BuildExecution) error
+
+	GetAllSettings() (map[string]string, error)
+	SetSetting(name, value string) error
+
+	GetAllUsers() ([]entity.User, error)
+	GetUsernameById(id int) string
+	GetUserByEmail(email string) (entity.User, error)
+	GetUserById(id uint) (entity.User, error)
+	AddUser(user entity.User) (uint, error)
+	UpdateUser(user entity.User) error
+	FindUser(cond string, args ...any) (entity.User, error)
+	DeleteUser(id uint) error
+
+	InsertUserAction(userId uint, purpose, token string, validity sql.NullTime) error
+	GetUserActionByToken(token string) (entity.UserAction, error)
+	InvalidatePasswordResets(userId uint) error
+	AddUserAction(action entity.UserAction) error
+	UpdateUserAction(userAction entity.UserAction) error
+
 	GetAvailableVariablesForUser(userId uint) ([]entity.UserVariable, error)
+	AddVariable(userVar entity.UserVariable) (uint, error)
+	GetVariable(id int) (entity.UserVariable, error)
+	FindVariable(cond string, args ...any) (entity.UserVariable, error)
+	UpdateVariable(userVar entity.UserVariable) error
+	DeleteVariable(id uint) error
 }
 
 type DBService struct {
@@ -59,7 +97,7 @@ func (ds *DBService) AutoMigrate() error {
 
 // Quit ends the database connection
 func (ds *DBService) Quit() {
-	ds.Quit()
+
 }
 
 // RowExists takes an SQL query and return true, if at least one entry

@@ -1,35 +1,34 @@
 package handler
 
 import (
-	"github.com/KaiserWerk/sessionstore/v2"
-	"github.com/sirupsen/logrus"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 )
 
-type HttpHandler struct {
-	Configuration *configuration.AppConfig
-	DBService     dbservice.IDBService
-	BuildService  *buildservice.BuildService
-	DeployService *deploymentservice.DeploymentService
-	SessMgr       *sessionstore.SessionManager
-	Logger        *logrus.Entry
-	Mailer        *mailer.Mailer
+type HTTPHandler struct {
+	Configuration  *configuration.AppConfig
+	DBService      dbservice.IDBService
+	BuildService   buildservice.IBuildService
+	DeployService  deploymentservice.IDeploymentService
+	SessionService sessionservice.ISessionService
+	Logger         logging.ILogger
+	Mailer         mailer.IMailer
 }
 
-func (h *HttpHandler) ContextLogger(context string) *logrus.Entry {
-	return h.Logger.WithField("context", context)
+func (h *HTTPHandler) ContextLogger(context string) logging.ILogger {
+	return h.Logger.SetContext(context)
 }
 
-func (h *HttpHandler) Injector() *templateservice.Injector {
+func (h *HTTPHandler) Injector() *templateservice.Injector {
 	return &templateservice.Injector{
-		Logger:  h.Logger,
-		SessMgr: h.SessMgr,
-		Ds:      h.DBService,
+		Logger:         h.Logger,
+		SessionService: h.SessionService,
+		Ds:             h.DBService,
 	}
 }

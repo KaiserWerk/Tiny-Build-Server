@@ -28,6 +28,10 @@ var (
 	ErrNoRecipient     = errors.New("no recipient was supplied")
 )
 
+type IMailer interface {
+	SendEmail(body string, subject string, to, attachments []string) error
+}
+
 type Mailer struct {
 	Settings map[string]string
 }

@@ -2,18 +2,19 @@ package handler
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 )
 
 // DownloadNewestArtifactHandler downloads the most recently created version
 // of a produced artifact
-func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err    error
@@ -38,7 +39,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 	}
 	artifact := beList[0].ArtifactPath
 
-	cont, err := ioutil.ReadFile(artifact)
+	cont, err := os.ReadFile(artifact)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":        err.Error(),
@@ -55,7 +56,7 @@ func (h *HttpHandler) DownloadNewestArtifactHandler(w http.ResponseWriter, r *ht
 
 // DownloadSpecificArtifactHandler downloads a artifact produced by a specific
 // build execution
-func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		vars   = mux.Vars(r)
@@ -72,7 +73,7 @@ func (h *HttpHandler) DownloadSpecificArtifactHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	cont, err := ioutil.ReadFile(be.ArtifactPath)
+	cont, err := os.ReadFile(be.ArtifactPath)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error":        err.Error(),

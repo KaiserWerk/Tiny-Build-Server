@@ -3,36 +3,44 @@ package buildservice
 import (
 	"context"
 	"errors"
+	"net/url"
+	"os/exec"
+
+	"gopkg.in/yaml.v3"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/common"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/KaiserWerk/sessionstore/v2"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
-	"net/url"
-	"os/exec"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 )
 
 var (
 	ErrCanceled = errors.New("buildservice: canceled by context")
 )
 
-type BuildService struct {
-	Cfg       *configuration.AppConfig
-	SessMgr   *sessionstore.SessionManager
-	Logger    *logrus.Entry
-	DBSvc     *dbservice.DBService
-	DeploySvc *deploymentservice.DeploymentService
+type IBuildService interface {
+	CloneRepository(ctx context.Context, branch string, repositoryUrl string, path string) error
+	GetRepositoryUrl(ctx context.Context, cont *entity.BuildDefinitionContent, withCredentials bool) (string, error)
+	GetBasePath() string
 }
 
-func New(cfg *configuration.AppConfig, sessMgr *sessionstore.SessionManager, logger *logrus.Entry,
-	ds *dbservice.DBService, dpl *deploymentservice.DeploymentService) *BuildService {
+type BuildService struct {
+	Cfg       *configuration.AppConfig
+	SessMgr   sessionservice.ISessionService
+	Logger    logging.ILogger
+	DBSvc     dbservice.IDBService
+	DeploySvc deploymentservice.IDeploymentService
+}
+
+func New(cfg *configuration.AppConfig, sessSvc sessionservice.ISessionService, logger logging.ILogger,
+	ds dbservice.IDBService, dpl deploymentservice.IDeploymentService) *BuildService {
 
 	return &BuildService{
 		Cfg:       cfg,
-		SessMgr:   sessMgr,
+		SessMgr:   sessSvc,
 		Logger:    logger.WithField("context", "buildSvc"),
 		DBSvc:     ds,
 		DeploySvc: dpl,

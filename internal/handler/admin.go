@@ -2,19 +2,20 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/security"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
 // AdminUserListHandler lists all existing user accounts
-func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger      = h.ContextLogger("AdminUserListHandler")
@@ -42,13 +43,13 @@ func (h *HttpHandler) AdminUserListHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // AdminUserAddHandler handles adding a new user account
-func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err         error
 		logger      = h.ContextLogger("AdminUserAddHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr     = h.SessMgr
+		sessMgr     = h.SessionService
 	)
 
 	if r.Method == http.MethodPost {
@@ -128,16 +129,16 @@ func (h *HttpHandler) AdminUserAddHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	if err = templateservice.ExecuteTemplate(h.Injector(), w, "admin_user_add.html", contextData); err != nil {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
 // AdminUserEditHandler handles edits to an existing user account
-func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err         error
-		sessMgr     = h.SessMgr
+		sessMgr     = h.SessionService
 		logger      = h.ContextLogger("AdminUserEditHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 		vars        = mux.Vars(r)
@@ -239,11 +240,11 @@ func (h *HttpHandler) AdminUserEditHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // AdminUserRemoveHandler handles removals of user accounts
-func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err         error
-		sessMgr     = h.SessMgr
+		sessMgr     = h.SessionService
 		logger      = h.ContextLogger("AdminUserRemoveHandler")
 		currentUser = r.Context().Value("user").(entity.User)
 		vars        = mux.Vars(r)
@@ -294,13 +295,13 @@ func (h *HttpHandler) AdminUserRemoveHandler(w http.ResponseWriter, r *http.Requ
 }
 
 // AdminSettingsHandler handles editing af administrative settings
-func (h *HttpHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) AdminSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		err         error
 		logger      = h.ContextLogger("AdminSettingsHandler")
 		currentUser = r.Context().Value("user").(entity.User)
-		sessMgr     = h.SessMgr
+		sessMgr     = h.SessionService
 	)
 
 	if r.Method == http.MethodPost {

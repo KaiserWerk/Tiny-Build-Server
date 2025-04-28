@@ -236,7 +236,7 @@ func TestPayloadReceiveHandler(t *testing.T) {
 
 	dbMock := &DBServiceMock{}
 
-	handler := &HttpHandler{
+	handler := &HTTPHandler{
 		Logger:    logrus.NewEntry(logger),
 		DBService: dbMock,
 	}

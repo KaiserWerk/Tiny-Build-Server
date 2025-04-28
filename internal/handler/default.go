@@ -1,16 +1,17 @@
 package handler
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/templateservice"
 	"github.com/gorilla/mux"
-	"net/http"
-	"strings"
 )
 
 // IndexHandler serves the dashboard
-func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		currentUser = r.Context().Value("user").(entity.User)
@@ -46,7 +47,7 @@ func (h *HttpHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // StaticAssetHandler serves static file. http.FileServer does not work as desired
-func (h *HttpHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) StaticAssetHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var (
 		logger = h.ContextLogger("StaticAssetHandler")
