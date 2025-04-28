@@ -8,6 +8,17 @@ import (
 )
 
 type Fields = logrus.Fields
+type Level = logrus.Level
+
+const (
+	LevelTrace Level = logrus.TraceLevel
+	LevelDebug Level = logrus.DebugLevel
+	LevelInfo  Level = logrus.InfoLevel
+	LevelWarn  Level = logrus.WarnLevel
+	LevelError Level = logrus.ErrorLevel
+	LevelFatal Level = logrus.FatalLevel
+	LevelPanic Level = logrus.PanicLevel
+)
 
 type ILogger interface {
 	SetContext(context string) ILogger
@@ -115,7 +126,9 @@ const (
 	ModeFile
 )
 
-func NewLogger(lvl logrus.Level, path, initialContext string, mode LogMode, filename string) (ILogger, func() error, error) {
+const logFilename = "tbs.log"
+
+func NewLogger(lvl Level, path, initialContext string, mode LogMode) (ILogger, func() error, error) {
 	l := logrus.New()
 	l.SetLevel(lvl)
 	l.SetFormatter(&TbsFormatter{
@@ -133,7 +146,7 @@ func NewLogger(lvl logrus.Level, path, initialContext string, mode LogMode, file
 	case mode&ModeDiscard != 0:
 		w = io.Discard
 	case mode&ModeConsole != 0 && mode&ModeFile != 0:
-		rotator, err := newRotator(path, filename, 3<<20, 0644, 10)
+		rotator, err := newRotator(path, logFilename, 3<<20, 0644, 10)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -142,7 +155,7 @@ func NewLogger(lvl logrus.Level, path, initialContext string, mode LogMode, file
 		}
 		w = io.MultiWriter(rotator, os.Stdout)
 	case mode&ModeFile != 0 && mode&ModeConsole == 0:
-		rotator, err := newRotator(path, "tbs.log", 3<<20, 0644, 10)
+		rotator, err := newRotator(path, logFilename, 3<<20, 0644, 10)
 		if err != nil {
 			return nil, nil, err
 		}

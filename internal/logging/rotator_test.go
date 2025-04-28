@@ -56,7 +56,7 @@ func Test_newRotatorCanWrite(t *testing.T) {
 }
 
 func Test_newRotatorRotatesFiles(t *testing.T) {
-	le, cleanup, err := NewLogger(logrus.InfoLevel, ".", "Test_newRotatorRotatesFiles", ModeFile, "tbs-test.log")
+	le, cleanup, err := NewLogger(logrus.InfoLevel, ".", "Test_newRotatorRotatesFiles", ModeFile)
 	if err != nil {
 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %s", "New()", err)
 	}

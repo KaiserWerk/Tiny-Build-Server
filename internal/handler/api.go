@@ -86,7 +86,7 @@ func (h *HTTPHandler) PayloadReceiveHandler(w http.ResponseWriter, r *http.Reque
 
 	// check if the correct headers, depending on the hoster, are set and
 	// have the correct values
-	if err = network.CheckPayloadHeader(bdContent, r); err != nil {
+	if err = network.CheckPayloadRequestHeader(bdContent, r); err != nil {
 		logger.WithField("error", err.Error()).Error("request headers are incorrect")
 		http.Error(w, "request headers are incorrect", http.StatusBadRequest)
 		return

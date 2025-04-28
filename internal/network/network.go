@@ -10,9 +10,9 @@ import (
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/helper"
 )
 
-// CheckPayloadHeader checks the existence and values taken from HTTP request headers
+// CheckPayloadRequestHeader checks the existence and values taken from HTTP request headers
 // from the given HTTP request
-func CheckPayloadHeader(content entity.BuildDefinitionContent, r *http.Request) error {
+func CheckPayloadRequestHeader(content entity.BuildDefinitionContent, r *http.Request) error {
 	var err error
 
 	switch content.Repository.Hoster {

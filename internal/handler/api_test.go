@@ -1,45 +1,13 @@
 package handler
 
 import (
-	"io"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
-	"github.com/sirupsen/logrus"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 )
-
-type DBServiceMock struct {
-	AutoMigrateFunc                  func() error
-	QuitFunc                         func()
-	RowExistsFunc                    func(query string, args ...interface{}) bool
-	FindBuildDefinitionFunc          func(cond string, args ...interface{}) (entity.BuildDefinition, error)
-	GetAvailableVariablesForUserFunc func(userId uint) ([]entity.UserVariable, error)
-}
-
-func (m *DBServiceMock) AutoMigrate() error {
-
-	return nil
-}
-
-func (m *DBServiceMock) Quit() {
-
-}
-
-func (m *DBServiceMock) RowExists(query string, args ...interface{}) bool {
-	return true
-}
-
-func (m *DBServiceMock) FindBuildDefinition(cond string, args ...interface{}) (entity.BuildDefinition, error) {
-	return entity.BuildDefinition{
-		Token: "123abc",
-	}, nil
-}
-
-func (m *DBServiceMock) GetAvailableVariablesForUser(userId uint) ([]entity.UserVariable, error) {
-	return nil, nil
-}
 
 var mockPayload = `{
   "ref": "refs/heads/master",
@@ -231,18 +199,21 @@ var mockPayload = `{
 }`
 
 func TestPayloadReceiveHandler(t *testing.T) {
-	logger := logrus.New()
-	logger.Out = io.Discard
-
-	dbMock := &DBServiceMock{}
+	dbMock := &dbservice.DBServiceMock{}
+	logger, _, _ := logging.NewLogger(logging.LevelDebug, "", "", logging.ModeDiscard)
 
 	handler := &HTTPHandler{
-		Logger:    logrus.NewEntry(logger),
+		Logger:    logger,
 		DBService: dbMock,
 	}
 
+	token := "123abc"
+
 	w := httptest.NewRecorder()
-	r := httptest.NewRequest("POST", "/payload/receive?token=123abc", strings.NewReader(mockPayload))
+	r := httptest.NewRequest("POST", "/payload/receive?token="+token, strings.NewReader(mockPayload))
+	r.Header.Set("X-GitHub-Delivery", "550e8400-e29b-41d4-a716-446655440000")
+	r.Header.Set("X-GitHub-Event", "push")
+	r.Header.Set("X-Hub-Signature", "sha1=1234567890abcdef1234567890abcdef12345678")
 
 	handler.PayloadReceiveHandler(w, r)
 
@@ -250,6 +221,5 @@ func TestPayloadReceiveHandler(t *testing.T) {
 
 	if resp.StatusCode != 200 {
 		t.Errorf("Expected status code 200, got %d", resp.StatusCode)
-
 	}
 }
