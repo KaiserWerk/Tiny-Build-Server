@@ -1,6 +1,8 @@
 module github.com/KaiserWerk/Tiny-Build-Server
 
-go 1.16
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/KaiserWerk/sessionstore/v2 v2.1.0
@@ -14,9 +16,18 @@ require (
 	github.com/stvp/slug v0.0.0-20150928221549-5ab8191bb1fe
 	golang.org/x/crypto v0.35.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/yaml.v3 v3.0.0
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.7
+)
+
+require (
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/kr/fs v0.1.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 )
