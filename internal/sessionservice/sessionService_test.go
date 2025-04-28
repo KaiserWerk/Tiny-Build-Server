@@ -4,13 +4,15 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/entity"
 
 	"github.com/KaiserWerk/sessionstore/v2"
 )
 
 func TestGetUserFromSession(t *testing.T) {
-	ds := dbservice.New(&entity.AppConfig{})
+	ds := dbservice.New(&configuration.AppConfig{})
 
 	type args struct {
 		s *sessionstore.Session

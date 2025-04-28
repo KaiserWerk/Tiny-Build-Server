@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/cron"
 	"io"
 	"net/http"
 	"os"
@@ -15,21 +14,22 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
-	"github.com/stvp/slug"
-
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/cron"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/dbservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/deploymentservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/handler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/logging"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/mailer"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/middleware"
-	"github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
+	panichandler "github.com/KaiserWerk/Tiny-Build-Server/internal/panicHandler"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
+
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
+	"github.com/stvp/slug"
 )
 
 var (
