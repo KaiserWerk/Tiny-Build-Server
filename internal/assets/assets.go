@@ -25,7 +25,7 @@ func GetTemplate(name string) ([]byte, error) {
 }
 
 func GetWebAssetFile(name string) ([]byte, error) {
-	return webAssetFS.ReadFile("webasset/" + name)
+	return webAssetFS.ReadFile("assets/" + name)
 }
 
 func GetWebAssetFS() embed.FS {

@@ -51,7 +51,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 	automigrate := flag.Bool("automigrate", false, "Whether to create/update database tables automatically on startup")
 	flag.Parse()
 
-	logger, cleanup, err := logging.NewLogger(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile, "tbs.log")
+	logger, cleanup, err := logging.NewLogger(logrus.DebugLevel, *logPath, "main", logging.ModeConsole|logging.ModeFile)
 	if err != nil {
 		panic("could not create new logger: " + err.Error())
 	}

@@ -22,9 +22,10 @@ func TestGetWebAssetFile(t *testing.T) {
 		filename string
 		wantErr  bool
 	}{
-		{"404 image", "assets/error-404-monochrome.svg", false},
+		{"404 image", "img/error-404-monochrome.svg", false},
 		{"stylesheet", "css/styles.css", false},
 		{"jQuery", "js/jquery-3.5.1.min.js", false},
+		{"bootstrap bundle", "js/bootstrap-4.5.0.bundle.min.js", false},
 		{"fontawesome", "js/fontawesome-5.13.0.min.js", false},
 		{"javascripts", "js/scripts.js", false},
 		{"err 1", "js/script.js", true},
@@ -42,7 +43,7 @@ func TestGetWebAssetFile(t *testing.T) {
 }
 
 func TestGetMiscFile(t *testing.T) {
-	_, err := GetMiscFile("build_definition_skeleton.yaml")
+	_, err := GetMiscFile("build_definition_skeleton.yml")
 	if err != nil {
 		t.Fatalf("could not read misc file: %s", err.Error())
 	}

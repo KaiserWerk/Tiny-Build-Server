@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -56,22 +54,17 @@ func Test_newRotatorCanWrite(t *testing.T) {
 }
 
 func Test_newRotatorRotatesFiles(t *testing.T) {
-	le, cleanup, err := NewLogger(logrus.InfoLevel, ".", "Test_newRotatorRotatesFiles", ModeFile)
+	rot, err := newRotator(testPath, testFilename, 1, testPerms, 2)
 	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %s", "New()", err)
+		t.Errorf("Test_newRotatorRotatesFiles | %s failed with error: %v", "newRotator()", err)
 	}
 
 	testdata1 := make([]byte, 11<<20)
-	le.Infof(string(testdata1))
+	rot.Write(testdata1)
 	testdata2 := make([]byte, 8<<20)
-	le.Infof(string(testdata2))
+	rot.Write(testdata2)
 	if err != nil {
 		t.Errorf("Test_newRotatorRotatesFiles | %s failed with error: %v", "le.Writer().Close()", err)
-	}
-
-	err = cleanup()
-	if err != nil {
-		t.Errorf("Test_newRotatorRotatesFiles | %s failed with error: %v", "logger cleanup()", err)
 	}
 
 	fi, err := os.Stat(testFullPath)

@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
+
 	"github.com/KaiserWerk/sessionstore/v2"
 )
 
@@ -82,7 +84,7 @@ func TestDoesHashMatch(t *testing.T) {
 }
 
 func TestCheckLogin(t *testing.T) {
-	mgr := sessionstore.NewManager("test")
+	svc := sessionservice.NewSessionService("test")
 	type args struct {
 		r *http.Request
 	}
@@ -96,7 +98,7 @@ func TestCheckLogin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CheckLogin(mgr, tt.args.r)
+			got, err := CheckLogin(svc, tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckLogin() error = %v, wantErr %v", err, tt.wantErr)
 				return
