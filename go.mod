@@ -14,7 +14,7 @@ require (
 	golang.org/x/crypto v0.35.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	gopkg.in/yaml.v3 v3.0.0
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.7
 )
