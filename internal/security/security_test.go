@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/sessionservice"
 
@@ -85,26 +86,100 @@ func TestDoesHashMatch(t *testing.T) {
 
 func TestCheckLogin(t *testing.T) {
 	svc := sessionservice.NewSessionService("test")
-	type args struct {
-		r *http.Request
-	}
+	sess, _ := svc.CreateSession(time.Now().Add(24 * time.Hour))
+
 	tests := []struct {
 		name    string
-		args    args
-		want    sessionstore.Session
+		r       *http.Request
+		want    *sessionstore.Session
 		wantErr bool
 	}{
-		{name: "Test Checklogin()", args: args{r: &http.Request{Method: http.MethodGet}}, want: sessionstore.Session{}, wantErr: true},
+		{
+			name: "With valid session",
+			r: func() *http.Request {
+				req := &http.Request{
+					Header: http.Header{},
+				}
+				cookie := &http.Cookie{
+					Name:  "test",
+					Value: sess.Id,
+				}
+				req.AddCookie(cookie)
+				return req
+			}(),
+			want:    sess,
+			wantErr: false,
+		},
+		{
+			name: "With missing cookie",
+			r: func() *http.Request {
+				req := &http.Request{
+					Header: http.Header{},
+				}
+				return req
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "With invalid session ID",
+			r: func() *http.Request {
+				req := &http.Request{
+					Header: http.Header{},
+				}
+				cookie := &http.Cookie{
+					Name:  "test",
+					Value: "invalid-session-id",
+				}
+				req.AddCookie(cookie)
+				return req
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "With expired session",
+			r: func() *http.Request {
+				expiredSess, _ := svc.CreateSession(time.Now().Add(-1 * time.Hour))
+				req := &http.Request{
+					Header: http.Header{},
+				}
+				cookie := &http.Cookie{
+					Name:  "test",
+					Value: expiredSess.Id,
+				}
+				req.AddCookie(cookie)
+				return req
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "With session ID not matching any session",
+			r: func() *http.Request {
+				req := &http.Request{
+					Header: http.Header{},
+				}
+				cookie := &http.Cookie{
+					Name:  "test",
+					Value: "nonexistent-session-id",
+				}
+				req.AddCookie(cookie)
+				return req
+			}(),
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CheckLogin(svc, tt.args.r)
+			got, err := CheckLogin(svc, tt.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CheckLogin() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(&got, &tt.want) {
-				t.Errorf("CheckLogin() got = %v, want %v", &got, &tt.want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CheckLogin() got = %v, want %v", got, &tt.want)
 			}
 		})
 	}

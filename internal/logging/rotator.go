@@ -98,6 +98,7 @@ func (r *Rotator) Write(data []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	r.currentSize += uint64(n)
 
 	return n, err
 }
