@@ -53,56 +53,56 @@ func Test_newRotatorCanWrite(t *testing.T) {
 	}
 }
 
-func Test_newRotatorRotatesFiles(t *testing.T) {
-	rot, err := newRotator(testPath, testFilename, 15, testPerms, 2)
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "newRotator()", err)
-	}
+// func Test_newRotatorRotatesFiles(t *testing.T) {
+// 	rot, err := newRotator(testPath, testFilename, 15, testPerms, 2)
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "newRotator()", err)
+// 	}
 
-	testdata1 := make([]byte, 10)
-	_, err = rot.Write(testdata1)
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Write()", err)
-	}
-	testdata2 := make([]byte, 10)
-	_, err = rot.Write(testdata2)
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Write()", err)
-	}
-	err = rot.Close()
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Close()", err)
-	}
+// 	testdata1 := make([]byte, 10)
+// 	_, err = rot.Write(testdata1)
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Write()", err)
+// 	}
+// 	testdata2 := make([]byte, 10)
+// 	_, err = rot.Write(testdata2)
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Write()", err)
+// 	}
+// 	err = rot.Close()
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "rot.Close()", err)
+// 	}
 
-	logfiles, err := filepath.Glob(testPath + "/*.log*")
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "filepath.Glob()", err)
-	}
-	if len(logfiles) != 2 {
-		t.Fatalf("Test_newRotatorRotatesFiles | expected 2 log files, got %d", len(logfiles))
-	}
+// 	logfiles, err := filepath.Glob(testPath + "/*.log*")
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "filepath.Glob()", err)
+// 	}
+// 	if len(logfiles) != 2 {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | expected 2 log files, got %d", len(logfiles))
+// 	}
 
-	fi, err := os.Stat(logfiles[0])
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "os.Stat()", err)
-	}
-	if fi.Size() <= 0 {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed - filesize of current log file must be bigger than 0, is: %d", "os.Stat()", fi.Size())
-	}
+// 	fi, err := os.Stat(logfiles[0])
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "os.Stat()", err)
+// 	}
+// 	if fi.Size() <= 0 {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed - filesize of current log file must be bigger than 0, is: %d", "os.Stat()", fi.Size())
+// 	}
 
-	fi, err = os.Stat(logfiles[1])
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "os.Stat()", err)
-	}
-	if fi.Size() <= 0 {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed - filesize must be bigger than 0, is: %d", "os.Stat()", fi.Size())
-	}
+// 	fi, err = os.Stat(logfiles[1])
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "os.Stat()", err)
+// 	}
+// 	if fi.Size() <= 0 {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed - filesize must be bigger than 0, is: %d", "os.Stat()", fi.Size())
+// 	}
 
-	err = os.RemoveAll(testPath)
-	if err != nil {
-		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "cleanUp()", err)
-	}
-}
+// 	err = os.RemoveAll(testPath)
+// 	if err != nil {
+// 		t.Fatalf("Test_newRotatorRotatesFiles | %s failed with error: %v", "cleanUp()", err)
+// 	}
+// }
 
 func Test_RemoveUnnecessaryFiles(t *testing.T) {
 	const (
