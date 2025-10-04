@@ -4,3 +4,7 @@ database:
 tls:
   certfile:
   keyfile:
+storagebox:
+  username: username
+  password: changeme
+  host: host:port

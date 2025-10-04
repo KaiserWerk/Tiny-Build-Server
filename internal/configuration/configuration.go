@@ -18,10 +18,17 @@ const (
 // AppConfig contains the configuration, taken from a
 // YAML configuration file
 type AppConfig struct {
+	Database   Database         `yaml:"database"`
+	TLS        Tls              `yaml:"tls"`
+	Build      Build            `yaml:"build"`
+	StorageBox StorageBoxConfig `yaml:"storagebox"`
+}
+
+type (
 	Database struct {
 		Driver string `yaml:"driver" envconfig:"db_driver"`
 		DSN    string `yaml:"dsn" envconfig:"db_dsn"`
-	} `yaml:"database"`
+	}
 	Tls struct {
 		CertFile string `yaml:"certfile" envconfig:"tls_certfile"`
 		KeyFile  string `yaml:"keyfile" envconfig:"tls_keyfile"`
@@ -29,7 +36,12 @@ type AppConfig struct {
 	Build struct {
 		BasePath string `yaml:"basepath" envconfig:"basepath"`
 	}
-}
+	StorageBoxConfig struct {
+		Username string `yaml:"username" envconfig:"storagebox_username"`
+		Password string `yaml:"password" envconfig:"storagebox_password"`
+		Host     string `yaml:"host" envconfig:"storagebox_host"`
+	}
+)
 
 func Setup(file string) (*AppConfig, bool, error) {
 	var created bool

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/assets"
+	"github.com/KaiserWerk/Tiny-Build-Server/internal/backup"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/buildservice"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/configuration"
 	"github.com/KaiserWerk/Tiny-Build-Server/internal/cron"
@@ -73,6 +74,11 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 		return 0
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	go backup.StartMakingBackups(ctx, config)
+
 	logger.WithFields(logrus.Fields{
 		"app":         "Tiny Build Server",
 		"version":     Version,
@@ -99,7 +105,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 	logger.Trace("Server starts handling requests")
 
 	var tlsEnabled bool
-	if config.Tls.CertFile != "" && config.Tls.KeyFile != "" {
+	if config.TLS.CertFile != "" && config.TLS.KeyFile != "" {
 		logger.Debug("  TLS is enabled")
 		tlsEnabled = true
 	}
@@ -137,32 +143,29 @@ func run(args []string, stdin io.Reader, stdout io.Writer, stderr io.Writer) int
 		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
-
 	go func() {
-		<-quit
+		<-ctx.Done()
 		cronjob.Stop()
 		logger.Debug("Server is shutting down...")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer shutdownCancel()
 
 		server.SetKeepAlivesEnabled(false)
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(shutdownCtx); err != nil {
 			logger.Error("Could not gracefully shut down the server: " + err.Error())
 		}
 	}()
 
 	if tlsEnabled {
-		if err := server.ListenAndServeTLS(config.Tls.CertFile, config.Tls.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := server.ListenAndServeTLS(config.TLS.CertFile, config.TLS.KeyFile); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.WithField("listenAddr", listenAddr).Error("Could not run HTTPS server: " + err.Error())
-			quit <- os.Interrupt
+			cancel()
 		}
 	} else {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.WithField("listenAddr", listenAddr).Error("Could not run HTTP server: " + err.Error())
-			quit <- os.Interrupt
+			cancel()
 		}
 	}
 
