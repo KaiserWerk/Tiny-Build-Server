@@ -10,7 +10,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/sftp v1.13.9
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	github.com/stvp/slug v0.0.0-20150928221549-5ab8191bb1fe
 	golang.org/x/crypto v0.42.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
