@@ -14,6 +14,9 @@ Short description of the desired changes
 - [ ] Criterion 2
 - [ ] Criterion 3
 
+### Files to read
+- example/file.go
+
 ### Files to create
 - folder/file1.go
 - sub/folder/example.js
